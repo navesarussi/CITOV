@@ -1,0 +1,152 @@
+import { randomUUID } from "crypto";
+import { NotFoundError } from "@/domain/errors";
+import {
+  mergeAnswerIntoCard,
+  unansweredQuestionsForCandidate,
+} from "@/domain/field-questions";
+import type {
+  CandidateCard,
+  ChatMessage,
+  JobCard,
+  StoreData,
+} from "@/domain/types";
+import { refreshStoreMatches } from "@/application/employer-actions";
+import { runEmployeeIntake, runEmployerIntake } from "@/infrastructure/ai/intake";
+import type { CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
+
+function applyCandidatePatch(card: CandidateCard, patch?: CandidatePatch): CandidateCard {
+  if (!patch) return card;
+  return {
+    ...card,
+    ...patch,
+    skills: patch.skills ?? card.skills,
+    softSkills: patch.softSkills ?? card.softSkills,
+    languages: patch.languages ?? card.languages,
+    extras: { ...card.extras, ...(patch.extras ?? {}) },
+    flexibility: patch.flexibility ?? card.flexibility,
+    experienceYears:
+      patch.experienceYears !== undefined ? patch.experienceYears : card.experienceYears,
+  };
+}
+
+function applyJobPatch(card: JobCard, patch?: JobPatch): JobCard {
+  if (!patch) return card;
+  return {
+    ...card,
+    ...patch,
+    mustHaves: patch.mustHaves ?? card.mustHaves,
+    niceToHaves: patch.niceToHaves ?? card.niceToHaves,
+    requiredLanguages: patch.requiredLanguages ?? card.requiredLanguages,
+    interviewSlots: patch.interviewSlots ?? card.interviewSlots,
+    extras: { ...card.extras, ...(patch.extras ?? {}) },
+  };
+}
+
+function pushChat(
+  chat: ChatMessage[],
+  role: "user" | "assistant",
+  content: string,
+): ChatMessage[] {
+  return [
+    ...chat,
+    {
+      id: randomUUID(),
+      role,
+      content,
+      createdAt: new Date().toISOString(),
+    },
+  ];
+}
+
+export async function handleEmployeeChat(
+  store: StoreData,
+  userId: string,
+  message: string,
+): Promise<{ store: StoreData; reply: string; provider: string }> {
+  const emp = store.employees.find((e) => e.userId === userId);
+  if (!emp) throw new NotFoundError("Employee");
+
+  const pending = unansweredQuestionsForCandidate(
+    emp.card,
+    store.fieldQuestions,
+    store.fieldAnswers,
+    userId,
+  );
+
+  const intake = await runEmployeeIntake({
+    message,
+    card: emp.card,
+    chat: emp.chat,
+    pendingQuestions: pending,
+  });
+
+  let card = applyCandidatePatch(emp.card, intake.candidatePatch);
+  let answers = store.fieldAnswers;
+  let pendingIds = emp.pendingFieldQuestionIds;
+
+  for (const fa of intake.fieldAnswers ?? []) {
+    const q = store.fieldQuestions.find((x) => x.id === fa.questionId);
+    if (!q) continue;
+    card = mergeAnswerIntoCard(card, q, fa.answer);
+    answers = [
+      ...answers.filter(
+        (a) => !(a.questionId === fa.questionId && a.candidateId === userId),
+      ),
+      {
+        questionId: fa.questionId,
+        candidateId: userId,
+        answer: fa.answer,
+        answeredAt: new Date().toISOString(),
+      },
+    ];
+    pendingIds = pendingIds.filter((id) => id !== fa.questionId);
+  }
+
+  let next: StoreData = {
+    ...store,
+    fieldAnswers: answers,
+    employees: store.employees.map((e) =>
+      e.userId === userId
+        ? {
+            ...e,
+            card,
+            pendingFieldQuestionIds: pendingIds,
+            chat: pushChat(pushChat(e.chat, "user", message), "assistant", intake.reply),
+          }
+        : e,
+    ),
+  };
+  next = refreshStoreMatches(next);
+  return { store: next, reply: intake.reply, provider: intake.provider };
+}
+
+export async function handleEmployerChat(
+  store: StoreData,
+  userId: string,
+  message: string,
+): Promise<{ store: StoreData; reply: string; provider: string }> {
+  const er = store.employers.find((e) => e.userId === userId);
+  if (!er) throw new NotFoundError("Employer");
+
+  const intake = await runEmployerIntake({
+    message,
+    card: er.card,
+    chat: er.chat,
+  });
+
+  const card = applyJobPatch(er.card, intake.jobPatch);
+  let next: StoreData = {
+    ...store,
+    employers: store.employers.map((e) =>
+      e.userId === userId
+        ? {
+            ...e,
+            card,
+            chat: pushChat(pushChat(e.chat, "user", message), "assistant", intake.reply),
+          }
+        : e,
+    ),
+  };
+  next = refreshStoreMatches(next);
+  return { store: next, reply: intake.reply, provider: intake.provider };
+}
