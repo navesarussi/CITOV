@@ -2,12 +2,12 @@ import { en, type Messages } from "./en";
 import { he } from "./he";
 import type { Locale } from "./types";
 
-const catalogs: Record<Locale, Messages> = { en: en as Messages, he };
+const catalogs: Record<Locale, Messages> = { en, he };
 
 export type { Messages };
 
 export function getMessages(locale: Locale): Messages {
-  return catalogs[locale] ?? he;
+  return catalogs[locale];
 }
 
 export { formatMessage } from "./format";

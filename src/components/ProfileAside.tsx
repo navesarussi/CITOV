@@ -1,7 +1,7 @@
 "use client";
 
+import { useTranslation } from "@/components/LocaleProvider";
 import { candidateRows, jobRows } from "@/domain/card-progress";
-import { CANDIDATE_FIELD_META, JOB_FIELD_META } from "@/domain/card-fields";
 import type { CandidateCard, JobCard } from "@/domain/types";
 
 export function ProfileAside(props: {
@@ -9,16 +9,13 @@ export function ProfileAside(props: {
   card: CandidateCard | JobCard | null | undefined;
   pendingQuestions?: { id: string; question: string }[];
 }) {
+  const { t, fmt } = useTranslation();
   const c = props.card;
   if (!c) return null;
 
-  const labels = Object.fromEntries(
-    (props.kind === "employee" ? CANDIDATE_FIELD_META : JOB_FIELD_META).map((m) => [
-      m.key,
-      m.label,
-    ]),
-  );
-
+  const labels = (props.kind === "employee"
+    ? t.cardFields.candidate
+    : t.cardFields.job) as Record<string, string>;
   const rows =
     props.kind === "employee"
       ? candidateRows(c as CandidateCard, labels)
@@ -28,25 +25,28 @@ export function ProfileAside(props: {
   return (
     <aside className="flex max-h-[70vh] flex-col rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4">
       <h2 className="text-sm font-semibold text-[var(--ink)]">
-        {props.kind === "employee" ? "הכרטיס שלך" : "כרטיס המשרה"}
+        {props.kind === "employee" ? t.profile.yourCard : t.profile.jobCard}
       </h2>
-      <p className="mt-1 text-xs text-[var(--muted)]">מתמלא אוטומטית מהשיחה · כולל טקסט חופשי</p>
+      <p className="mt-1 text-xs text-[var(--muted)]">{t.profile.autoFillHint}</p>
 
       {props.kind === "employee" ? (
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between text-[11px] text-[var(--muted)]">
-            <span>גמישות</span>
+            <span>{t.profile.flexibility}</span>
             <span>{card.flexibility}/10</span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-[var(--chip)]">
-            <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${(card.flexibility / 10) * 100}%` }} />
+            <div
+              className="h-full rounded-full bg-[var(--accent)]"
+              style={{ width: `${(card.flexibility / 10) * 100}%` }}
+            />
           </div>
         </div>
       ) : null}
 
       {props.pendingQuestions && props.pendingQuestions.length > 0 ? (
         <div className="mt-3 rounded-xl bg-[var(--warn-bg)] p-3 text-xs text-[var(--warn)]">
-          יש {props.pendingQuestions.length} שאלות תחום שמחכות בשיחה
+          {fmt(t.profile.pendingQuestions, { count: props.pendingQuestions.length })}
         </div>
       ) : null}
 
@@ -54,7 +54,7 @@ export function ProfileAside(props: {
         {rows.map((row) => (
           <div key={row.key} className={row.filled ? "" : "opacity-55"}>
             <dt className="text-xs text-[var(--muted)]">{row.label}</dt>
-            <dd className="text-[var(--ink)]">{row.value || "—"}</dd>
+            <dd className="text-[var(--ink)]">{row.value || t.profile.emptyValue}</dd>
           </div>
         ))}
       </dl>

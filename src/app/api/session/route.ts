@@ -3,11 +3,14 @@ import { auth } from "@/auth";
 import { emptyCandidateCard, emptyJobCard, type Role, type StoreData } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
 import { allowDemoMode, hasGoogleAuth } from "@/infrastructure/ai/schemas";
+import { isAdminEmail } from "@/infrastructure/admin-config";
 import { allowDemo } from "@/infrastructure/auth-guard";
 import { readStore, writeStore } from "@/infrastructure/store";
 
 export async function GET() {
-  return ok({ googleAuth: hasGoogleAuth(), allowDemo: allowDemoMode() });
+  const session = await auth();
+  const isAdmin = isAdminEmail(session?.user?.email);
+  return ok({ googleAuth: hasGoogleAuth(), allowDemo: allowDemoMode(), isAdmin });
 }
 
 export async function POST(req: Request) {

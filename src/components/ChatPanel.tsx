@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@/components/LocaleProvider";
+import type { Locale } from "@/i18n/types";
 
 type Msg = { id: string; role: "user" | "assistant" | "system"; content: string };
 
 export function ChatPanel(props: {
   userId: string;
   role: "employee" | "employer";
+  locale: Locale;
   initialMessages: Msg[];
   placeholder: string;
   onDone?: () => void;
 }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Msg[]>(props.initialMessages);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -30,10 +34,7 @@ export function ChatPanel(props: {
     if (!text || busy) return;
     setInput("");
     setBusy(true);
-    setMessages((m) => [
-      ...m,
-      { id: `local-${Date.now()}`, role: "user", content: text },
-    ]);
+    setMessages((m) => [...m, { id: `local-${Date.now()}`, role: "user", content: text }]);
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -42,6 +43,7 @@ export function ChatPanel(props: {
           userId: props.userId,
           role: props.role,
           message: text,
+          locale: props.locale,
         }),
       });
       const data = await res.json();
@@ -51,7 +53,7 @@ export function ChatPanel(props: {
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          content: data.reply ?? data.error ?? "לא הצלחתי לענות",
+          content: data.reply ?? data.error ?? t.chat.replyFailed,
         },
       ]);
       props.onDone?.();
@@ -64,14 +66,12 @@ export function ChatPanel(props: {
     <div className="flex h-full min-h-[420px] flex-col rounded-2xl border border-[var(--stroke)] bg-[var(--surface)]">
       <div className="flex items-center justify-between border-b border-[var(--stroke)] px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-[var(--ink)]">שיחה עם הסוכן</p>
-          <p className="text-xs text-[var(--muted)]">
-            מדברים חופשי — הסוכן ממלא את הכרטיס
-          </p>
+          <p className="text-sm font-medium text-[var(--ink)]">{t.chat.title}</p>
+          <p className="text-xs text-[var(--muted)]">{t.chat.subtitle}</p>
         </div>
         {provider ? (
           <span className="rounded-full bg-[var(--chip)] px-2.5 py-1 text-[11px] text-[var(--muted)]">
-            {provider === "gemini" ? "Gemini" : "מצב מקומי"}
+            {provider === "gemini" ? "Gemini" : t.chat.localMode}
           </span>
         ) : null}
       </div>
@@ -79,9 +79,7 @@ export function ChatPanel(props: {
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
           <p className="text-sm leading-6 text-[var(--muted)]">
-            {props.role === "employee"
-              ? "ספרו על עצמכם: תפקיד, ניסיון, מיקום, אופי, זמינות — וכמה אתם מוכנים להתפשר (1–10)."
-              : "ספרו מה אתם מחפשים: תפקיד, תחום, מיקום, חובה, אופי צוות, וזמנים לראיון."}
+            {props.role === "employee" ? t.chat.employeeEmptyHint : t.chat.employerEmptyHint}
           </p>
         ) : null}
         {messages.map((m) => (
@@ -96,9 +94,7 @@ export function ChatPanel(props: {
             {m.content}
           </div>
         ))}
-        {busy ? (
-          <p className="text-xs text-[var(--muted)]">הסוכן כותב…</p>
-        ) : null}
+        {busy ? <p className="text-xs text-[var(--muted)]">{t.chat.typing}</p> : null}
         <div ref={bottomRef} />
       </div>
 
@@ -119,7 +115,7 @@ export function ChatPanel(props: {
             disabled={busy}
             className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            שליחה
+            {t.chat.send}
           </button>
         </div>
       </div>

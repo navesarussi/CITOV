@@ -37,6 +37,7 @@ export const he: Messages = {
     afterSignInHint: "אחרי התחברות בוחרים תפקיד — עובד או מעסיק.",
     demoEmployeeDev: "דמו עובד/ת (פיתוח בלבד)",
     demoEmployerDev: "דמו מעסיק/ה (פיתוח בלבד)",
+    adminPortal: "פורטל מנהלים",
   },
   session: {
     noActiveSession: "אין סשן פעיל.",
@@ -72,8 +73,8 @@ export const he: Messages = {
   profile: {
     yourCard: "הכרטיס שלך",
     jobCard: "כרטיס המשרה",
-    fieldsFilled:
-      "{filled}/{total} שדות מולאו · השאר מוגדרים וממתינים למילוי",
+    fieldsFilled: "{filled}/{total} שדות מולאו · השאר מוגדרים וממתינים למילוי",
+    autoFillHint: "מתמלא אוטומטית מהשיחה · כולל טקסט חופשי",
     flexibility: "גמישות",
     pendingQuestions: "יש {count} שאלות תחום שמחכות בשיחה",
     emptyValue: "—",

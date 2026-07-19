@@ -35,6 +35,7 @@ export const en = {
     afterSignInHint: "After signing in, choose employee or employer.",
     demoEmployeeDev: "Employee demo (dev only)",
     demoEmployerDev: "Employer demo (dev only)",
+    adminPortal: "Admin portal",
   },
   session: {
     noActiveSession: "No active session.",
@@ -71,6 +72,7 @@ export const en = {
     yourCard: "Your card",
     jobCard: "Job card",
     fieldsFilled: "{filled}/{total} fields filled · the rest are defined and waiting to be completed",
+    autoFillHint: "Fills automatically from chat · includes free text",
     flexibility: "Flexibility",
     pendingQuestions: "{count} field questions are waiting in the chat",
     emptyValue: "—",

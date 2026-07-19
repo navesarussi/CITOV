@@ -1,10 +1,12 @@
 import { randomUUID } from "crypto";
 import { NotFoundError } from "@/domain/errors";
+import { createAiUsageRecord } from "@/domain/admin";
 import {
   mergeAnswerIntoCard,
   unansweredQuestionsForCandidate,
 } from "@/domain/field-questions";
 import type {
+  AiUsageRecord,
   CandidateCard,
   ChatMessage,
   JobCard,
@@ -12,7 +14,8 @@ import type {
 } from "@/domain/types";
 import { refreshStoreMatches } from "@/application/employer-actions";
 import { runEmployeeIntake, runEmployerIntake } from "@/infrastructure/ai/intake";
-import type { CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
+import { resolveAdminSettings } from "@/infrastructure/ai/prompts";
+import type { AiTokenUsage, CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
 
 function applyCandidatePatch(card: CandidateCard, patch?: CandidatePatch): CandidateCard {
   if (!patch) return card;
@@ -58,6 +61,22 @@ function pushChat(
   ];
 }
 
+function recordAiUsage(
+  store: StoreData,
+  type: AiUsageRecord["type"],
+  usage?: AiTokenUsage,
+): StoreData {
+  if (!usage) return store;
+  const record = createAiUsageRecord({
+    id: randomUUID(),
+    type,
+    promptTokens: usage.promptTokens,
+    completionTokens: usage.completionTokens,
+    createdAt: new Date().toISOString(),
+  });
+  return { ...store, aiUsage: [...(store.aiUsage ?? []), record] };
+}
+
 export async function handleEmployeeChat(
   store: StoreData,
   userId: string,
@@ -73,11 +92,13 @@ export async function handleEmployeeChat(
     userId,
   );
 
+  const prompts = resolveAdminSettings(store.adminSettings);
   const intake = await runEmployeeIntake({
     message,
     card: emp.card,
     chat: emp.chat,
     pendingQuestions: pending,
+    systemPrompt: prompts.candidatePrompt,
   });
 
   let card = applyCandidatePatch(emp.card, intake.candidatePatch);
@@ -117,6 +138,7 @@ export async function handleEmployeeChat(
     ),
   };
   next = refreshStoreMatches(next);
+  next = recordAiUsage(next, "employee_intake", intake.usage);
   return { store: next, reply: intake.reply, provider: intake.provider };
 }
 
@@ -128,10 +150,12 @@ export async function handleEmployerChat(
   const er = store.employers.find((e) => e.userId === userId);
   if (!er) throw new NotFoundError("Employer");
 
+  const prompts = resolveAdminSettings(store.adminSettings);
   const intake = await runEmployerIntake({
     message,
     card: er.card,
     chat: er.chat,
+    systemPrompt: prompts.employerPrompt,
   });
 
   const card = applyJobPatch(er.card, intake.jobPatch);
@@ -148,5 +172,6 @@ export async function handleEmployerChat(
     ),
   };
   next = refreshStoreMatches(next);
+  next = recordAiUsage(next, "employer_intake", intake.usage);
   return { store: next, reply: intake.reply, provider: intake.provider };
 }

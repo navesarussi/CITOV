@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "@/components/LocaleProvider";
+
 type Job = {
   matchId: string;
   score: number;
@@ -17,10 +19,12 @@ type Job = {
 };
 
 export function OpportunityList(props: { jobs: Job[] }) {
+  const { t, fmt } = useTranslation();
+
   if (props.jobs.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-[var(--stroke)] p-8 text-center text-sm text-[var(--muted)]">
-        כאן יופיעו רק משרות שמעסיק כבר סימן אותך כמועמד/ת פוטנציאלי/ת.
+        {t.jobs.empty}
       </div>
     );
   }
@@ -35,7 +39,7 @@ export function OpportunityList(props: { jobs: Job[] }) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="font-semibold text-[var(--ink)]">
-                {job.card?.title || "משרה"}
+                {job.card?.title || t.jobs.defaultTitle}
               </h3>
               <p className="mt-1 text-sm text-[var(--muted)]">
                 {job.employerName}
@@ -44,16 +48,18 @@ export function OpportunityList(props: { jobs: Job[] }) {
               </p>
             </div>
             <span className="rounded-full bg-[var(--chip)] px-2.5 py-1 text-xs">
-              אושר
+              {t.jobs.approved}
             </span>
           </div>
           <p className="mt-3 text-sm leading-6">{job.reason}</p>
           {job.card?.salaryRange ? (
-            <p className="mt-2 text-xs text-[var(--muted)]">שכר: {job.card.salaryRange}</p>
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              {fmt(t.jobs.salary, { value: job.card.salaryRange })}
+            </p>
           ) : null}
           {job.card?.interviewSlots?.length ? (
             <p className="mt-1 text-xs text-[var(--muted)]">
-              זמינות לראיון: {job.card.interviewSlots.join(" · ")}
+              {fmt(t.jobs.interviewSlots, { value: job.card.interviewSlots.join(" · ") })}
             </p>
           ) : null}
         </article>

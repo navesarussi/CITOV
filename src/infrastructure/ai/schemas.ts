@@ -113,12 +113,19 @@ export const jobPatchSchema = z.object({
 export type CandidatePatch = z.infer<typeof candidatePatchSchema>;
 export type JobPatch = z.infer<typeof jobPatchSchema>;
 
+export type AiTokenUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+};
+
 export type IntakeResult = {
   reply: string;
   candidatePatch?: CandidatePatch;
   jobPatch?: JobPatch;
   fieldAnswers?: { questionId: string; answer: string }[];
   provider: "gemini" | "heuristic";
+  usage?: AiTokenUsage;
 };
 
 export function hasGeminiKey(): boolean {

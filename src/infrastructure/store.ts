@@ -45,6 +45,8 @@ function normalizeStore(raw: StoreData): StoreData {
     fieldQuestions: raw.fieldQuestions ?? [],
     fieldAnswers: raw.fieldAnswers ?? [],
     matches: raw.matches ?? [],
+    adminSettings: raw.adminSettings,
+    aiUsage: raw.aiUsage ?? [],
   };
 }
 

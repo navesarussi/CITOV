@@ -171,6 +171,25 @@ export type Match = {
   updatedAt: string;
 };
 
+export type AdminSettings = {
+  candidatePrompt: string;
+  employerPrompt: string;
+  updatedAt?: string;
+  updatedBy?: string;
+};
+
+export type AiUsageType = "employee_intake" | "employer_intake" | "enrich_reason";
+
+export type AiUsageRecord = {
+  id: string;
+  type: AiUsageType;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+  createdAt: string;
+};
+
 export type StoreData = {
   users: User[];
   employees: EmployeeRecord[];
@@ -178,6 +197,8 @@ export type StoreData = {
   fieldQuestions: FieldQuestion[];
   fieldAnswers: FieldAnswer[];
   matches: Match[];
+  adminSettings?: AdminSettings;
+  aiUsage?: AiUsageRecord[];
 };
 
 export function emptyCandidateCard(): CandidateCard {
