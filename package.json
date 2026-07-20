@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/domain/*.test.ts src/application/*.test.ts src/infrastructure/ai/*.test.ts"
+    "test": "tsx --test src/domain/*.test.ts src/application/*.test.ts src/infrastructure/ai/*.test.ts src/application/admin-prompts.test.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.95",

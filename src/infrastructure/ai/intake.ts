@@ -12,12 +12,15 @@ import {
   type IntakeResult,
 } from "./schemas";
 
+let cachedModel: ReturnType<ReturnType<typeof createGoogleGenerativeAI>> | null = null;
+
 function model() {
+  if (cachedModel) return cachedModel;
   const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
   });
-  // Flash is the speed/quality sweet spot for intake turns.
-  return google("gemini-2.5-flash");
+  cachedModel = google("gemini-2.5-flash");
+  return cachedModel;
 }
 
 function extractUsage(usage?: {

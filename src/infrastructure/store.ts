@@ -8,8 +8,8 @@ import {
 } from "@/domain/types";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __shidukhPg: Pool | undefined;
+  var __shidukhSchemaReady: Promise<void> | undefined;
 }
 
 function getPool(): Pool {
@@ -21,7 +21,7 @@ function getPool(): Pool {
     global.__shidukhPg = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      max: 3,
+      max: 5,
     });
   }
   return global.__shidukhPg;
@@ -81,14 +81,19 @@ function seedStore(): StoreData {
 }
 
 async function ensureSchema(): Promise<void> {
-  const pool = getPool();
-  await pool.query(`
-    create table if not exists app_store (
-      id text primary key,
-      data jsonb not null,
-      updated_at timestamptz not null default now()
-    );
-  `);
+  if (!global.__shidukhSchemaReady) {
+    global.__shidukhSchemaReady = (async () => {
+      const pool = getPool();
+      await pool.query(`
+        create table if not exists app_store (
+          id text primary key,
+          data jsonb not null,
+          updated_at timestamptz not null default now()
+        );
+      `);
+    })();
+  }
+  await global.__shidukhSchemaReady;
 }
 
 export async function readStore(): Promise<StoreData> {

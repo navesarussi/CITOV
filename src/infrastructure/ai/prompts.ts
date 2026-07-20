@@ -20,16 +20,30 @@ import type {
   JobCard,
 } from "@/domain/types";
 
+let cachedCandidatePrompt: string | null = null;
+let cachedEmployerPrompt: string | null = null;
+
 function readPromptFile(relativePath: string): string {
   return readFileSync(join(process.cwd(), relativePath), "utf-8");
 }
 
+export function clearDefaultPromptCache(): void {
+  cachedCandidatePrompt = null;
+  cachedEmployerPrompt = null;
+}
+
 export function getDefaultCandidatePrompt(): string {
-  return readPromptFile("prompts/candidate/system-prompt.md");
+  if (!cachedCandidatePrompt) {
+    cachedCandidatePrompt = readPromptFile("prompts/candidate/system-prompt.md");
+  }
+  return cachedCandidatePrompt;
 }
 
 export function getDefaultEmployerPrompt(): string {
-  return readPromptFile("prompts/employer/system-prompt.md");
+  if (!cachedEmployerPrompt) {
+    cachedEmployerPrompt = readPromptFile("prompts/employer/system-prompt.md");
+  }
+  return cachedEmployerPrompt;
 }
 
 export function resolveAdminSettings(
@@ -41,6 +55,10 @@ export function resolveAdminSettings(
     updatedAt: raw?.updatedAt,
     updatedBy: raw?.updatedBy,
   };
+}
+
+export function hasCustomAdminPrompts(raw?: Partial<AdminSettings>): boolean {
+  return Boolean(raw?.candidatePrompt?.trim() || raw?.employerPrompt?.trim());
 }
 
 export type BuiltConversation = {
@@ -110,7 +128,6 @@ export function buildEmployerConversation(params: {
   };
 }
 
-/** Legacy single-string prompt (admin preview / tests). */
 export function buildEmployeePrompt(params: {
   template: string;
   message: string;

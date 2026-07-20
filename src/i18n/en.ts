@@ -14,7 +14,7 @@ export const en = {
   home: {
     tagline: "Find work without searching",
     description:
-      "Talk to an agent in free text. It fills a detailed card (dozens of fields), matches you, and shows each side only what is relevant.",
+      "A natural conversation with a smart placement agent. It understands you deeply, matches with precision, and shows each side only what matters.",
     googleSignIn: "Sign in with Google",
     connectedAs: "Signed in as {name}",
     continueAsEmployee: "Continue as job seeker",
@@ -41,6 +41,7 @@ export const en = {
     noActiveSession: "No active session.",
     backToStart: "Back to start",
     reconnect: "Sign in again",
+    loading: "Loading…",
   },
   employee: {
     subtitle: "Chat with the agent · Jobs approved for you",
@@ -58,21 +59,21 @@ export const en = {
   },
   chat: {
     title: "Chat with the agent",
-    subtitle: "Speak freely — the agent fills the card",
+    subtitle: "A live conversation — at your pace",
     localMode: "Local mode",
     employeeEmptyHint:
-      "Tell us about yourself: role, experience, location, personality, availability — and how flexible you are (1–10).",
+      "Tell me about yourself freely — what you’re looking for, what matters, and what a good workday looks like.",
     employerEmptyHint:
-      "Describe what you're looking for: role, field, location, must-haves, team vibe, and interview times.",
+      "Tell me about the role freely — who would truly fit your team, and what matters day to day.",
     typing: "Agent is typing…",
     send: "Send",
     replyFailed: "Could not get a reply",
   },
   profile: {
-    yourCard: "Your card",
-    jobCard: "Job card",
+    yourCard: "Your profile",
+    jobCard: "Job profile",
     fieldsFilled: "{filled}/{total} fields filled · the rest are defined and waiting to be completed",
-    autoFillHint: "Fills automatically from chat · includes free text",
+    autoFillHint: "Updates quietly from the chat · includes free text",
     flexibility: "Flexibility",
     pendingQuestions: "{count} field questions are waiting in the chat",
     emptyValue: "—",
@@ -101,7 +102,7 @@ export const en = {
   api: {
     missingDetails: "Missing required details",
     missingUserId: "Missing userId",
-    internalError: "Internal error",
+    internalError: "Something went wrong on the server. Please try again in a moment.",
     googleRequired: "Google sign-in required",
     demoDisabled: "Demo mode is disabled. Sign in with Google.",
     userNotFound: "User not found",

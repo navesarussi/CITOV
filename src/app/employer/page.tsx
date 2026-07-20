@@ -3,18 +3,32 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { CandidateQueue } from "@/components/CandidateQueue";
-import { ChatPanel } from "@/components/ChatPanel";
+import { ChatPanel, type ChatTurnPayload } from "@/components/ChatPanel";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "@/components/LocaleProvider";
 import { ProfileAside } from "@/components/ProfileAside";
 
 type Tab = "chat" | "candidates";
 
+function readEmployerSession(): { id: string; name: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("shidukh_user");
+    if (!raw) return null;
+    const user = JSON.parse(raw) as { id: string; name: string; role: string };
+    return user.role === "employer" ? { id: user.id, name: user.name } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function EmployerPage() {
   const { t, fmt, locale } = useTranslation();
   const [tab, setTab] = useState<Tab>("chat");
-  const [userId, setUserId] = useState<string | null>(null);
-  const [name, setName] = useState("");
+  const [sessionUser] = useState(readEmployerSession);
+  const [bootstrapping, setBootstrapping] = useState(() => Boolean(sessionUser));
+  const userId = sessionUser?.id ?? null;
+  const name = sessionUser?.name ?? "";
   const [me, setMe] = useState<{
     card: unknown;
     chat: { id: string; role: "user" | "assistant" | "system"; content: string }[];
@@ -22,24 +36,54 @@ export default function EmployerPage() {
   } | null>(null);
   const [candidates, setCandidates] = useState([]);
 
-  const refresh = useCallback(async (id: string) => {
-    const [meRes, candRes] = await Promise.all([
-      fetch(`/api/me?userId=${id}&locale=${locale}`).then((r) => r.json()),
-      fetch(`/api/candidates?userId=${id}&locale=${locale}`).then((r) => r.json()),
-    ]);
-    setMe(meRes);
-    setCandidates(candRes.candidates ?? []);
-  }, [locale]);
+  const refreshLists = useCallback(
+    async (id: string) => {
+      const candRes = await fetch(`/api/candidates?userId=${id}&locale=${locale}`).then((r) =>
+        r.json(),
+      );
+      setCandidates(candRes.candidates ?? []);
+    },
+    [locale],
+  );
+
+  const refresh = useCallback(
+    async (id: string) => {
+      const [meRes] = await Promise.all([
+        fetch(`/api/me?userId=${id}&locale=${locale}`).then((r) => r.json()),
+        refreshLists(id),
+      ]);
+      setMe(meRes);
+    },
+    [locale, refreshLists],
+  );
 
   useEffect(() => {
-    const raw = localStorage.getItem("shidukh_user");
-    if (!raw) return;
-    const user = JSON.parse(raw) as { id: string; name: string; role: string };
-    if (user.role !== "employer") return;
-    setUserId(user.id);
-    setName(user.name);
-    void refresh(user.id);
-  }, [refresh]);
+    if (!userId) return;
+    // Initial session hydrate from API (async setState is intentional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
+    void refresh(userId).finally(() => setBootstrapping(false));
+  }, [refresh, userId]);
+
+  function onTurn(payload: ChatTurnPayload) {
+    setMe((prev) =>
+      prev
+        ? {
+            ...prev,
+            card: payload.card ?? prev.card,
+            chat: (payload.chat as typeof prev.chat) ?? prev.chat,
+          }
+        : prev,
+    );
+    if (userId) void refreshLists(userId);
+  }
+
+  if (bootstrapping) {
+    return (
+      <main className="mx-auto max-w-lg px-5 py-16 text-center text-[var(--muted)]">
+        {t.session.loading}
+      </main>
+    );
+  }
 
   if (!userId) {
     return (
@@ -67,10 +111,12 @@ export default function EmployerPage() {
     <main className="mx-auto min-h-full w-full max-w-6xl px-4 py-6">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/" className="text-sm text-[var(--accent)]">
+          <Link href="/" className="text-sm font-medium tracking-wide text-[var(--accent)]">
             {t.app.name}
           </Link>
-          <h1 className="text-2xl font-semibold text-[var(--hero)]">{name}</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--hero)]">
+            {name}
+          </h1>
           <p className="text-sm text-[var(--muted)]">{t.employer.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -87,18 +133,22 @@ export default function EmployerPage() {
       </header>
 
       {tab === "chat" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <ChatPanel
-            key={`${userId}-employer`}
-            userId={userId}
-            role="employer"
-            locale={locale}
-            initialMessages={me?.chat ?? []}
-            placeholder={t.employer.chatPlaceholder}
-            onDone={() => void refresh(userId)}
-          />
-          <ProfileAside kind="employer" card={me?.card as never} />
-        </div>
+        me ? (
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            <ChatPanel
+              key={`${userId}-employer`}
+              userId={userId}
+              role="employer"
+              locale={locale}
+              initialMessages={me.chat}
+              placeholder={t.employer.chatPlaceholder}
+              onTurn={onTurn}
+            />
+            <ProfileAside kind="employer" card={me.card as never} />
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--muted)]">{t.session.loading}</p>
+        )
       ) : (
         <CandidateQueue
           employerId={userId}
@@ -121,7 +171,7 @@ function TabButton(props: {
       onClick={props.onClick}
       className={
         props.active
-          ? "rounded-lg bg-white px-3 py-1.5 font-medium"
+          ? "rounded-lg bg-white px-3 py-1.5 font-medium shadow-sm"
           : "rounded-lg px-3 py-1.5 text-[var(--muted)]"
       }
     >

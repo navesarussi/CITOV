@@ -1,0 +1,41 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  getAdminDashboard,
+  resetAdminPrompts,
+  updateAdminPrompts,
+} from "./admin";
+import type { StoreData } from "@/domain/types";
+import { emptyCandidateCard, emptyJobCard } from "@/domain/types";
+
+function emptyStore(): StoreData {
+  return {
+    users: [],
+    employees: [{ userId: "u1", card: emptyCandidateCard(), chat: [], pendingFieldQuestionIds: [] }],
+    employers: [{ userId: "u2", card: emptyJobCard(), chat: [] }],
+    fieldQuestions: [],
+    fieldAnswers: [],
+    matches: [],
+    aiUsage: [],
+  };
+}
+
+describe("admin prompts live override", () => {
+  it("marks custom prompts and resets to file defaults", () => {
+    let store = emptyStore();
+    store = updateAdminPrompts(store, {
+      candidatePrompt: "CUSTOM CANDIDATE {{known_facts}}",
+      employerPrompt: "CUSTOM EMPLOYER {{known_facts}}",
+      updatedBy: "admin@test.com",
+    });
+    const dash = getAdminDashboard(store);
+    assert.equal(dash.prompts.isCustom, true);
+    assert.match(dash.prompts.candidatePrompt, /CUSTOM CANDIDATE/);
+
+    store = resetAdminPrompts(store);
+    const after = getAdminDashboard(store);
+    assert.equal(after.prompts.isCustom, false);
+    assert.equal(/CUSTOM CANDIDATE/.test(after.prompts.candidatePrompt), false);
+    assert.match(after.prompts.candidatePrompt, /FR-CHAT|יועץ/);
+  });
+});

@@ -23,11 +23,11 @@ export function ProfileAside(props: {
   const card = c as CandidateCard;
 
   return (
-    <aside className="flex max-h-[70vh] flex-col rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4">
-      <h2 className="text-sm font-semibold text-[var(--ink)]">
+    <aside className="premium-panel flex max-h-[70vh] flex-col rounded-[1.35rem] p-4">
+      <h2 className="text-sm font-semibold tracking-tight text-[var(--ink)]">
         {props.kind === "employee" ? t.profile.yourCard : t.profile.jobCard}
       </h2>
-      <p className="mt-1 text-xs text-[var(--muted)]">{t.profile.autoFillHint}</p>
+      <p className="mt-1 text-xs leading-5 text-[var(--muted)]">{t.profile.autoFillHint}</p>
 
       {props.kind === "employee" ? (
         <div className="mt-3">
