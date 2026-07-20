@@ -18,4 +18,4 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - Legacy `app_store` blob auto-migrated on first read after deploy
 - DB pool: DNS-filter pooler candidates then probe in small batches; cache last-good URL per instance
 - Session start uses `upsertSessionRole` (no full-store rewrite)
-- [PENDING REFACTOR]: pin `SUPABASE_POOLER_REGION` / `SUPABASE_POOLER_CLUSTER` from `/api/health/db` `resolvedHost` to skip discovery on cold start
+- Default pooler preference: `aws-1` / `ap-south-1` (prod `resolvedHost`); override via `SUPABASE_POOLER_*`

@@ -1,4 +1,9 @@
+/** Known-good for this Supabase project (from prod `/api/health/db` resolvedHost). */
+const DEFAULT_POOLER_REGION = "ap-south-1";
+const DEFAULT_POOLER_CLUSTER = "aws-1";
+
 const POOLER_REGIONS = [
+  "ap-south-1",
   "us-east-1",
   "us-east-2",
   "us-west-1",
@@ -9,12 +14,11 @@ const POOLER_REGIONS = [
   "ap-southeast-2",
   "ap-northeast-1",
   "ap-northeast-2",
-  "ap-south-1",
   "ca-central-1",
   "sa-east-1",
 ] as const;
 
-const POOLER_CLUSTERS = ["aws-0", "aws-1", "aws-2", "aws-3"] as const;
+const POOLER_CLUSTERS = ["aws-1", "aws-0", "aws-2", "aws-3"] as const;
 const POOLER_PORTS = [6543, 5432] as const;
 
 export type ParsedDbUrl = {
@@ -65,8 +69,8 @@ export function buildDatabaseUrl(parts: {
 /** Rewrite direct `db.*.supabase.co` URLs to IPv4-compatible Supavisor pooler. */
 export function toPoolerConnectionString(
   connectionString: string,
-  region = process.env.SUPABASE_POOLER_REGION?.trim(),
-  cluster = process.env.SUPABASE_POOLER_CLUSTER?.trim() || "aws-0",
+  region = process.env.SUPABASE_POOLER_REGION?.trim() || DEFAULT_POOLER_REGION,
+  cluster = process.env.SUPABASE_POOLER_CLUSTER?.trim() || DEFAULT_POOLER_CLUSTER,
 ): string {
   try {
     const parsed = parseDatabaseUrl(connectionString);
@@ -74,7 +78,7 @@ export function toPoolerConnectionString(
     return buildDatabaseUrl({
       user: `postgres.${parsed.ref}`,
       password: parsed.password,
-      host: `${cluster}-${region || "us-east-1"}.pooler.supabase.com`,
+      host: `${cluster}-${region}.pooler.supabase.com`,
       port: 6543,
       database: parsed.database,
     });
@@ -84,9 +88,8 @@ export function toPoolerConnectionString(
 }
 
 export function poolerRegionCandidates(): readonly string[] {
-  const preferred = process.env.SUPABASE_POOLER_REGION?.trim();
-  if (preferred) return [preferred, ...POOLER_REGIONS.filter((r) => r !== preferred)];
-  return POOLER_REGIONS;
+  const preferred = process.env.SUPABASE_POOLER_REGION?.trim() || DEFAULT_POOLER_REGION;
+  return [preferred, ...POOLER_REGIONS.filter((r) => r !== preferred)];
 }
 
 export function poolerConnectionCandidates(connectionString: string): string[] {
@@ -96,9 +99,12 @@ export function poolerConnectionCandidates(connectionString: string): string[] {
       return [connectionString];
     }
 
-    const clusters = process.env.SUPABASE_POOLER_CLUSTER
-      ? [process.env.SUPABASE_POOLER_CLUSTER.trim()]
-      : POOLER_CLUSTERS;
+    const preferredCluster =
+      process.env.SUPABASE_POOLER_CLUSTER?.trim() || DEFAULT_POOLER_CLUSTER;
+    const clusters = [
+      preferredCluster,
+      ...POOLER_CLUSTERS.filter((c) => c !== preferredCluster),
+    ];
 
     const out: string[] = [];
     for (const cluster of clusters) {
