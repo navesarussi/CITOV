@@ -90,6 +90,7 @@ export default function EmployeePage() {
       {tab === "chat" ? (
         <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
           <ChatPanel
+            key={`${userId}-employee`}
             userId={userId}
             role="employee"
             locale={locale}

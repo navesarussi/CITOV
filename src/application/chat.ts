@@ -12,7 +12,6 @@ import type {
   JobCard,
   StoreData,
 } from "@/domain/types";
-import { refreshStoreMatches } from "@/application/employer-actions";
 import { runEmployeeIntake, runEmployerIntake } from "@/infrastructure/ai/intake";
 import { resolveAdminSettings } from "@/infrastructure/ai/prompts";
 import type { AiTokenUsage, CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
@@ -137,7 +136,7 @@ export async function handleEmployeeChat(
         : e,
     ),
   };
-  next = refreshStoreMatches(next);
+  // Match rebuild is deferred by the API route so the reply returns faster.
   next = recordAiUsage(next, "employee_intake", intake.usage);
   return { store: next, reply: intake.reply, provider: intake.provider };
 }
@@ -171,7 +170,6 @@ export async function handleEmployerChat(
         : e,
     ),
   };
-  next = refreshStoreMatches(next);
   next = recordAiUsage(next, "employer_intake", intake.usage);
   return { store: next, reply: intake.reply, provider: intake.provider };
 }

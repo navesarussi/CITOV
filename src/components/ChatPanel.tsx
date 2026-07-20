@@ -15,15 +15,25 @@ export function ChatPanel(props: {
   onDone?: () => void;
 }) {
   const { t } = useTranslation();
+  const sessionKey = `${props.role}:${props.userId}`;
   const [messages, setMessages] = useState<Msg[]>(props.initialMessages);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [provider, setProvider] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const lastSession = useRef(sessionKey);
 
+  // Hard reset when switching candidate ↔ employer (or user).
   useEffect(() => {
+    if (lastSession.current !== sessionKey) {
+      lastSession.current = sessionKey;
+      setMessages(props.initialMessages);
+      setProvider("");
+      setInput("");
+      return;
+    }
     setMessages(props.initialMessages);
-  }, [props.initialMessages]);
+  }, [sessionKey, props.initialMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,23 +57,46 @@ export function ChatPanel(props: {
         }),
       });
       const data = await res.json();
+      if (data.error) {
+        setMessages((m) => [
+          ...m,
+          {
+            id: `err-${Date.now()}`,
+            role: "assistant",
+            content: data.error,
+          },
+        ]);
+        return;
+      }
       setProvider(data.provider ?? data.aiMode ?? "");
       setMessages((m) => [
         ...m,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          content: data.reply ?? data.error ?? t.chat.replyFailed,
+          content: data.reply ?? t.chat.replyFailed,
         },
       ]);
       props.onDone?.();
+    } catch {
+      setMessages((m) => [
+        ...m,
+        {
+          id: `err-${Date.now()}`,
+          role: "assistant",
+          content: t.chat.replyFailed,
+        },
+      ]);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex h-full min-h-[420px] flex-col rounded-2xl border border-[var(--stroke)] bg-[var(--surface)]">
+    <div
+      key={sessionKey}
+      className="flex h-full min-h-[420px] flex-col rounded-2xl border border-[var(--stroke)] bg-[var(--surface)]"
+    >
       <div className="flex items-center justify-between border-b border-[var(--stroke)] px-4 py-3">
         <div>
           <p className="text-sm font-medium text-[var(--ink)]">{t.chat.title}</p>

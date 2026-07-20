@@ -3,7 +3,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import type { CandidateCard, ChatMessage, FieldQuestion, JobCard } from "@/domain/types";
 import { heuristicEmployeeIntake, heuristicEmployerIntake } from "./heuristic";
-import { buildEmployeePrompt, buildEmployerPrompt } from "./prompts";
+import { buildEmployeeConversation, buildEmployerConversation } from "./prompts";
 import {
   candidatePatchSchema,
   hasGeminiKey,
@@ -16,6 +16,7 @@ function model() {
   const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
   });
+  // Flash is the speed/quality sweet spot for intake turns.
   return google("gemini-2.5-flash");
 }
 
@@ -45,11 +46,16 @@ export async function runEmployeeIntake(params: {
   systemPrompt: string;
 }): Promise<IntakeResult> {
   if (!hasGeminiKey()) {
-    return heuristicEmployeeIntake(params.message, params.card, params.pendingQuestions);
+    return heuristicEmployeeIntake(
+      params.message,
+      params.card,
+      params.pendingQuestions,
+      params.chat,
+    );
   }
 
   try {
-    const prompt = buildEmployeePrompt({
+    const { system, messages } = buildEmployeeConversation({
       template: params.systemPrompt,
       message: params.message,
       card: params.card,
@@ -66,7 +72,8 @@ export async function runEmployeeIntake(params: {
           .array(z.object({ questionId: z.string(), answer: z.string() }))
           .default([]),
       }),
-      prompt,
+      system,
+      messages,
     });
 
     return {
@@ -76,8 +83,14 @@ export async function runEmployeeIntake(params: {
       provider: "gemini",
       usage: extractUsage(usage),
     };
-  } catch {
-    return heuristicEmployeeIntake(params.message, params.card, params.pendingQuestions);
+  } catch (err) {
+    console.error("employee intake Gemini failed, using heuristic", err);
+    return heuristicEmployeeIntake(
+      params.message,
+      params.card,
+      params.pendingQuestions,
+      params.chat,
+    );
   }
 }
 
@@ -88,11 +101,11 @@ export async function runEmployerIntake(params: {
   systemPrompt: string;
 }): Promise<IntakeResult> {
   if (!hasGeminiKey()) {
-    return heuristicEmployerIntake(params.message, params.card);
+    return heuristicEmployerIntake(params.message, params.card, params.chat);
   }
 
   try {
-    const prompt = buildEmployerPrompt({
+    const { system, messages } = buildEmployerConversation({
       template: params.systemPrompt,
       message: params.message,
       card: params.card,
@@ -105,7 +118,8 @@ export async function runEmployerIntake(params: {
         reply: z.string(),
         patch: jobPatchSchema,
       }),
-      prompt,
+      system,
+      messages,
     });
 
     return {
@@ -114,8 +128,9 @@ export async function runEmployerIntake(params: {
       provider: "gemini",
       usage: extractUsage(usage),
     };
-  } catch {
-    return heuristicEmployerIntake(params.message, params.card);
+  } catch (err) {
+    console.error("employer intake Gemini failed, using heuristic", err);
+    return heuristicEmployerIntake(params.message, params.card, params.chat);
   }
 }
 

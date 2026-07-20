@@ -78,6 +78,13 @@ export async function POST(req: Request) {
     await writeStore(next);
     return ok({ user: next.users.find((u) => u.id === id) });
   } catch (e) {
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("DATABASE_URL")) {
+      return ok(
+        { error: "שירות הנתונים לא מוגדר (DATABASE_URL). נסו שוב מאוחר יותר." },
+        { status: 503 },
+      );
+    }
     return fail(e);
   }
 }
