@@ -44,6 +44,13 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 ### FR-DATA
 - Persist store in Supabase Postgres
 
+### FR-UI
+| ID | Requirement |
+|---|---|
+| FR-UI-01 | Global settings control (top corner): language, privacy, terms, report a problem, rate the app, about |
+| FR-UI-02 | Starting as employee/employer must succeed for signed-in Google users without opaque server errors |
+| FR-UI-03 | App entry and admin portal must not hang indefinitely on loading |
+
 ## Non-goals (current POC)
 
 - Zoom intake, WhatsApp, payments, native apps, trained custom ML models

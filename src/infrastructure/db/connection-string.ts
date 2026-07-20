@@ -1,21 +1,4 @@
-const POOLER_REGIONS = [
-  "us-east-1",
-  "us-east-2",
-  "us-west-1",
-  "eu-west-1",
-  "eu-central-1",
-  "eu-north-1",
-  "ap-southeast-1",
-  "ap-southeast-2",
-  "ap-northeast-1",
-  "ap-northeast-2",
-  "ap-south-1",
-  "ca-central-1",
-  "sa-east-1",
-] as const;
-
-const POOLER_CLUSTERS = ["aws-0", "aws-1", "aws-2", "aws-3"] as const;
-const POOLER_PORTS = [6543, 5432] as const;
+const POOLER_FALLBACK_REGIONS = ["eu-central-1", "eu-west-1", "us-east-1"] as const;
 
 export type ParsedDbUrl = {
   user: string;
@@ -74,7 +57,7 @@ export function toPoolerConnectionString(
     return buildDatabaseUrl({
       user: `postgres.${parsed.ref}`,
       password: parsed.password,
-      host: `${cluster}-${region || "us-east-1"}.pooler.supabase.com`,
+      host: `${cluster}-${region || "eu-central-1"}.pooler.supabase.com`,
       port: 6543,
       database: parsed.database,
     });
@@ -83,12 +66,10 @@ export function toPoolerConnectionString(
   }
 }
 
-export function poolerRegionCandidates(): readonly string[] {
-  const preferred = process.env.SUPABASE_POOLER_REGION?.trim();
-  if (preferred) return [preferred, ...POOLER_REGIONS.filter((r) => r !== preferred)];
-  return POOLER_REGIONS;
-}
-
+/**
+ * Small candidate list — original URL first.
+ * Avoids 100+ host probes that freeze cold starts on Vercel.
+ */
 export function poolerConnectionCandidates(connectionString: string): string[] {
   try {
     const parsed = parseDatabaseUrl(connectionString);
@@ -96,25 +77,23 @@ export function poolerConnectionCandidates(connectionString: string): string[] {
       return [connectionString];
     }
 
-    const clusters = process.env.SUPABASE_POOLER_CLUSTER
-      ? [process.env.SUPABASE_POOLER_CLUSTER.trim()]
-      : POOLER_CLUSTERS;
+    const cluster = process.env.SUPABASE_POOLER_CLUSTER?.trim() || "aws-0";
+    const preferred = process.env.SUPABASE_POOLER_REGION?.trim();
+    const regions = preferred
+      ? [preferred, ...POOLER_FALLBACK_REGIONS.filter((r) => r !== preferred)]
+      : [...POOLER_FALLBACK_REGIONS];
 
-    const out: string[] = [];
-    for (const cluster of clusters) {
-      for (const region of poolerRegionCandidates()) {
-        for (const port of POOLER_PORTS) {
-          out.push(
-            buildDatabaseUrl({
-              user: `postgres.${parsed.ref}`,
-              password: parsed.password,
-              host: `${cluster}-${region}.pooler.supabase.com`,
-              port,
-              database: parsed.database,
-            }),
-          );
-        }
-      }
+    const out = [connectionString];
+    for (const region of regions.slice(0, 3)) {
+      out.push(
+        buildDatabaseUrl({
+          user: `postgres.${parsed.ref}`,
+          password: parsed.password,
+          host: `${cluster}-${region}.pooler.supabase.com`,
+          port: 6543,
+          database: parsed.database,
+        }),
+      );
     }
     return out;
   } catch {

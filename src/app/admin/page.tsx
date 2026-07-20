@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
+import { SettingsMenu } from "@/components/SettingsMenu";
 
 type AdminStats = {
   employers: number;
@@ -55,31 +56,44 @@ export default function AdminPage() {
   const [saved, setSaved] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
   const [aiMode, setAiMode] = useState<string | null>(null);
+  const [bootTimedOut, setBootTimedOut] = useState(false);
 
   const load = useCallback(async () => {
-    const [res, aiRes] = await Promise.all([
-      fetch("/api/admin/stats"),
-      fetch("/api/health/ai"),
-    ]);
-    const json = await res.json();
-    const ai = await aiRes.json().catch(() => null);
-    if (!res.ok) {
-      setError(json.error ?? "שגיאה בטעינה");
-      return;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      const [res, aiRes] = await Promise.all([
+        fetch("/api/admin/stats", { signal: controller.signal }),
+        fetch("/api/health/ai", { signal: controller.signal }),
+      ]);
+      clearTimeout(timer);
+      const json = await res.json();
+      const ai = await aiRes.json().catch(() => null);
+      if (!res.ok) {
+        setError(json.error ?? "שגיאה בטעינה");
+        return;
+      }
+      setData(json);
+      setCandidatePrompt(json.prompts.candidatePrompt);
+      setEmployerPrompt(json.prompts.employerPrompt);
+      setIsCustom(Boolean(json.prompts.isCustom));
+      setAiMode(ai?.mode ?? null);
+      setError(null);
+    } catch {
+      setError("הטעינה ארכה מדי או נכשלה. רעננו את העמוד.");
     }
-    setData(json);
-    setCandidatePrompt(json.prompts.candidatePrompt);
-    setEmployerPrompt(json.prompts.employerPrompt);
-    setIsCustom(Boolean(json.prompts.isCustom));
-    setAiMode(ai?.mode ?? null);
-    setError(null);
   }, []);
 
   useEffect(() => {
-    if (status === "loading") return;
+    const t = setTimeout(() => setBootTimedOut(true), 10000);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (status === "loading" && !bootTimedOut) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- dashboard fetch on auth ready
     void load();
-  }, [status, load]);
+  }, [status, load, bootTimedOut]);
 
   async function savePrompts() {
     setSaving(true);
@@ -123,10 +137,13 @@ export default function AdminPage() {
     }
   }
 
-  if (status === "loading" || (!data && !error)) {
+  if ((!data && !error) && (status === "loading" || !bootTimedOut)) {
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 text-center text-[var(--muted)]">
-        טוען פורטל מנהלים…
+        <p>טוען פורטל מנהלים…</p>
+        <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)]">
+          חזרה להתחלה
+        </Link>
       </main>
     );
   }
@@ -135,6 +152,13 @@ export default function AdminPage() {
     return (
       <main className="mx-auto max-w-lg px-5 py-16 text-center">
         <p className="text-[var(--muted)]">{error}</p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="mt-4 me-3 text-[var(--accent)]"
+        >
+          נסו שוב
+        </button>
         <Link href="/" className="mt-4 inline-block text-[var(--accent)]">
           חזרה להתחלה
         </Link>
@@ -160,13 +184,16 @@ export default function AdminPage() {
             סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm"
-        >
-          רענון
-        </button>
+        <div className="flex items-center gap-2">
+          <SettingsMenu />
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm"
+          >
+            רענון
+          </button>
+        </div>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

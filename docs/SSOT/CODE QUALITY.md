@@ -16,3 +16,5 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - Runtime expansion via `extras` on cards; employer field questions merge into `extras`
 - `card_field_definitions` for optional metadata on dynamic keys (no DDL per new question)
 - Legacy `app_store` blob auto-migrated on first read after deploy
+- DB pool: try configured `DATABASE_URL` first; tiny pooler fallback list (no 100-host probe)
+- Session start uses `upsertSessionRole` (no full-store rewrite)

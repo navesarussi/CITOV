@@ -4,7 +4,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 
 export default function HomePage() {
@@ -35,11 +35,15 @@ export default function HomePage() {
     setBusy(role + (demo ? "-demo" : ""));
     setError(null);
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 20000);
       const res = await fetch("/api/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role, demo, locale }),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
       const data = await res.json();
       if (data.error) {
         setError(data.error);
@@ -62,7 +66,7 @@ export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-5 py-10">
       <div className="mb-8 flex justify-end">
-        <LanguageSwitcher />
+        <SettingsMenu />
       </div>
 
       <p className="text-sm font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">

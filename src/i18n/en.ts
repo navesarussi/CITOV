@@ -43,6 +43,35 @@ export const en = {
     reconnect: "Sign in again",
     loading: "Loading…",
   },
+  settings: {
+    title: "Settings",
+    language: "Language",
+    privacy: "Privacy policy",
+    terms: "Terms of service",
+    about: "About",
+    report: "Report a problem",
+    rate: "Rate the app",
+    rateTitle: "How was your experience?",
+    rateHint: "Your rating helps us improve Shidukh.",
+    cancel: "Cancel",
+    sendRating: "Send",
+    reportSubject: "Shidukh — problem report",
+    reportBody: "Describe the problem:",
+    rateSubject: "Shidukh — app rating",
+    rateBody: "My rating",
+  },
+  legal: {
+    privacyTitle: "Privacy policy",
+    termsTitle: "Terms of service",
+    aboutTitle: "About Shidukh",
+    back: "Back",
+    privacyBody:
+      "Shidukh stores the profile and chat information you share in order to match candidates and employers. We use Google sign-in for authentication. We do not sell your personal data. Contact us to request deletion of your account data.",
+    termsBody:
+      "Shidukh is a placement matching service. Matches are recommendations, not hiring guarantees. Users are responsible for the accuracy of information they provide. Misuse, harassment, or fraudulent profiles may lead to account removal.",
+    aboutBody:
+      "Shidukh helps people find work and hire talent through natural conversation with an AI placement agent — without traditional search.",
+  },
   employee: {
     subtitle: "Chat with the agent · Jobs approved for you",
     localMode: " · Local mode (no Gemini key)",

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ChatPanel, type ChatTurnPayload } from "@/components/ChatPanel";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { OpportunityList } from "@/components/OpportunityList";
 import { ProfileAside } from "@/components/ProfileAside";
@@ -122,7 +122,7 @@ export default function EmployeePage() {
           <p className="text-sm text-[var(--muted)]">{t.employee.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <LanguageSwitcher />
+          <SettingsMenu />
           <div className="flex rounded-xl bg-[var(--chip)] p-1 text-sm">
             <TabButton active={tab === "chat"} onClick={() => setTab("chat")}>
               {t.employee.chatTab}
