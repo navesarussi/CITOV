@@ -6,13 +6,23 @@ import type { Locale } from "@/i18n/types";
 
 type Msg = { id: string; role: "user" | "assistant" | "system"; content: string };
 
+export type ChatTurnPayload = {
+  reply?: string;
+  error?: string;
+  provider?: string;
+  aiMode?: string;
+  card?: unknown;
+  chat?: Msg[];
+  pendingQuestions?: { id: string; question: string }[];
+};
+
 export function ChatPanel(props: {
   userId: string;
   role: "employee" | "employer";
   locale: Locale;
   initialMessages: Msg[];
   placeholder: string;
-  onDone?: () => void;
+  onTurn?: (payload: ChatTurnPayload) => void;
 }) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<Msg[]>(props.initialMessages);
@@ -20,10 +30,6 @@ export function ChatPanel(props: {
   const [busy, setBusy] = useState(false);
   const [provider, setProvider] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMessages(props.initialMessages);
-  }, [props.initialMessages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -46,31 +52,48 @@ export function ChatPanel(props: {
           locale: props.locale,
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as ChatTurnPayload;
+      if (data.error) {
+        setMessages((m) => [
+          ...m,
+          { id: `err-${Date.now()}`, role: "assistant", content: data.error! },
+        ]);
+        return;
+      }
       setProvider(data.provider ?? data.aiMode ?? "");
       setMessages((m) => [
         ...m,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          content: data.reply ?? data.error ?? t.chat.replyFailed,
+          content: data.reply ?? t.chat.replyFailed,
         },
       ]);
-      props.onDone?.();
+      props.onTurn?.(data);
+    } catch {
+      setMessages((m) => [
+        ...m,
+        { id: `err-${Date.now()}`, role: "assistant", content: t.chat.replyFailed },
+      ]);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex h-full min-h-[420px] flex-col rounded-2xl border border-[var(--stroke)] bg-[var(--surface)]">
-      <div className="flex items-center justify-between border-b border-[var(--stroke)] px-4 py-3">
+    <div className="premium-panel flex h-full min-h-[440px] flex-col overflow-hidden rounded-[1.35rem]">
+      <div className="flex items-center justify-between border-b border-[var(--stroke)] bg-[linear-gradient(180deg,#ffffff,rgba(230,242,240,0.55))] px-4 py-3.5">
         <div>
-          <p className="text-sm font-medium text-[var(--ink)]">{t.chat.title}</p>
-          <p className="text-xs text-[var(--muted)]">{t.chat.subtitle}</p>
+          <div className="flex items-center gap-2">
+            <span className="live-pulse inline-block h-2 w-2 rounded-full bg-[var(--accent)]" />
+            <p className="text-sm font-semibold tracking-tight text-[var(--ink)]">
+              {t.chat.title}
+            </p>
+          </div>
+          <p className="mt-0.5 text-xs text-[var(--muted)]">{t.chat.subtitle}</p>
         </div>
         {provider ? (
-          <span className="rounded-full bg-[var(--chip)] px-2.5 py-1 text-[11px] text-[var(--muted)]">
+          <span className="rounded-full bg-[var(--chip)] px-2.5 py-1 text-[11px] font-medium text-[var(--muted)]">
             {provider === "gemini" ? "Gemini" : t.chat.localMode}
           </span>
         ) : null}
@@ -78,27 +101,36 @@ export function ChatPanel(props: {
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
-          <p className="text-sm leading-6 text-[var(--muted)]">
+          <div className="chat-msg rounded-2xl bg-[var(--bubble)]/70 px-4 py-3 text-sm leading-6 text-[var(--muted)]">
             {props.role === "employee" ? t.chat.employeeEmptyHint : t.chat.employerEmptyHint}
-          </p>
+          </div>
         ) : null}
         {messages.map((m) => (
           <div
             key={m.id}
             className={
               m.role === "user"
-                ? "ms-8 rounded-2xl rounded-se-md bg-[var(--accent)] px-3.5 py-2.5 text-sm text-white"
-                : "me-8 rounded-2xl rounded-ss-md bg-[var(--bubble)] px-3.5 py-2.5 text-sm text-[var(--ink)]"
+                ? "chat-msg ms-8 rounded-2xl rounded-se-md bg-[var(--accent)] px-3.5 py-2.5 text-sm leading-6 text-white shadow-[0_8px_20px_rgba(12,107,102,0.22)]"
+                : "chat-msg me-8 rounded-2xl rounded-ss-md border border-[var(--stroke)] bg-white px-3.5 py-2.5 text-sm leading-6 text-[var(--ink)] shadow-[0_6px_16px_rgba(16,36,42,0.04)]"
             }
           >
             {m.content}
           </div>
         ))}
-        {busy ? <p className="text-xs text-[var(--muted)]">{t.chat.typing}</p> : null}
+        {busy ? (
+          <div className="chat-msg me-8 inline-flex items-center gap-2 rounded-2xl border border-[var(--stroke)] bg-white px-3.5 py-2.5 text-xs text-[var(--muted)]">
+            <span>{t.chat.typing}</span>
+            <span className="typing-dots" aria-hidden>
+              <span />
+              <span />
+              <span />
+            </span>
+          </div>
+        ) : null}
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t border-[var(--stroke)] p-3">
+      <div className="border-t border-[var(--stroke)] bg-white/80 p-3 backdrop-blur">
         <div className="flex gap-2">
           <input
             value={input}
@@ -107,13 +139,13 @@ export function ChatPanel(props: {
               if (e.key === "Enter") void send();
             }}
             placeholder={props.placeholder}
-            className="flex-1 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[var(--accent)]"
+            className="flex-1 rounded-xl border border-[var(--stroke)] bg-[var(--bg)]/40 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)] focus:bg-white"
           />
           <button
             type="button"
             onClick={() => void send()}
             disabled={busy}
-            className="rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-xl bg-[var(--accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--accent)] disabled:opacity-50"
           >
             {t.chat.send}
           </button>

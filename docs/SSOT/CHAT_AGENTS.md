@@ -22,6 +22,13 @@ Applies to **both** candidate intake and employer intake agents.
 - Prefer questions that reveal **how someone works / who they are / what the team feels like**, not only years and titles.
 - If the user dumps many facts at once, extract them silently and continue with the next *useful* human question.
 - Employer and candidate interviews should **mirror the job context** (e.g. hospitality vs logistics → different soft probes).
+- Never re-ask a question already answered in the card or earlier in the chat.
+
+## Context window (implementation)
+
+- Each turn sends the **full recent conversation** as role-based `messages` (not a single isolated utterance).
+- System prompt carries compact **known facts** + anti-repeat hints.
+- Candidate and employer chats are **role-isolated** for the same Google user.
 
 ## Information targets (examples, not a script)
 
@@ -40,16 +47,19 @@ Applies to **both** candidate intake and employer intake agents.
 - Firing unrelated generic questions when context already known
 - Rigid Q1→Q2→Q3 interview order regardless of answers
 - Inventing facts the user did not provide
+- Re-asking the same question after the user already answered
 
-## Implementation backlog
+## Implementation status
 
-- [ ] Update Gemini system prompts (candidate + employer) to FR-CHAT-*
-- [ ] Update heuristic fallback replies (remove fill-count language)
-- [ ] Add explicit free-text / narrative field to both cards + UI
-- [ ] Context-adaptive question picker (role/field aware)
+- [x] Gemini system prompts (candidate + employer) aligned to FR-CHAT-*
+- [x] Heuristic fallback replies (no fill-count language; history-aware)
+- [x] Free-text / narrative field on both cards + patch schemas
+- [x] Full-conversation messages API + compact known-facts context
+- [x] Role-isolated chat sessions (API enforces active role)
 
 ## Feedback log
 
 | Date | Note |
 |---|---|
 | 2026-07-20 | Initial product notes: no field-count talk; adaptive specific questions; free-text field; natural dialogue; maximize personality insight; optimize for fast excellent matches / perfect hire |
+| 2026-07-20 | Critical UX: inhuman heuristic voice, repeated questions, card meta leakage, slow turns, role-switch chat bleed, need full-chat context — addressed in chat-agents-context-ux |

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ChatPanel } from "@/components/ChatPanel";
+import { ChatPanel, type ChatTurnPayload } from "@/components/ChatPanel";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "@/components/LocaleProvider";
 import { OpportunityList } from "@/components/OpportunityList";
@@ -10,11 +10,25 @@ import { ProfileAside } from "@/components/ProfileAside";
 
 type Tab = "chat" | "jobs";
 
+function readEmployeeSession(): { id: string; name: string } | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("shidukh_user");
+    if (!raw) return null;
+    const user = JSON.parse(raw) as { id: string; name: string; role: string };
+    return user.role === "employee" ? { id: user.id, name: user.name } : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function EmployeePage() {
   const { t, fmt, locale } = useTranslation();
   const [tab, setTab] = useState<Tab>("chat");
-  const [userId, setUserId] = useState<string | null>(null);
-  const [name, setName] = useState("");
+  const [sessionUser] = useState(readEmployeeSession);
+  const [bootstrapping, setBootstrapping] = useState(() => Boolean(sessionUser));
+  const userId = sessionUser?.id ?? null;
+  const name = sessionUser?.name ?? "";
   const [me, setMe] = useState<{
     card: unknown;
     chat: { id: string; role: "user" | "assistant" | "system"; content: string }[];
@@ -23,24 +37,55 @@ export default function EmployeePage() {
   } | null>(null);
   const [jobs, setJobs] = useState([]);
 
-  const refresh = useCallback(async (id: string) => {
-    const [meRes, jobsRes] = await Promise.all([
-      fetch(`/api/me?userId=${id}&locale=${locale}`).then((r) => r.json()),
-      fetch(`/api/opportunities?userId=${id}&locale=${locale}`).then((r) => r.json()),
-    ]);
-    setMe(meRes);
-    setJobs(jobsRes.jobs ?? []);
-  }, [locale]);
+  const refreshLists = useCallback(
+    async (id: string) => {
+      const jobsRes = await fetch(`/api/opportunities?userId=${id}&locale=${locale}`).then((r) =>
+        r.json(),
+      );
+      setJobs(jobsRes.jobs ?? []);
+    },
+    [locale],
+  );
+
+  const refresh = useCallback(
+    async (id: string) => {
+      const [meRes] = await Promise.all([
+        fetch(`/api/me?userId=${id}&locale=${locale}`).then((r) => r.json()),
+        refreshLists(id),
+      ]);
+      setMe(meRes);
+    },
+    [locale, refreshLists],
+  );
 
   useEffect(() => {
-    const raw = localStorage.getItem("shidukh_user");
-    if (!raw) return;
-    const user = JSON.parse(raw) as { id: string; name: string; role: string };
-    if (user.role !== "employee") return;
-    setUserId(user.id);
-    setName(user.name);
-    void refresh(user.id);
-  }, [refresh]);
+    if (!userId) return;
+    // Initial session hydrate from API (async setState is intentional).
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
+    void refresh(userId).finally(() => setBootstrapping(false));
+  }, [refresh, userId]);
+
+  function onTurn(payload: ChatTurnPayload) {
+    setMe((prev) =>
+      prev
+        ? {
+            ...prev,
+            card: payload.card ?? prev.card,
+            chat: (payload.chat as typeof prev.chat) ?? prev.chat,
+            pendingQuestions: payload.pendingQuestions ?? prev.pendingQuestions,
+          }
+        : prev,
+    );
+    if (userId) void refreshLists(userId);
+  }
+
+  if (bootstrapping) {
+    return (
+      <main className="mx-auto max-w-lg px-5 py-16 text-center text-[var(--muted)]">
+        {t.session.loading}
+      </main>
+    );
+  }
 
   if (!userId) {
     return (
@@ -68,10 +113,12 @@ export default function EmployeePage() {
     <main className="mx-auto min-h-full w-full max-w-6xl px-4 py-6">
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/" className="text-sm text-[var(--accent)]">
+          <Link href="/" className="text-sm font-medium tracking-wide text-[var(--accent)]">
             {t.app.name}
           </Link>
-          <h1 className="text-2xl font-semibold text-[var(--hero)]">{name}</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--hero)]">
+            {name}
+          </h1>
           <p className="text-sm text-[var(--muted)]">{t.employee.subtitle}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -88,21 +135,26 @@ export default function EmployeePage() {
       </header>
 
       {tab === "chat" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <ChatPanel
-            userId={userId}
-            role="employee"
-            locale={locale}
-            initialMessages={me?.chat ?? []}
-            placeholder={t.employee.chatPlaceholder}
-            onDone={() => void refresh(userId)}
-          />
-          <ProfileAside
-            kind="employee"
-            card={me?.card as never}
-            pendingQuestions={me?.pendingQuestions}
-          />
-        </div>
+        me ? (
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            <ChatPanel
+              key={`${userId}-employee`}
+              userId={userId}
+              role="employee"
+              locale={locale}
+              initialMessages={me.chat}
+              placeholder={t.employee.chatPlaceholder}
+              onTurn={onTurn}
+            />
+            <ProfileAside
+              kind="employee"
+              card={me.card as never}
+              pendingQuestions={me.pendingQuestions}
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--muted)]">{t.session.loading}</p>
+        )
       ) : (
         <OpportunityList jobs={jobs} />
       )}
@@ -121,7 +173,7 @@ function TabButton(props: {
       onClick={props.onClick}
       className={
         props.active
-          ? "rounded-lg bg-white px-3 py-1.5 font-medium"
+          ? "rounded-lg bg-white px-3 py-1.5 font-medium shadow-sm"
           : "rounded-lg px-3 py-1.5 text-[var(--muted)]"
       }
     >

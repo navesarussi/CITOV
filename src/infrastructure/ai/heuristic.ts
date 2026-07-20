@@ -1,11 +1,6 @@
-import {
-  nextMissingCandidateField,
-  nextMissingJobField,
-  candidateRows,
-  jobRows,
-  filledCount,
-} from "@/domain/card-progress";
-import type { CandidateCard, FieldQuestion, JobCard } from "@/domain/types";
+import { wasQuestionJustAsked } from "@/domain/chat-context";
+import { nextMissingCandidateField, nextMissingJobField } from "@/domain/card-progress";
+import type { CandidateCard, ChatMessage, FieldQuestion, JobCard } from "@/domain/types";
 import type { CandidatePatch, IntakeResult, JobPatch } from "./schemas";
 
 function pickFlexibility(text: string): number | undefined {
@@ -29,19 +24,26 @@ function extractList(text: string, label: RegExp): string[] {
     .slice(0, 8);
 }
 
+const ROLE_RE =
+  /מלצר(?:ית)?|ברמן|מארח(?:ת)?|שף|טבח(?:ית)?|קופאי(?:ת)?|מחסנאי|שליח|מנהל(?:ת)?|נציג(?:ת)?(?:\s*מכירות)?|מכירות/;
+
 function extractCandidatePatch(message: string, card: CandidateCard): CandidatePatch {
   const patch: CandidatePatch = {};
   const lower = message;
 
-  if (/מלצר|ברמן|מארח|שף|טבח|קופאי|מחסנ|שליח|מנהל|נציג/.test(lower)) {
-    patch.desiredRole =
-      lower.match(
-        /מלצר(?:ית)?|ברמן|מארח(?:ת)?|שף|טבח(?:ית)?|קופאי(?:ת)?|מחסנאי|שליח|מנהל(?:ת)?|נציג(?:ת)?/,
-      )?.[0] ?? card.desiredRole;
+  const role = lower.match(ROLE_RE)?.[0];
+  if (role) {
+    patch.desiredRole = role === "מכירות" ? "מכירות" : role;
+    if (/מכירות|שירות לקוחות/.test(role) || /מכירות|שירות לקוחות/.test(lower)) {
+      patch.field = patch.field || "מכירות";
+    }
   }
   if (/מסעד|בית קפה|בר\b|מזון/.test(lower)) patch.field = "מסעדנות";
   if (/מחסן|לוגיסט|הפצה|שילוח/.test(lower)) patch.field = "לוגיסטיקה";
-  if (/מכירות|שירות לקוחות/.test(lower)) patch.field = patch.field || "מכירות";
+  if (/מכירות|שירות לקוחות/.test(lower)) {
+    patch.field = patch.field || "מכירות";
+    if (!card.desiredRole && !patch.desiredRole) patch.desiredRole = "מכירות";
+  }
   if (/תל אביב|חיפה|ירושלים|באר שבע|רמת גן|פתח תקווה|נתניה|הרצליה/.test(lower)) {
     patch.location = lower.match(
       /תל אביב|חיפה|ירושלים|באר שבע|רמת גן|פתח תקווה|נתניה|הרצליה/,
@@ -50,7 +52,7 @@ function extractCandidatePatch(message: string, card: CandidateCard): CandidateP
   if (/היברידי|מהבית|ריחוק|משרד/.test(lower)) patch.remotePreference = message.slice(0, 80);
   const years = lower.match(/(\d+)\s*שנ(?:ות|ה)/);
   if (years) patch.experienceYears = Number(years[1]);
-  if (/ג׳וניור|ג׳וניור|junior|בכיר|סיניור|senior|ביניים/.test(lower)) {
+  if (/ג׳וניור|junior|בכיר|סיניור|senior|ביניים/i.test(lower)) {
     patch.experienceLevel = lower.match(/ג׳וניור|junior|בכיר|סיניור|senior|ביניים/i)?.[0];
   }
   const skills = extractList(lower, /כישור(?:ים)?[:\s]+(.+)/i);
@@ -85,24 +87,26 @@ function extractCandidatePatch(message: string, card: CandidateCard): CandidateP
   if (/קהל|לקוחות/.test(lower)) patch.customerFacingOk = "כן";
   if (/ניהול|צוות/.test(lower)) patch.managementExperience = message.slice(0, 100);
   if (/לא מוכן|בלי|קו אדום|לא אסכים/.test(lower)) patch.dealBreakers = message.slice(0, 120);
+  if (message.trim().length > 40) patch.narrative = message.trim().slice(0, 400);
   const flex = pickFlexibility(lower);
   if (flex) patch.flexibility = flex;
-
   return patch;
 }
 
 function extractJobPatch(message: string, card: JobCard): JobPatch {
   const patch: JobPatch = {};
   const lower = message;
-
-  if (/מלצר|ברמן|מארח|שף|טבח|מחסנ|שליח|קופאי|מנהל|נציג/.test(lower)) {
-    patch.title = lower.match(
-      /מלצר(?:ית)?|ברמן|מארח(?:ת)?|שף|טבח(?:ית)?|מחסנאי|שליח|קופאי(?:ת)?|מנהל(?:ת)?|נציג(?:ת)?/,
-    )?.[0];
+  const role = lower.match(ROLE_RE)?.[0];
+  if (role) {
+    patch.title = role === "מכירות" ? "מכירות" : role;
+    if (/מכירות|שירות/.test(lower)) patch.field = patch.field || "מכירות";
   }
   if (/מסעד|בית קפה|בר\b/.test(lower)) patch.field = "מסעדנות";
   if (/מחסן|לוגיסט|הפצה/.test(lower)) patch.field = "לוגיסטיקה";
-  if (/מכירות|שירות/.test(lower)) patch.field = patch.field || "מכירות";
+  if (/מכירות|שירות/.test(lower)) {
+    patch.field = patch.field || "מכירות";
+    if (!card.title && !patch.title) patch.title = "מכירות";
+  }
   if (/תל אביב|חיפה|ירושלים|באר שבע|רמת גן|פתח תקווה|נתניה|הרצליה/.test(lower)) {
     patch.location = lower.match(
       /תל אביב|חיפה|ירושלים|באר שבע|רמת גן|פתח תקווה|נתניה|הרצליה/,
@@ -122,9 +126,7 @@ function extractJobPatch(message: string, card: JobCard): JobPatch {
   if (nice.length) patch.niceToHaves = nice;
   if (/אופי|צוות|אנרגטי|רגוע|שירותי/.test(lower)) patch.personalityFit = message.slice(0, 160);
   if (/תרבות|אווירה/.test(lower)) patch.teamCulture = message.slice(0, 120);
-  if (/ראיון|זמין|יום|שעה|אחה״צ/.test(lower)) {
-    patch.interviewSlots = [message.slice(0, 120)];
-  }
+  if (/ראיון|זמין|יום|שעה|אחה״צ/.test(lower)) patch.interviewSlots = [message.slice(0, 120)];
   if (/דחוף|מיידי|השבוע/.test(lower)) patch.urgency = message.slice(0, 60);
   if (/הטבות|אוכל|נסיעות|ביטוח/.test(lower)) patch.benefits = message.slice(0, 120);
   if (/לילה/.test(lower)) patch.nightShiftsRequired = /לא.*לילה/.test(lower) ? "לא" : "כן";
@@ -136,64 +138,99 @@ function extractJobPatch(message: string, card: JobCard): JobPatch {
   if (/קהל|לקוחות/.test(lower)) patch.customerFacing = "כן";
   if (/חברה|עסק|רשת/.test(lower)) patch.companyDescription = message.slice(0, 160);
   if (/קו אדום|לא לקבל|חובה שיהיה/.test(lower)) patch.dealBreakers = message.slice(0, 120);
-
+  if (message.trim().length > 40) patch.narrative = message.trim().slice(0, 400);
   return patch;
 }
 
-function acknowledge(patch: Record<string, unknown>): string {
-  const keys = Object.keys(patch).filter((k) => patch[k] !== undefined && patch[k] !== "");
-  if (keys.length === 0) return "קיבלתי.";
-  if (keys.length === 1) return "עדכנתי.";
-  return `עדכנתי ${keys.length} פרטים.`;
+const CANDIDATE_FOLLOWUPS: Record<string, string> = {
+  desiredRole: "ספר/י לי קצת — איזה תפקיד מדבר אליך עכשיו?",
+  field: "באיזה תחום זה בעיקר?",
+  location: "באיזה אזור נוח לך לעבוד?",
+  experienceYears: "כמה זמן כבר בעניין הזה, בערך?",
+  skills: "מה לדעתך הכי חזק אצלך בעבודה?",
+  personality: "איך היית מתאר/ת את עצמך עם צוות או מול לקוחות?",
+  salaryExpectation: "מה בערך ציפיית השכר שלך?",
+  interviewAvailability: "מתי בדרך כלל נוח לך לראיון?",
+  flexibility: "כמה חשוב לך שהמשרה תתאים בדיוק, או שיש גמישות?",
+  dealBreakers: "יש משהו שהוא קו אדום מבחינתך?",
+  shiftPreference: "יש העדפה למשמרות — בוקר, ערב, לילה?",
+  transportation: "איך את/ה בדרך כלל מגיע/ה לעבודה?",
+  motivation: "מה גורם לך לרצות את התפקיד הבא?",
+};
+
+const JOB_FOLLOWUPS: Record<string, string> = {
+  title: "איזה תפקיד את/ה מגייס/ת עכשיו?",
+  field: "מה התחום של המשרה?",
+  location: "איפה המיקום?",
+  mustHaves: "מה באמת חובה שיהיה למועמד/ת?",
+  personalityFit: "איזה אופי ישתלב טוב אצלכם בצוות?",
+  interviewSlots: "מתי את/ה פנוי/ה לראיונות השבוע?",
+  salaryRange: "מה טווח השכר או התנאים?",
+  urgency: "כמה דחוף הגיוס?",
+  teamCulture: "איך היית מתאר/ת את האווירה אצלכם?",
+  dealBreakers: "מה יהיה דיל-ברייקר אצל מועמד/ת?",
+  benefits: "יש הטבות שחשוב לציין?",
+  workModel: "העבודה מהמשרד, היברידית או מרחוק?",
+};
+
+function warmAck(patch: Record<string, unknown>, kind: "candidate" | "job"): string {
+  if (patch.desiredRole || patch.title) {
+    const role = String(patch.desiredRole ?? patch.title);
+    return kind === "candidate" ? `מעולה, ${role} — קיבלתי.` : `מעולה, מגייסים ל${role}.`;
+  }
+  if (patch.field) return `יופי, תחום ${String(patch.field)}.`;
+  if (patch.location) return `הבנתי, ${String(patch.location)}.`;
+  if (Object.keys(patch).length) return "תודה, קלטתי.";
+  return "היי, אני כאן איתך.";
+}
+
+function pickFollowUp(
+  chat: ChatMessage[],
+  missingKey: string | undefined,
+  prompts: Record<string, string>,
+  fallback: string,
+): string {
+  const ordered = missingKey
+    ? [missingKey, ...Object.keys(prompts).filter((k) => k !== missingKey)]
+    : Object.keys(prompts);
+  for (const key of ordered) {
+    const q = prompts[key];
+    if (q && !wasQuestionJustAsked(chat, q)) return q;
+  }
+  return fallback;
 }
 
 export function heuristicEmployeeIntake(
   message: string,
   card: CandidateCard,
   pending: FieldQuestion[],
+  chat: ChatMessage[] = [],
 ): IntakeResult {
   const patch = extractCandidatePatch(message, card);
   const fieldAnswers: { questionId: string; answer: string }[] = [];
-
   if (pending.length && message.trim().length > 5) {
     fieldAnswers.push({ questionId: pending[0].id, answer: message.trim() });
   }
 
   const nextCard = { ...card, ...patch } as CandidateCard;
   if (patch.skills) nextCard.skills = patch.skills;
-  const filled = filledCount(candidateRows(nextCard));
-  const total = candidateRows(nextCard).length;
-  const missing = nextMissingCandidateField(nextCard);
 
   if (pending.length && fieldAnswers.length === 0) {
     return {
-      reply: `לפני שנמשיך — מעסיקים בתחום שלך שאלו: ${pending[0].question}`,
+      reply: `לפני שנמשיך — מעסיקים בתחום שאלו משהו חשוב: ${pending[0].question}`,
       candidatePatch: patch,
       fieldAnswers,
       provider: "heuristic",
     };
   }
 
-  let followUp = "אפשר להוסיף עוד פרט שחשוב לך.";
-  if (missing) {
-    const prompts: Record<string, string> = {
-      desiredRole: "איזה תפקיד את/ה מחפש/ת עכשיו?",
-      field: "באיזה תחום זה בעיקר?",
-      location: "באיזה אזור את/ה מעדיפ/ה לעבוד?",
-      experienceYears: "כמה שנות ניסיון רלוונטי יש לך בערך?",
-      skills: "אילו כישורים הכי חשובים לציין?",
-      personality: "איך היית מתאר/ת את האופי שלך בעבודה?",
-      salaryExpectation: "מה ציפיית השכר שלך?",
-      interviewAvailability: "מתי נוח לך לראיון השבוע?",
-      flexibility:
-        "כמה את/ה מוכנ/ה להתפשר על התאמה מדויקת? דרג/י מ-1 (גמיש מאוד) עד 10 (רק מדויק).",
-      dealBreakers: "יש משהו שהוא קו אדום מבחינתך?",
-      shiftPreference: "יש העדפה למשמרות (בוקר/ערב/לילה)?",
-      transportation: "איך את/ה מגיע/ה לעבודה בדרך כלל?",
-    };
-    followUp = prompts[missing.key] ?? `ספר/י לי עוד על: ${missing.label}.`;
-  }
-
+  const missing = nextMissingCandidateField(nextCard);
+  const followUp = pickFollowUp(
+    chat,
+    missing?.key,
+    CANDIDATE_FOLLOWUPS,
+    "ספר/י לי עוד משהו שחשוב לך בתפקיד הבא.",
+  );
   if (Object.keys(patch).length) {
     patch.summary = [nextCard.desiredRole, nextCard.field, nextCard.location]
       .filter(Boolean)
@@ -201,42 +238,30 @@ export function heuristicEmployeeIntake(
   }
 
   return {
-    reply: `${acknowledge(patch as Record<string, unknown>)} הכרטיס מולא ב-${filled}/${total} שדות. ${followUp}`,
+    reply: `${warmAck(patch as Record<string, unknown>, "candidate")} ${followUp}`,
     candidatePatch: patch,
     fieldAnswers,
     provider: "heuristic",
   };
 }
 
-export function heuristicEmployerIntake(message: string, card: JobCard): IntakeResult {
+export function heuristicEmployerIntake(
+  message: string,
+  card: JobCard,
+  chat: ChatMessage[] = [],
+): IntakeResult {
   const patch = extractJobPatch(message, card);
   const nextCard = { ...card, ...patch } as JobCard;
   if (patch.mustHaves) nextCard.mustHaves = patch.mustHaves;
   if (patch.interviewSlots) nextCard.interviewSlots = patch.interviewSlots;
 
-  const filled = filledCount(jobRows(nextCard));
-  const total = jobRows(nextCard).length;
   const missing = nextMissingJobField(nextCard);
-
-  const prompts: Record<string, string> = {
-    title: "איזה תפקיד את/ה מגייס/ת?",
-    field: "מה התחום של המשרה?",
-    location: "איפה המיקום?",
-    mustHaves: "מה חובה שיהיה למועמד? אפשר לפרט כמה דברים.",
-    personalityFit: "איזה אופי ישתלב טוב בצוות?",
-    interviewSlots: "מתי את/ה פנוי/ה לראיונות? אפשר כמה חלונות.",
-    salaryRange: "מה טווח השכר או התנאים?",
-    urgency: "כמה דחוף הגיוס?",
-    teamCulture: "איך היית מתאר/ת את האווירה בצוות?",
-    dealBreakers: "מה יהיה דיל-ברייקר אצל מועמד?",
-    benefits: "יש הטבות חשובות לציין?",
-    workModel: "העבודה מהמשרד, היברידית או מרחוק?",
-  };
-
-  const followUp = missing
-    ? prompts[missing.key] ?? `ספר/י לי עוד על: ${missing.label}.`
-    : "הכרטיס כבר עשיר. אפשר להוסיף ניואנסים — ככל שיש יותר מידע, השידוך מדויק יותר.";
-
+  const followUp = pickFollowUp(
+    chat,
+    missing?.key,
+    JOB_FOLLOWUPS,
+    "ספר/י לי עוד ניואנס על מי שבאמת ישתלב אצלכם.",
+  );
   if (Object.keys(patch).length) {
     patch.summary = [nextCard.title, nextCard.field, nextCard.location]
       .filter(Boolean)
@@ -244,7 +269,7 @@ export function heuristicEmployerIntake(message: string, card: JobCard): IntakeR
   }
 
   return {
-    reply: `${acknowledge(patch as Record<string, unknown>)} כרטיס המשרה מולא ב-${filled}/${total} שדות. ${followUp}`,
+    reply: `${warmAck(patch as Record<string, unknown>, "job")} ${followUp}`,
     jobPatch: patch,
     provider: "heuristic",
   };

@@ -28,8 +28,12 @@ type Dashboard = {
     employerPrompt: string;
     updatedAt?: string;
     updatedBy?: string;
+    isCustom?: boolean;
   };
 };
+
+const PLACEHOLDER_HELP =
+  "{{known_facts}}, {{current_card}}, {{missing_field_key}}, {{pending_field_questions}}, {{recent_agent_questions}} — היסטוריית השיחה נשלחת אוטומטית כ-messages";
 
 function formatUsd(value: number): string {
   if (value < 0.01) return `$${value.toFixed(4)}`;
@@ -47,7 +51,9 @@ export default function AdminPage() {
   const [candidatePrompt, setCandidatePrompt] = useState("");
   const [employerPrompt, setEmployerPrompt] = useState("");
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [isCustom, setIsCustom] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/stats");
@@ -59,11 +65,13 @@ export default function AdminPage() {
     setData(json);
     setCandidatePrompt(json.prompts.candidatePrompt);
     setEmployerPrompt(json.prompts.employerPrompt);
+    setIsCustom(Boolean(json.prompts.isCustom));
     setError(null);
   }, []);
 
   useEffect(() => {
     if (status === "loading") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- dashboard fetch on auth ready
     void load();
   }, [status, load]);
 
@@ -78,13 +86,34 @@ export default function AdminPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        alert(json.error ?? "שגיאה בשמירה");
+        setError(json.error ?? "שגיאה בשמירה");
         return;
       }
       setSaved(true);
+      setIsCustom(true);
       await load();
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function resetPrompts() {
+    if (!confirm("לאפס לפרומפטים ברירת המחדל מהקבצים?")) return;
+    setResetting(true);
+    setSaved(false);
+    try {
+      const res = await fetch("/api/admin/prompts", { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "שגיאה באיפוס");
+        return;
+      }
+      setCandidatePrompt(json.prompts.candidatePrompt);
+      setEmployerPrompt(json.prompts.employerPrompt);
+      setIsCustom(false);
+      await load();
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -96,7 +125,7 @@ export default function AdminPage() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <main className="mx-auto max-w-lg px-5 py-16 text-center">
         <p className="text-[var(--muted)]">{error}</p>
@@ -115,16 +144,20 @@ export default function AdminPage() {
     <main className="mx-auto min-h-full w-full max-w-5xl px-4 py-6">
       <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <Link href="/" className="text-sm text-[var(--accent)]">
+          <Link href="/" className="text-sm font-medium text-[var(--accent)]">
             שידוך
           </Link>
-          <h1 className="text-2xl font-semibold text-[var(--hero)]">פורטל מנהלים</h1>
-          <p className="text-sm text-[var(--muted)]">סטטיסטיקות מערכת ועריכת פרומפטים לסוכני צ׳אט</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--hero)]">
+            פורטל מנהלים
+          </h1>
+          <p className="text-sm text-[var(--muted)]">
+            סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט
+          </p>
         </div>
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm"
+          className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm"
         >
           רענון
         </button>
@@ -133,7 +166,11 @@ export default function AdminPage() {
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="מעסיקים" value={stats.employers} />
         <StatCard label="מועמדים" value={stats.candidates} />
-        <StatCard label="מאצ׳ים" value={stats.matches.total} sub={`${stats.matches.approved} אושרו · ${stats.matches.queued} בתור`} />
+        <StatCard
+          label="מאצ׳ים"
+          value={stats.matches.total}
+          sub={`${stats.matches.approved} אושרו · ${stats.matches.queued} בתור`}
+        />
         <StatCard
           label="עלות AI (הערכה)"
           value={formatUsd(stats.aiUsage.estimatedCostUsd)}
@@ -141,7 +178,7 @@ export default function AdminPage() {
         />
       </section>
 
-      <section className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4">
+      <section className="premium-panel mt-4 rounded-2xl p-4">
         <h2 className="text-sm font-semibold text-[var(--muted)]">פירוט מאצ׳ים</h2>
         <div className="mt-2 flex flex-wrap gap-4 text-sm">
           <span>בתור: {stats.matches.queued}</span>
@@ -152,11 +189,26 @@ export default function AdminPage() {
       </section>
 
       <section className="mt-8 space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-[var(--muted)]">
+            הפרומפטים נשלחים בכל הודעת צ׳אט (מצב Gemini).{" "}
+            <span className="font-medium text-[var(--ink)]">
+              {isCustom ? "מקור: עריכה מותאמת (DB)" : "מקור: קבצי ברירת מחדל"}
+            </span>
+          </p>
+        </div>
+
+        {error ? (
+          <p className="rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
+            {error}
+          </p>
+        ) : null}
+
         <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
             <h2 className="text-lg font-semibold">פרומפט סוכן מועמדים</h2>
-            <span className="text-xs text-[var(--muted)]">
-              Placeholders: {"{{new_message}}"}, {"{{chat_history}}"}, {"{{current_card}}"}, {"{{missing_field_key}}"}, {"{{pending_field_questions}}"}
+            <span className="max-w-xl text-xs leading-5 text-[var(--muted)]">
+              {PLACEHOLDER_HELP}
             </span>
           </div>
           <textarea
@@ -169,10 +221,10 @@ export default function AdminPage() {
         </div>
 
         <div>
-          <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
             <h2 className="text-lg font-semibold">פרומפט סוכן מעסיקים</h2>
-            <span className="text-xs text-[var(--muted)]">
-              Placeholders: {"{{new_message}}"}, {"{{chat_history}}"}, {"{{current_card}}"}, {"{{missing_field_key}}"}
+            <span className="max-w-xl text-xs leading-5 text-[var(--muted)]">
+              {PLACEHOLDER_HELP}
             </span>
           </div>
           <textarea
@@ -191,9 +243,17 @@ export default function AdminPage() {
             onClick={() => void savePrompts()}
             className="rounded-xl bg-[var(--hero)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
           >
-            {saving ? "שומר…" : "שמירת פרומפטים"}
+            {saving ? "שומר…" : "שמירת פרומפטים (לייב)"}
           </button>
-          {saved ? <span className="text-sm text-[var(--accent)]">נשמר בהצלחה</span> : null}
+          <button
+            type="button"
+            disabled={resetting}
+            onClick={() => void resetPrompts()}
+            className="rounded-xl border border-[var(--stroke)] bg-white px-5 py-2.5 text-sm disabled:opacity-50"
+          >
+            {resetting ? "מאפס…" : "איפוס לברירת מחדל"}
+          </button>
+          {saved ? <span className="text-sm text-[var(--accent)]">נשמר — פעיל מההודעה הבאה</span> : null}
           {prompts.updatedAt ? (
             <span className="text-xs text-[var(--muted)]">
               עודכן לאחרונה: {new Date(prompts.updatedAt).toLocaleString("he-IL")}
@@ -216,7 +276,7 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-5">
+    <div className="premium-panel rounded-2xl p-5">
       <p className="text-sm text-[var(--muted)]">{label}</p>
       <p className="mt-1 text-3xl font-semibold text-[var(--hero)]">{value}</p>
       {sub ? <p className="mt-1 text-xs text-[var(--muted)]">{sub}</p> : null}

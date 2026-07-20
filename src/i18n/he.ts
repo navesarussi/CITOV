@@ -16,7 +16,7 @@ export const he: Messages = {
   home: {
     tagline: "מוצאים עבודה בלי לחפש",
     description:
-      "מדברים עם סוכן בטקסט חופשי. הוא ממלא כרטיס מפורט (עשרות שדות), משדך, ומציג לכל צד רק את מה שרלוונטי.",
+      "שיחה טבעית עם סוכן השמה חכם. הוא מבין אתכם לעומק, משדך בדיוק, ומציג לכל צד רק את מה שרלוונטי.",
     googleSignIn: "כניסה עם Google",
     connectedAs: "מחובר/ת כ־{name}",
     continueAsEmployee: "המשך כמחפש/ת עבודה",
@@ -43,6 +43,7 @@ export const he: Messages = {
     noActiveSession: "אין סשן פעיל.",
     backToStart: "חזרה להתחלה",
     reconnect: "התחברות מחדש",
+    loading: "טוען…",
   },
   employee: {
     subtitle: "צ׳אט עם הסוכן · משרות שאושרו עבורך",
@@ -60,21 +61,21 @@ export const he: Messages = {
   },
   chat: {
     title: "שיחה עם הסוכן",
-    subtitle: "מדברים חופשי — הסוכן ממלא את הכרטיס",
+    subtitle: "שיחה חיה — בקצב שלכם",
     localMode: "מצב מקומי",
     employeeEmptyHint:
-      "ספרו על עצמכם: תפקיד, ניסיון, מיקום, אופי, זמינות — וכמה אתם מוכנים להתפשר (1–10).",
+      "ספרו לי על עצמכם בחופשיות — מה מחפשים, מה חשוב לכם, ואיך נראה יום עבודה טוב.",
     employerEmptyHint:
-      "ספרו מה אתם מחפשים: תפקיד, תחום, מיקום, חובה, אופי צוות, וזמנים לראיון.",
+      "ספרו לי על המשרה בחופשיות — מי באמת ישתלב אצלכם, ומה חשוב ביום-יום.",
     typing: "הסוכן כותב…",
     send: "שליחה",
     replyFailed: "לא הצלחתי לענות",
   },
   profile: {
-    yourCard: "הכרטיס שלך",
-    jobCard: "כרטיס המשרה",
+    yourCard: "הפרופיל שלך",
+    jobCard: "פרופיל המשרה",
     fieldsFilled: "{filled}/{total} שדות מולאו · השאר מוגדרים וממתינים למילוי",
-    autoFillHint: "מתמלא אוטומטית מהשיחה · כולל טקסט חופשי",
+    autoFillHint: "מתעדכן בשקט מהשיחה · כולל טקסט חופשי",
     flexibility: "גמישות",
     pendingQuestions: "יש {count} שאלות תחום שמחכות בשיחה",
     emptyValue: "—",
@@ -103,7 +104,7 @@ export const he: Messages = {
   api: {
     missingDetails: "חסרים פרטים",
     missingUserId: "חסר userId",
-    internalError: "שגיאה פנימית",
+    internalError: "משהו השתבש בשרת. נסו שוב בעוד רגע.",
     googleRequired: "נדרשת התחברות עם Google",
     demoDisabled: "מצב דמו כבוי. התחברו עם Google.",
     userNotFound: "משתמש לא נמצא",

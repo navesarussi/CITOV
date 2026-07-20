@@ -1,6 +1,12 @@
 import { computeAdminStats } from "@/domain/admin";
 import type { AdminSettings, StoreData } from "@/domain/types";
-import { resolveAdminSettings } from "@/infrastructure/ai/prompts";
+import {
+  clearDefaultPromptCache,
+  getDefaultCandidatePrompt,
+  getDefaultEmployerPrompt,
+  hasCustomAdminPrompts,
+  resolveAdminSettings,
+} from "@/infrastructure/ai/prompts";
 
 export function getAdminDashboard(store: StoreData) {
   const settings = resolveAdminSettings(store.adminSettings);
@@ -11,6 +17,7 @@ export function getAdminDashboard(store: StoreData) {
       employerPrompt: settings.employerPrompt,
       updatedAt: settings.updatedAt,
       updatedBy: settings.updatedBy,
+      isCustom: hasCustomAdminPrompts(store.adminSettings),
     },
   };
 }
@@ -27,4 +34,22 @@ export function updateAdminPrompts(
     updatedBy: params.updatedBy,
   };
   return { ...store, adminSettings };
+}
+
+/** Clears DB override so file prompts become live again. */
+export function resetAdminPrompts(store: StoreData): StoreData {
+  clearDefaultPromptCache();
+  const { adminSettings: _removed, ...rest } = store;
+  return {
+    ...rest,
+    adminSettings: undefined,
+  };
+}
+
+export function defaultPromptSnapshot() {
+  clearDefaultPromptCache();
+  return {
+    candidatePrompt: getDefaultCandidatePrompt(),
+    employerPrompt: getDefaultEmployerPrompt(),
+  };
 }

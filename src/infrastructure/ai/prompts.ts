@@ -2,23 +2,48 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { renderPromptTemplate } from "@/domain/admin";
 import {
-  candidateRows,
-  jobRows,
+  compactCard,
+  knownFactsText,
+  recentAssistantReplies,
+  toModelMessages,
+  type ModelChatMessage,
+} from "@/domain/chat-context";
+import {
   nextMissingCandidateField,
   nextMissingJobField,
 } from "@/domain/card-progress";
-import type { AdminSettings, CandidateCard, ChatMessage, FieldQuestion, JobCard } from "@/domain/types";
+import type {
+  AdminSettings,
+  CandidateCard,
+  ChatMessage,
+  FieldQuestion,
+  JobCard,
+} from "@/domain/types";
+
+let cachedCandidatePrompt: string | null = null;
+let cachedEmployerPrompt: string | null = null;
 
 function readPromptFile(relativePath: string): string {
   return readFileSync(join(process.cwd(), relativePath), "utf-8");
 }
 
+export function clearDefaultPromptCache(): void {
+  cachedCandidatePrompt = null;
+  cachedEmployerPrompt = null;
+}
+
 export function getDefaultCandidatePrompt(): string {
-  return readPromptFile("prompts/candidate/system-prompt.md");
+  if (!cachedCandidatePrompt) {
+    cachedCandidatePrompt = readPromptFile("prompts/candidate/system-prompt.md");
+  }
+  return cachedCandidatePrompt;
 }
 
 export function getDefaultEmployerPrompt(): string {
-  return readPromptFile("prompts/employer/system-prompt.md");
+  if (!cachedEmployerPrompt) {
+    cachedEmployerPrompt = readPromptFile("prompts/employer/system-prompt.md");
+  }
+  return cachedEmployerPrompt;
 }
 
 export function resolveAdminSettings(
@@ -32,11 +57,75 @@ export function resolveAdminSettings(
   };
 }
 
-function historyText(chat: ChatMessage[]): string {
-  return chat
-    .slice(-16)
-    .map((m) => `${m.role === "user" ? "משתמש" : "סוכן"}: ${m.content}`)
+export function hasCustomAdminPrompts(raw?: Partial<AdminSettings>): boolean {
+  return Boolean(raw?.candidatePrompt?.trim() || raw?.employerPrompt?.trim());
+}
+
+export type BuiltConversation = {
+  system: string;
+  messages: ModelChatMessage[];
+};
+
+function renderSystem(template: string, vars: Record<string, string>): string {
+  return renderPromptTemplate(template, {
+    chat_history: "(ההיסטוריה מגיעה כהודעות נפרדות — ראה/י messages)",
+    new_message: "(ההודעה האחרונה היא ההודעה האחרונה ב-messages)",
+    current_card: vars.current_card,
+    known_facts: vars.known_facts,
+    missing_field_key: vars.missing_field_key,
+    pending_field_questions: vars.pending_field_questions,
+    recent_agent_questions: vars.recent_agent_questions,
+  });
+}
+
+export function buildEmployeeConversation(params: {
+  template: string;
+  message: string;
+  card: CandidateCard;
+  chat: ChatMessage[];
+  pendingQuestions: FieldQuestion[];
+}): BuiltConversation {
+  const pending = params.pendingQuestions
+    .map((q) => `- [${q.id}] ${q.question}`)
     .join("\n");
+  const missing = nextMissingCandidateField(params.card);
+  const recent = recentAssistantReplies(params.chat)
+    .map((q) => `- ${q}`)
+    .join("\n");
+
+  return {
+    system: renderSystem(params.template, {
+      current_card: JSON.stringify(compactCard(params.card), null, 2),
+      known_facts: knownFactsText(params.card),
+      missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
+      pending_field_questions: pending || "אין",
+      recent_agent_questions: recent || "אין עדיין",
+    }),
+    messages: toModelMessages(params.chat, params.message),
+  };
+}
+
+export function buildEmployerConversation(params: {
+  template: string;
+  message: string;
+  card: JobCard;
+  chat: ChatMessage[];
+}): BuiltConversation {
+  const missing = nextMissingJobField(params.card);
+  const recent = recentAssistantReplies(params.chat)
+    .map((q) => `- ${q}`)
+    .join("\n");
+
+  return {
+    system: renderSystem(params.template, {
+      current_card: JSON.stringify(compactCard(params.card), null, 2),
+      known_facts: knownFactsText(params.card),
+      missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
+      pending_field_questions: "אין",
+      recent_agent_questions: recent || "אין עדיין",
+    }),
+    messages: toModelMessages(params.chat, params.message),
+  };
 }
 
 export function buildEmployeePrompt(params: {
@@ -46,18 +135,8 @@ export function buildEmployeePrompt(params: {
   chat: ChatMessage[];
   pendingQuestions: FieldQuestion[];
 }): string {
-  const pending = params.pendingQuestions
-    .map((q) => `- [${q.id}] ${q.question}`)
-    .join("\n");
-  const missing = nextMissingCandidateField(params.card);
-
-  return renderPromptTemplate(params.template, {
-    new_message: params.message,
-    chat_history: historyText(params.chat),
-    current_card: JSON.stringify(params.card, null, 2),
-    missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
-    pending_field_questions: pending || "אין",
-  });
+  const built = buildEmployeeConversation(params);
+  return `${built.system}\n\n---\n${built.messages.map((m) => `${m.role}: ${m.content}`).join("\n")}`;
 }
 
 export function buildEmployerPrompt(params: {
@@ -66,13 +145,6 @@ export function buildEmployerPrompt(params: {
   card: JobCard;
   chat: ChatMessage[];
 }): string {
-  const missing = nextMissingJobField(params.card);
-
-  return renderPromptTemplate(params.template, {
-    new_message: params.message,
-    chat_history: historyText(params.chat),
-    current_card: JSON.stringify(params.card, null, 2),
-    missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
-    pending_field_questions: "",
-  });
+  const built = buildEmployerConversation(params);
+  return `${built.system}\n\n---\n${built.messages.map((m) => `${m.role}: ${m.content}`).join("\n")}`;
 }

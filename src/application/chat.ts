@@ -12,7 +12,6 @@ import type {
   JobCard,
   StoreData,
 } from "@/domain/types";
-import { refreshStoreMatches } from "@/application/employer-actions";
 import { runEmployeeIntake, runEmployerIntake } from "@/infrastructure/ai/intake";
 import { resolveAdminSettings } from "@/infrastructure/ai/prompts";
 import type { AiTokenUsage, CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
@@ -74,14 +73,24 @@ function recordAiUsage(
     completionTokens: usage.completionTokens,
     createdAt: new Date().toISOString(),
   });
-  return { ...store, aiUsage: [...(store.aiUsage ?? []), record] };
+  const nextUsage = [...(store.aiUsage ?? []), record].slice(-200);
+  return { ...store, aiUsage: nextUsage };
 }
+
+export type ChatTurnResult = {
+  store: StoreData;
+  reply: string;
+  provider: string;
+  card: CandidateCard | JobCard;
+  chat: ChatMessage[];
+  pendingQuestions: { id: string; question: string }[];
+};
 
 export async function handleEmployeeChat(
   store: StoreData,
   userId: string,
   message: string,
-): Promise<{ store: StoreData; reply: string; provider: string }> {
+): Promise<ChatTurnResult> {
   const emp = store.employees.find((e) => e.userId === userId);
   if (!emp) throw new NotFoundError("Employee");
 
@@ -137,16 +146,27 @@ export async function handleEmployeeChat(
         : e,
     ),
   };
-  next = refreshStoreMatches(next);
+  // Match rebuild is deferred by the API route so the reply returns faster.
   next = recordAiUsage(next, "employee_intake", intake.usage);
-  return { store: next, reply: intake.reply, provider: intake.provider };
+  const empNext = next.employees.find((e) => e.userId === userId)!;
+  const pendingOut = next.fieldQuestions.filter((q) =>
+    empNext.pendingFieldQuestionIds.includes(q.id),
+  );
+  return {
+    store: next,
+    reply: intake.reply,
+    provider: intake.provider,
+    card: empNext.card,
+    chat: empNext.chat,
+    pendingQuestions: pendingOut.map((q) => ({ id: q.id, question: q.question })),
+  };
 }
 
 export async function handleEmployerChat(
   store: StoreData,
   userId: string,
   message: string,
-): Promise<{ store: StoreData; reply: string; provider: string }> {
+): Promise<ChatTurnResult> {
   const er = store.employers.find((e) => e.userId === userId);
   if (!er) throw new NotFoundError("Employer");
 
@@ -159,19 +179,20 @@ export async function handleEmployerChat(
   });
 
   const card = applyJobPatch(er.card, intake.jobPatch);
+  const chat = pushChat(pushChat(er.chat, "user", message), "assistant", intake.reply);
   let next: StoreData = {
     ...store,
     employers: store.employers.map((e) =>
-      e.userId === userId
-        ? {
-            ...e,
-            card,
-            chat: pushChat(pushChat(e.chat, "user", message), "assistant", intake.reply),
-          }
-        : e,
+      e.userId === userId ? { ...e, card, chat } : e,
     ),
   };
-  next = refreshStoreMatches(next);
   next = recordAiUsage(next, "employer_intake", intake.usage);
-  return { store: next, reply: intake.reply, provider: intake.provider };
+  return {
+    store: next,
+    reply: intake.reply,
+    provider: intake.provider,
+    card,
+    chat,
+    pendingQuestions: [],
+  };
 }

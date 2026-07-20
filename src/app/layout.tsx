@@ -9,8 +9,8 @@ const heebo = Heebo({
 });
 
 export const metadata: Metadata = {
-  title: "Shidukh — POC",
-  description: "A placement agent that matches without search",
+  title: "שידוך — השמה חכמה",
+  description: "סוכן השמה שמכיר אתכם לעומק ומשדך בלי חיפוש",
 };
 
 export default function RootLayout({

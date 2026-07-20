@@ -10,26 +10,27 @@ Product behavior: `docs/SSOT/CHAT_AGENTS.md` · SRS **FR-CHAT-01 … FR-CHAT-08*
 | `prompts/candidate/` | Candidate (employee) intake | Free-text chat that fills the candidate card |
 | `prompts/employer/` | Employer intake | Free-text chat that fills the job card |
 
-Each folder contains `system-prompt.md` — the main template.  
-Placeholders use `{{double_braces}}` and are filled at runtime by the AI layer.
+Each folder contains `system-prompt.md` — rendered as the **system** instruction.  
+Conversation turns are sent separately as `messages` (full recent history + new user turn).
 
-## Placeholders (shared)
+## Placeholders
 
 | Placeholder | Description |
 |---|---|
-| `{{new_message}}` | Latest user message |
-| `{{chat_history}}` | Recent conversation (last ~16 turns) |
-| `{{current_card}}` | JSON snapshot of the card being filled |
-| `{{missing_field_key}}` | Suggested next field key, or empty if deepening |
-| `{{pending_field_questions}}` | Employer field questions waiting for answers (candidate only) |
+| `{{known_facts}}` | Compact non-empty card facts (preferred context) |
+| `{{current_card}}` | Compact JSON of filled fields only |
+| `{{missing_field_key}}` | Internal next-field hint (never spoken aloud) |
+| `{{pending_field_questions}}` | Employer field questions (candidate only) |
+| `{{recent_agent_questions}}` | Last agent replies — do not repeat |
+| `{{chat_history}}` / `{{new_message}}` | Legacy admin templates only (history is in messages) |
+
+## Runtime wiring
+
+`src/infrastructure/ai/prompts.ts` → `buildEmployeeConversation` / `buildEmployerConversation`  
+`src/infrastructure/ai/intake.ts` → `generateObject({ system, messages })`
 
 ## Editing workflow
 
-1. Edit the `.md` template in the relevant folder.
-2. Keep voice rules from `CHAT_AGENTS.md` (no fill-count talk, natural dialogue, one thread at a time).
-3. Wire templates into `src/infrastructure/ai/intake.ts` when ready (not yet connected in POC).
-
-## Not in scope here
-
-- Match-reason enrichment (`enrichReasonWithAi`) — stays inline until extracted.
-- Heuristic fallback copy — `src/infrastructure/ai/heuristic.ts`.
+1. Edit the `.md` template.
+2. Keep voice rules from `CHAT_AGENTS.md`.
+3. Prefer natural dialogue; never mention cards / fill counts.
