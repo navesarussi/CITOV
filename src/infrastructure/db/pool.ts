@@ -11,7 +11,7 @@ async function probeConnection(connectionString: string): Promise<string> {
     connectionString,
     ssl: { rejectUnauthorized: false },
     max: 1,
-    connectionTimeoutMillis: 2500,
+    connectionTimeoutMillis: 3000,
   });
   try {
     const client = await pool.connect();
@@ -28,12 +28,18 @@ async function resolveConnectionString(): Promise<string> {
   if (!raw) throw new Error("DATABASE_URL is not set");
 
   const candidates = poolerConnectionCandidates(raw);
+  // Race small batches — first success wins (keeps cold start snappy).
+  const batchSize = 4;
   let lastError = "unknown";
-  for (const candidate of candidates) {
-    try {
-      return await probeConnection(candidate);
-    } catch (e) {
-      lastError = e instanceof Error ? e.message : String(e);
+  for (let i = 0; i < candidates.length; i += batchSize) {
+    const batch = candidates.slice(i, i + batchSize);
+    const results = await Promise.allSettled(batch.map((c) => probeConnection(c)));
+    const hit = results.find((r) => r.status === "fulfilled");
+    if (hit && hit.status === "fulfilled") return hit.value;
+    for (const r of results) {
+      if (r.status === "rejected") {
+        lastError = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      }
     }
   }
   throw new Error(
