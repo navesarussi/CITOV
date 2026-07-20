@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyFlexibility, computeBaseFit, shouldQueueForEmployer } from "./matching";
+import {
+  applyFlexibility,
+  combineFlexibility,
+  computeBaseFit,
+  shouldQueueForEmployer,
+} from "./matching";
 import { emptyCandidateCard, emptyJobCard } from "./types";
 import { unansweredQuestionsForCandidate } from "./field-questions";
 
@@ -30,6 +35,13 @@ describe("matching", () => {
     const weak = applyFlexibility(0.4, 10);
     const flexible = applyFlexibility(0.4, 1);
     assert.ok(flexible > weak);
+  });
+
+  it("combines candidate and job flexibility by average", () => {
+    assert.equal(combineFlexibility(1, 1), 1);
+    assert.equal(combineFlexibility(10, 10), 10);
+    assert.equal(combineFlexibility(1, 10), 6);
+    assert.equal(combineFlexibility(4, 8), 6);
   });
 });
 

@@ -63,3 +63,10 @@ export function nextMissingJobField(card: JobCard) {
 export function filledCount(rows: { filled: boolean }[]): number {
   return rows.filter((r) => r.filled).length;
 }
+
+/** Knowledge completeness 0–100. Excludes flexibility (user slider). */
+export function knowledgePercent(rows: { key: string; filled: boolean }[]): number {
+  const relevant = rows.filter((r) => r.key !== "flexibility");
+  if (relevant.length === 0) return 0;
+  return Math.round((filledCount(relevant) / relevant.length) * 100);
+}

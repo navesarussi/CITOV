@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import {
   applyFlexibility,
+  combineFlexibility,
   computeBaseFit,
   explainMatch,
   shouldQueueForEmployer,
@@ -26,7 +27,8 @@ export function rebuildMatches(store: StoreData): Match[] {
         if (keptKeys.has(key)) continue;
 
         const base = computeBaseFit(employee.card, job.card);
-        const score = applyFlexibility(base, employee.card.flexibility);
+        const flex = combineFlexibility(employee.card.flexibility, job.card.flexibility);
+        const score = applyFlexibility(base, flex);
         if (!shouldQueueForEmployer(score)) continue;
 
         next.push({

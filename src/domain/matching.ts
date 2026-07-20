@@ -69,6 +69,13 @@ export function applyFlexibility(baseFit: number, flexibility: number): number {
   return Math.min(1, baseFit + (1 - strictness) * 0.12);
 }
 
+/** Blend candidate + employer strictness (1 flexible … 10 exact). */
+export function combineFlexibility(candidateFlex: number, jobFlex: number): number {
+  const a = Math.max(1, Math.min(10, candidateFlex));
+  const b = Math.max(1, Math.min(10, jobFlex));
+  return Math.round((a + b) / 2);
+}
+
 export function explainMatch(candidate: CandidateCard, job: JobCard, score: number): string {
   const parts: string[] = [];
   if (textScore(candidate.field, job.field) > 0.4) {
