@@ -210,7 +210,21 @@ export default function EmployerPage() {
             {hydrating && !me ? (
               <p className="mb-2 text-xs text-[var(--muted)] opacity-70">…</p>
             ) : null}
-            <ProfileAside kind="employer" card={(me?.card as never) ?? ({} as never)} />
+            <ProfileAside
+              kind="employer"
+              userId={userId}
+              card={(me?.card as never) ?? ({} as never)}
+              onFlexibilityChange={(value) => {
+                setMe((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        card: { ...(prev.card as object), flexibility: value },
+                      }
+                    : prev,
+                );
+              }}
+            />
           </div>
         </div>
       ) : (

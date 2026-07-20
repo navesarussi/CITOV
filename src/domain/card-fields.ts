@@ -101,5 +101,6 @@ export const JOB_FIELD_META: { key: string; label: string; priority: number }[] 
   { key: "contactName", label: "איש קשר לגיוס", priority: 45 },
   { key: "contactPhone", label: "טלפון ליצירת קשר", priority: 46 },
   { key: "narrative", label: "טקסט חופשי / סיפור על המשרה", priority: 47 },
-  { key: "summary", label: "סיכום משרה", priority: 48 },
+  { key: "flexibility", label: "גמישות בדרישות (1–10)", priority: 48 },
+  { key: "summary", label: "סיכום משרה", priority: 49 },
 ];

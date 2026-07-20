@@ -128,8 +128,19 @@ export default function EmployeePage() {
           />
           <ProfileAside
             kind="employee"
+            userId={userId}
             card={(me?.card as never) ?? null}
             pendingQuestions={me?.pendingQuestions ?? []}
+            onFlexibilityChange={(value) => {
+              setMe((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      card: { ...(prev.card as object), flexibility: value },
+                    }
+                  : prev,
+              );
+            }}
           />
         </div>
       ) : (

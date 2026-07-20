@@ -41,6 +41,8 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 - Rank candidates for employers; show employer-approved jobs to candidates only
 - Field-level follow-up questions apply to all candidates in that field
 - Candidate flexibility score 1–10 (1 flexible, 10 exact match)
+- Employer/job flexibility score 1–10 (1 flexible on candidates, 10 exact match only)
+- Matching blends candidate + job flexibility (average) before applying the score curve
 
 ### FR-DATA
 - Persist store in Supabase Postgres
@@ -54,6 +56,8 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 | FR-UI-04 | Remember default role (employee/employer); home auto-opens that role’s screen (chat + jobs / chat + candidates) |
 | FR-UI-05 | Screens paint shell UI immediately; hydrate chat/lists in the background — no full-page “טוען…” gate |
 | FR-UI-06 | Every chat has a reset-conversation control |
+| FR-UI-07 | Chat sidebar: **admins only** see the full card field fill-in list; regular users see a **knowledge % bar** only (0% = no relevant knowledge, 100% = all relevant knowledge shared) |
+| FR-UI-08 | Chat sidebar: employee and employer can **drag a flexibility slider** 1–10 (1 = very flexible, 10 = exact only); persists via API and affects matching |
 
 ### FR-EMPLOYER-JOBS
 | ID | Requirement |
