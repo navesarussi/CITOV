@@ -4,7 +4,6 @@ import {
   emptyCandidateCard,
   emptyJobCard,
   normalizeCandidateCard,
-  normalizeJobCard,
 } from "@/domain/types";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import { ensureSchema, hasNormalizedData } from "./schema";

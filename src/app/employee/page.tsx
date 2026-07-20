@@ -27,7 +27,6 @@ export default function EmployeePage() {
     error?: string;
   } | null>(null);
   const [jobs, setJobs] = useState([]);
-  const [hydrating, setHydrating] = useState(Boolean(userId));
 
   const refreshLists = useCallback(
     async (id: string) => {
