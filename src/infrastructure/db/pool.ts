@@ -29,13 +29,18 @@ async function resolveConnectionString(): Promise<string> {
 
   const candidates = poolerConnectionCandidates(raw);
   const batchSize = 8;
+  let lastError = "unknown";
   for (let i = 0; i < candidates.length; i += batchSize) {
     const batch = candidates.slice(i, i + batchSize);
     const results = await Promise.allSettled(batch.map((c) => probeConnection(c)));
     const hit = results.find((r) => r.status === "fulfilled");
     if (hit && hit.status === "fulfilled") return hit.value;
+    const last = results.findLast((r) => r.status === "rejected");
+    if (last && last.status === "rejected") {
+      lastError = last.reason instanceof Error ? last.reason.message : String(last.reason);
+    }
   }
-  throw new Error("Could not connect to Supabase via pooler candidates");
+  throw new Error(`Could not connect to Supabase via pooler (${candidates.length} tried): ${lastError}`);
 }
 
 export async function getPool(): Promise<Pool> {
