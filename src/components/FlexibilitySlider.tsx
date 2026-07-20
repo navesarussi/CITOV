@@ -69,7 +69,8 @@ export function FlexibilitySlider(props: {
           props.onChange(next);
           scheduleSave(next);
         }}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[var(--chip)] accent-[var(--accent)]"
+        style={{ ["--pct"]: `${((local - 1) / 9) * 100}%` } as React.CSSProperties}
+        className="range focus-ring"
       />
       <div className="mt-1 flex justify-between text-[10px] leading-4 text-[var(--muted)]">
         <span>{t.flexibility.veryFlexible}</span>

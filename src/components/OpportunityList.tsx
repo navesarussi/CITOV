@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { useTranslation } from "@/components/LocaleProvider";
 
 type Job = {
@@ -18,23 +19,23 @@ type Job = {
   };
 };
 
-export function OpportunityList(props: { jobs: Job[] }) {
+function OpportunityListBase(props: { jobs: Job[] }) {
   const { t, fmt } = useTranslation();
 
   if (props.jobs.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--stroke)] p-8 text-center text-sm text-[var(--muted)]">
+      <div className="view-in rounded-2xl border border-dashed border-[var(--stroke)] p-8 text-center text-sm text-[var(--muted)]">
         {t.jobs.empty}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="list-enter space-y-3">
       {props.jobs.map((job) => (
         <article
           key={job.matchId}
-          className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4"
+          className="card-lift rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -67,3 +68,5 @@ export function OpportunityList(props: { jobs: Job[] }) {
     </div>
   );
 }
+
+export const OpportunityList = memo(OpportunityListBase);
