@@ -23,13 +23,14 @@ describe("connection-string", () => {
     assert.match(out, /aws-0-us-east-1\.pooler\.supabase\.com:6543/);
   });
 
-  it("builds a small candidate list with original URL first", () => {
+  it("builds a compact candidate list with original URL first", () => {
     const input =
       "postgresql://postgres:secret@db.abc123xyz.supabase.co:5432/postgres";
     const candidates = poolerConnectionCandidates(input);
     assert.equal(candidates[0], input);
-    assert.ok(candidates.length >= 2 && candidates.length <= 12);
+    assert.ok(candidates.length > 8 && candidates.length < 50);
     assert.ok(candidates.some((c) => c.includes("aws-0-us-east-1.pooler.supabase.com:6543")));
+    assert.ok(candidates.some((c) => c.includes(":5432/") && c.includes("pooler")));
   });
 
   it("round-trips buildDatabaseUrl", () => {

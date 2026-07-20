@@ -1,5 +1,6 @@
-const DEFAULT_REGIONS = ["us-east-1", "eu-central-1", "eu-west-1"] as const;
-const DEFAULT_CLUSTERS = ["aws-0", "aws-1"] as const;
+const PRIMARY_REGIONS = ["us-east-1", "eu-west-1", "eu-central-1", "us-west-1"] as const;
+const CLUSTERS = ["aws-0", "aws-1", "aws-2", "aws-3"] as const;
+const POOLER_PORTS = [6543, 5432] as const;
 
 export type ParsedDbUrl = {
   user: string;
@@ -68,8 +69,8 @@ export function toPoolerConnectionString(
 }
 
 /**
- * Compact candidate list for cold starts.
- * Original URL first, then a few pooler hosts (not 100+).
+ * Candidate list sized for reliability on Vercel without the old 100+ probe storm.
+ * Order: configured URL, then common pooler hosts (transaction + session ports).
  */
 export function poolerConnectionCandidates(connectionString: string): string[] {
   try {
@@ -80,24 +81,26 @@ export function poolerConnectionCandidates(connectionString: string): string[] {
 
     const clusters = process.env.SUPABASE_POOLER_CLUSTER?.trim()
       ? [process.env.SUPABASE_POOLER_CLUSTER.trim()]
-      : [...DEFAULT_CLUSTERS];
+      : [...CLUSTERS];
     const preferred = process.env.SUPABASE_POOLER_REGION?.trim();
     const regions = preferred
-      ? [preferred, ...DEFAULT_REGIONS.filter((r) => r !== preferred)]
-      : [...DEFAULT_REGIONS];
+      ? [preferred, ...PRIMARY_REGIONS.filter((r) => r !== preferred)]
+      : [...PRIMARY_REGIONS];
 
     const out = [connectionString];
     for (const cluster of clusters) {
       for (const region of regions) {
-        out.push(
-          buildDatabaseUrl({
-            user: `postgres.${parsed.ref}`,
-            password: parsed.password,
-            host: `${cluster}-${region}.pooler.supabase.com`,
-            port: 6543,
-            database: parsed.database,
-          }),
-        );
+        for (const port of POOLER_PORTS) {
+          out.push(
+            buildDatabaseUrl({
+              user: `postgres.${parsed.ref}`,
+              password: parsed.password,
+              host: `${cluster}-${region}.pooler.supabase.com`,
+              port,
+              database: parsed.database,
+            }),
+          );
+        }
       }
     }
     return out;
