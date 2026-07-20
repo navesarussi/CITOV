@@ -32,11 +32,14 @@ create index if not exists employer_profiles_card_gin on employer_profiles using
 create table if not exists chat_messages (
   id text primary key,
   owner_user_id text not null references app_users (id) on delete cascade,
+  conversation_context text not null default 'employee' check (conversation_context in ('employee', 'employer')),
+  job_id text,
   role text not null check (role in ('user', 'assistant', 'system')),
   content text not null,
   created_at timestamptz not null default now()
 );
 create index if not exists chat_messages_owner_idx on chat_messages (owner_user_id, created_at);
+create index if not exists chat_messages_context_idx on chat_messages (owner_user_id, conversation_context, job_id, created_at);
 
 create table if not exists field_questions (
   id text primary key,

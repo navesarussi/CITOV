@@ -6,6 +6,7 @@ import {
   normalizeCandidateCard,
 } from "@/domain/types";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
+import { applyChatRowsToStore, chatRowsFromStore } from "./chat-messages";
 import { ensureSchema, hasNormalizedData } from "./schema";
 import { registerFieldQuestionDefinition } from "./field-definitions";
 import { getPool } from "./pool";
@@ -55,14 +56,7 @@ async function loadFromTables(client: PoolClient): Promise<StoreData> {
       client.query(`select * from ai_usage order by created_at`),
     ]);
 
-  const chatByOwner = new Map<string, typeof chats.rows>();
-  for (const row of chats.rows) {
-    const list = chatByOwner.get(row.owner_user_id) ?? [];
-    list.push(row);
-    chatByOwner.set(row.owner_user_id, list);
-  }
-
-  return normalizeStore({
+  const baseStore = normalizeStore({
     users: users.rows.map((u) => ({
       id: u.id,
       name: u.name,
@@ -76,28 +70,17 @@ async function loadFromTables(client: PoolClient): Promise<StoreData> {
       userId: e.user_id,
       card: e.card,
       pendingFieldQuestionIds: e.pending_field_question_ids ?? [],
-      chat: (chatByOwner.get(e.user_id) ?? []).map((m) => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-        createdAt: new Date(m.created_at).toISOString(),
-      })),
+      chat: [],
     })),
-    employers: employers.rows.map((e) => {
-      const legacyChat = (chatByOwner.get(e.user_id) ?? []).map((m) => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-        createdAt: new Date(m.created_at).toISOString(),
-      }));
-      return normalizeEmployerRecord({
+    employers: employers.rows.map((e) =>
+      normalizeEmployerRecord({
         userId: e.user_id,
         card: e.card,
-        chat: legacyChat,
+        chat: [],
         jobs: e.jobs ?? [],
         activeJobId: e.active_job_id ?? "",
-      });
-    }),
+      }),
+    ),
     fieldQuestions: questions.rows.map((q) => ({
       id: q.id,
       field: q.field,
@@ -143,6 +126,8 @@ async function loadFromTables(client: PoolClient): Promise<StoreData> {
       createdAt: new Date(r.created_at).toISOString(),
     })),
   });
+
+  return applyChatRowsToStore(baseStore, chats.rows);
 }
 
 async function upsertUser(client: PoolClient, user: User): Promise<void> {
@@ -232,32 +217,28 @@ async function persistStore(client: PoolClient, store: StoreData): Promise<void>
 
   // Replace chats in one pass (avoids dual-role wipe races).
   await client.query(`delete from chat_messages`);
-  for (const emp of normalized.employees) {
-    for (const msg of emp.chat) {
-      await client.query(
-        `insert into chat_messages (id, owner_user_id, role, content, created_at)
-         values ($1, $2, $3, $4, $5)
-         on conflict (id) do update set
-           owner_user_id = excluded.owner_user_id,
-           role = excluded.role,
-           content = excluded.content`,
-        [msg.id, emp.userId, msg.role, msg.content, msg.createdAt],
-      );
-    }
-  }
-  for (const er of normalized.employers) {
-    const employer = normalizeEmployerRecord(er);
-    for (const msg of employer.chat) {
-      await client.query(
-        `insert into chat_messages (id, owner_user_id, role, content, created_at)
-         values ($1, $2, $3, $4, $5)
-         on conflict (id) do update set
-           owner_user_id = excluded.owner_user_id,
-           role = excluded.role,
-           content = excluded.content`,
-        [msg.id, employer.userId, msg.role, msg.content, msg.createdAt],
-      );
-    }
+  for (const row of chatRowsFromStore(normalized)) {
+    await client.query(
+      `insert into chat_messages (
+         id, owner_user_id, conversation_context, job_id, role, content, created_at
+       )
+       values ($1, $2, $3, $4, $5, $6, $7)
+       on conflict (id) do update set
+         owner_user_id = excluded.owner_user_id,
+         conversation_context = excluded.conversation_context,
+         job_id = excluded.job_id,
+         role = excluded.role,
+         content = excluded.content`,
+      [
+        row.id,
+        row.ownerUserId,
+        row.conversationContext,
+        row.jobId,
+        row.role,
+        row.content,
+        row.createdAt,
+      ],
+    );
   }
 
   await client.query(`delete from field_answers`);
