@@ -1,8 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { poolerConnectionCandidates, toPoolerConnectionString } from "./connection-string";
+import {
+  buildDatabaseUrl,
+  parseDatabaseUrl,
+  poolerConnectionCandidates,
+  toPoolerConnectionString,
+} from "./connection-string";
 
-describe("toPoolerConnectionString", () => {
+describe("connection-string", () => {
+  it("parses passwords with reserved characters", () => {
+    const parsed = parseDatabaseUrl(
+      "postgresql://postgres:p%40ss%2Fword@db.abc123xyz.supabase.co:5432/postgres",
+    );
+    assert.equal(parsed.password, "p@ss/word");
+    assert.equal(parsed.ref, "abc123xyz");
+  });
+
   it("rewrites direct supabase db host to pooler", () => {
     const input =
       "postgresql://postgres:secret@db.abc123xyz.supabase.co:5432/postgres";
@@ -16,5 +29,17 @@ describe("toPoolerConnectionString", () => {
     const candidates = poolerConnectionCandidates(input);
     assert.ok(candidates.length > 1);
     assert.ok(candidates.some((c) => c.includes("aws-1-us-east-1.pooler.supabase.com:6543")));
+  });
+
+  it("round-trips buildDatabaseUrl", () => {
+    const url = buildDatabaseUrl({
+      user: "postgres.ref",
+      password: "a@b/c",
+      host: "aws-0-us-east-1.pooler.supabase.com",
+      port: 6543,
+      database: "postgres",
+    });
+    const parsed = parseDatabaseUrl(url);
+    assert.equal(parsed.password, "a@b/c");
   });
 });

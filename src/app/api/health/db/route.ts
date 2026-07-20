@@ -1,7 +1,7 @@
 import { ok } from "@/infrastructure/http";
 import { getSupabaseConfig } from "@/infrastructure/supabase/client";
 import { deriveSupabaseUrlFromDatabaseUrl } from "@/infrastructure/supabase/derive-url";
-import { poolerConnectionCandidates } from "@/infrastructure/db/connection-string";
+import { parseDatabaseUrl, poolerConnectionCandidates } from "@/infrastructure/db/connection-string";
 import { ensureSchema } from "@/infrastructure/db/schema";
 import { getPool } from "@/infrastructure/db/pool";
 
@@ -9,12 +9,13 @@ function databaseDiagnostics() {
   const raw = process.env.DATABASE_URL?.trim();
   if (!raw) return { hasDatabaseUrl: false };
   try {
-    const url = new URL(raw);
+    const parsed = parseDatabaseUrl(raw);
     return {
       hasDatabaseUrl: true,
-      host: url.hostname,
-      user: url.username,
-      passwordLength: url.password.length,
+      host: parsed.host,
+      user: parsed.user,
+      passwordLength: parsed.password.length,
+      ref: parsed.ref,
       candidateCount: poolerConnectionCandidates(raw).length,
     };
   } catch {
