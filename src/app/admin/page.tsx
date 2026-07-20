@@ -54,10 +54,15 @@ export default function AdminPage() {
   const [resetting, setResetting] = useState(false);
   const [saved, setSaved] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
+  const [aiMode, setAiMode] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/admin/stats");
+    const [res, aiRes] = await Promise.all([
+      fetch("/api/admin/stats"),
+      fetch("/api/health/ai"),
+    ]);
     const json = await res.json();
+    const ai = await aiRes.json().catch(() => null);
     if (!res.ok) {
       setError(json.error ?? "שגיאה בטעינה");
       return;
@@ -66,6 +71,7 @@ export default function AdminPage() {
     setCandidatePrompt(json.prompts.candidatePrompt);
     setEmployerPrompt(json.prompts.employerPrompt);
     setIsCustom(Boolean(json.prompts.isCustom));
+    setAiMode(ai?.mode ?? null);
     setError(null);
   }, []);
 
@@ -191,10 +197,19 @@ export default function AdminPage() {
       <section className="mt-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-[var(--muted)]">
-            הפרומפטים נשלחים בכל הודעת צ׳אט (מצב Gemini).{" "}
+            הפרומפטים נשלחים בכל הודעת צ׳אט מ־
+            <code className="mx-1 rounded bg-[var(--chip)] px-1.5 py-0.5 text-[11px]">
+              /api/chat
+            </code>
+            (מפתח Gemini רק בשרת).{" "}
             <span className="font-medium text-[var(--ink)]">
               {isCustom ? "מקור: עריכה מותאמת (DB)" : "מקור: קבצי ברירת מחדל"}
             </span>
+            {aiMode ? (
+              <span className="ms-2 font-medium text-[var(--accent)]">
+                · מצב AI: {aiMode === "gemini" ? "Gemini פעיל" : "מקומי (חסר מפתח)"}
+              </span>
+            ) : null}
           </p>
         </div>
 

@@ -171,11 +171,16 @@ export type Match = {
   updatedAt: string;
 };
 
+/** Bump when shipping new default prompt files so stale admin overrides refresh. */
+export const PROMPT_BUNDLE_VERSION = "2026-07-20-interview-v2";
+
 export type AdminSettings = {
   candidatePrompt: string;
   employerPrompt: string;
   updatedAt?: string;
   updatedBy?: string;
+  /** Matches PROMPT_BUNDLE_VERSION when saved from admin; otherwise files win. */
+  promptBundleVersion?: string;
 };
 
 export type AiUsageType = "employee_intake" | "employer_intake" | "enrich_reason";

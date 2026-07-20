@@ -12,12 +12,13 @@ import {
   nextMissingCandidateField,
   nextMissingJobField,
 } from "@/domain/card-progress";
-import type {
-  AdminSettings,
-  CandidateCard,
-  ChatMessage,
-  FieldQuestion,
-  JobCard,
+import {
+  PROMPT_BUNDLE_VERSION,
+  type AdminSettings,
+  type CandidateCard,
+  type ChatMessage,
+  type FieldQuestion,
+  type JobCard,
 } from "@/domain/types";
 
 let cachedCandidatePrompt: string | null = null;
@@ -49,16 +50,37 @@ export function getDefaultEmployerPrompt(): string {
 export function resolveAdminSettings(
   raw?: Partial<AdminSettings>,
 ): AdminSettings {
+  const customFresh =
+    Boolean(raw?.candidatePrompt?.trim()) &&
+    Boolean(raw?.employerPrompt?.trim()) &&
+    raw?.promptBundleVersion === PROMPT_BUNDLE_VERSION;
+
+  if (customFresh) {
+    return {
+      candidatePrompt: raw!.candidatePrompt!.trim(),
+      employerPrompt: raw!.employerPrompt!.trim(),
+      updatedAt: raw?.updatedAt,
+      updatedBy: raw?.updatedBy,
+      promptBundleVersion: raw?.promptBundleVersion,
+    };
+  }
+
+  // Stale / missing admin override → ship the latest file prompts.
   return {
-    candidatePrompt: raw?.candidatePrompt?.trim() || getDefaultCandidatePrompt(),
-    employerPrompt: raw?.employerPrompt?.trim() || getDefaultEmployerPrompt(),
+    candidatePrompt: getDefaultCandidatePrompt(),
+    employerPrompt: getDefaultEmployerPrompt(),
     updatedAt: raw?.updatedAt,
     updatedBy: raw?.updatedBy,
+    promptBundleVersion: PROMPT_BUNDLE_VERSION,
   };
 }
 
 export function hasCustomAdminPrompts(raw?: Partial<AdminSettings>): boolean {
-  return Boolean(raw?.candidatePrompt?.trim() || raw?.employerPrompt?.trim());
+  return Boolean(
+    raw?.candidatePrompt?.trim() &&
+      raw?.employerPrompt?.trim() &&
+      raw?.promptBundleVersion === PROMPT_BUNDLE_VERSION,
+  );
 }
 
 export type BuiltConversation = {

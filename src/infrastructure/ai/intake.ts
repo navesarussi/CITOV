@@ -68,6 +68,7 @@ export async function runEmployeeIntake(params: {
 
     const { object, usage } = await generateObject({
       model: model(),
+      temperature: 0.65,
       schema: z.object({
         reply: z.string(),
         patch: candidatePatchSchema,
@@ -117,6 +118,7 @@ export async function runEmployerIntake(params: {
 
     const { object, usage } = await generateObject({
       model: model(),
+      temperature: 0.65,
       schema: z.object({
         reply: z.string(),
         patch: jobPatchSchema,

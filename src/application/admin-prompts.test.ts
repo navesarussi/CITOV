@@ -6,7 +6,8 @@ import {
   updateAdminPrompts,
 } from "./admin";
 import type { StoreData } from "@/domain/types";
-import { emptyCandidateCard, emptyJobCard } from "@/domain/types";
+import { emptyCandidateCard, emptyJobCard, PROMPT_BUNDLE_VERSION } from "@/domain/types";
+import { resolveAdminSettings } from "@/infrastructure/ai/prompts";
 
 function emptyStore(): StoreData {
   return {
@@ -36,6 +37,16 @@ describe("admin prompts live override", () => {
     const after = getAdminDashboard(store);
     assert.equal(after.prompts.isCustom, false);
     assert.equal(/CUSTOM CANDIDATE/.test(after.prompts.candidatePrompt), false);
-    assert.match(after.prompts.candidatePrompt, /FR-CHAT|יועץ/);
+    assert.match(after.prompts.candidatePrompt, /FR-CHAT|מראיין|יועץ/);
+  });
+
+  it("ignores stale admin overrides without current prompt bundle version", () => {
+    const stale = resolveAdminSettings({
+      candidatePrompt: "OLD CUSTOM",
+      employerPrompt: "OLD EMPLOYER",
+      promptBundleVersion: "ancient",
+    });
+    assert.equal(/OLD CUSTOM/.test(stale.candidatePrompt), false);
+    assert.equal(stale.promptBundleVersion, PROMPT_BUNDLE_VERSION);
   });
 });

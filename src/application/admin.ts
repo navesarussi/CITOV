@@ -1,5 +1,5 @@
 import { computeAdminStats } from "@/domain/admin";
-import type { AdminSettings, StoreData } from "@/domain/types";
+import { PROMPT_BUNDLE_VERSION, type AdminSettings, type StoreData } from "@/domain/types";
 import {
   clearDefaultPromptCache,
   getDefaultCandidatePrompt,
@@ -32,6 +32,7 @@ export function updateAdminPrompts(
     employerPrompt: params.employerPrompt.trim(),
     updatedAt: now,
     updatedBy: params.updatedBy,
+    promptBundleVersion: PROMPT_BUNDLE_VERSION,
   };
   return { ...store, adminSettings };
 }
