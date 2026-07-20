@@ -1,17 +1,11 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import { getPool } from "./pool";
+import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 
 const MIGRATION_VERSION = "001_normalized_schema";
 
-function loadMigrationSql(): string {
-  const path = join(process.cwd(), "supabase/migrations/001_normalized_schema.sql");
-  return readFileSync(path, "utf8");
-}
-
 export async function ensureSchema(): Promise<void> {
   const pool = getPool();
-  await pool.query(loadMigrationSql());
+  await pool.query(NORMALIZED_SCHEMA_SQL);
   await pool.query(
     `insert into schema_migrations (version) values ($1) on conflict (version) do nothing`,
     [MIGRATION_VERSION],
