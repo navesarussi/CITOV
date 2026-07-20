@@ -19,7 +19,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" dir="ltr" className={`${heebo.variable} h-full`} suppressHydrationWarning>
+    <html lang="he" dir="rtl" className={`${heebo.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full antialiased">
         <Providers>{children}</Providers>
       </body>

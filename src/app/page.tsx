@@ -64,10 +64,8 @@ export default function HomePage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-5 py-10">
-      <div className="mb-8 flex justify-end">
-        <SettingsMenu />
-      </div>
+    <main className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-5 py-10 pt-16">
+      <SettingsMenu />
 
       <p className="text-sm font-semibold tracking-[0.18em] text-[var(--accent)] uppercase">
         {t.app.name}

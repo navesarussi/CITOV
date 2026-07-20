@@ -22,12 +22,12 @@ export function LegalPage(props: {
         : t.legal.aboutBody;
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-2xl px-5 py-8">
-      <div className="mb-6 flex items-center justify-between gap-3">
+    <main className="mx-auto min-h-full w-full max-w-2xl px-5 py-8 pt-16">
+      <SettingsMenu />
+      <div className="mb-6">
         <Link href="/" className="text-sm text-[var(--accent)]">
           ← {t.legal.back}
         </Link>
-        <SettingsMenu />
       </div>
       <h1 className="text-3xl font-semibold tracking-tight text-[var(--hero)]">{title}</h1>
       <p className="mt-4 text-base leading-7 text-[var(--muted)]">{body}</p>

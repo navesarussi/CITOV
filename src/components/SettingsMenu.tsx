@@ -53,14 +53,15 @@ export function SettingsMenu() {
   }
 
   return (
-    <div ref={rootRef} className="relative z-40">
+    <div ref={rootRef} className="fixed top-3 end-3 z-50 sm:top-4 sm:end-4">
       <button
         type="button"
         aria-label={t.settings.title}
+        title={t.settings.title}
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] shadow-sm transition hover:border-[var(--accent)] hover:text-[var(--accent)]"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-[var(--accent)] bg-white text-[var(--accent)] shadow-[var(--shadow-soft)] transition hover:bg-[var(--bubble)]"
       >
         <SettingsIcon />
       </button>

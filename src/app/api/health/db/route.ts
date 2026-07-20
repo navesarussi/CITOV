@@ -3,7 +3,7 @@ import { getSupabaseConfig } from "@/infrastructure/supabase/client";
 import { deriveSupabaseUrlFromDatabaseUrl } from "@/infrastructure/supabase/derive-url";
 import { parseDatabaseUrl, poolerConnectionCandidates } from "@/infrastructure/db/connection-string";
 import { ensureSchema } from "@/infrastructure/db/schema";
-import { getPool } from "@/infrastructure/db/pool";
+import { getPool, getResolvedDatabaseHost } from "@/infrastructure/db/pool";
 
 function databaseDiagnostics() {
   const raw = process.env.DATABASE_URL?.trim();
@@ -36,7 +36,10 @@ export async function GET() {
       timestamp: result.rows[0]?.now,
       supabase: Boolean(supabase),
       supabaseUrl: supabase?.url ?? derivedUrl,
-      diagnostics,
+      diagnostics: {
+        ...diagnostics,
+        resolvedHost: getResolvedDatabaseHost(),
+      },
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

@@ -1,6 +1,6 @@
 export type Locale = "en" | "he";
 
-export const DEFAULT_LOCALE: Locale = "en";
+export const DEFAULT_LOCALE: Locale = "he";
 export const LOCALE_STORAGE_KEY = "shidukh_locale";
 
 export const SUPPORTED_LOCALES: { code: Locale; label: string }[] = [

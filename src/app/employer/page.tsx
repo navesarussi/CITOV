@@ -119,7 +119,7 @@ export default function EmployerPage() {
           </h1>
           <p className="text-sm text-[var(--muted)]">{t.employer.subtitle}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 pe-14">
           <SettingsMenu />
           <div className="flex rounded-xl bg-[var(--chip)] p-1 text-sm">
             <TabButton active={tab === "chat"} onClick={() => setTab("chat")}>

@@ -140,6 +140,7 @@ export default function AdminPage() {
   if ((!data && !error) && (status === "loading" || !bootTimedOut)) {
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 text-center text-[var(--muted)]">
+        <SettingsMenu />
         <p>טוען פורטל מנהלים…</p>
         <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)]">
           חזרה להתחלה
@@ -151,6 +152,7 @@ export default function AdminPage() {
   if (error && !data) {
     return (
       <main className="mx-auto max-w-lg px-5 py-16 text-center">
+        <SettingsMenu />
         <p className="text-[var(--muted)]">{error}</p>
         <button
           type="button"
@@ -184,7 +186,7 @@ export default function AdminPage() {
             סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pe-14">
           <SettingsMenu />
           <button
             type="button"

@@ -16,5 +16,6 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - Runtime expansion via `extras` on cards; employer field questions merge into `extras`
 - `card_field_definitions` for optional metadata on dynamic keys (no DDL per new question)
 - Legacy `app_store` blob auto-migrated on first read after deploy
-- DB pool: try configured `DATABASE_URL` first; tiny pooler fallback list (no 100-host probe)
+- DB pool: DNS-filter pooler candidates then probe in small batches; cache last-good URL per instance
 - Session start uses `upsertSessionRole` (no full-store rewrite)
+- [PENDING REFACTOR]: pin `SUPABASE_POOLER_REGION` / `SUPABASE_POOLER_CLUSTER` from `/api/health/db` `resolvedHost` to skip discovery on cold start
