@@ -1,10 +1,29 @@
-import { ok, fail } from "@/infrastructure/http";
+import { ok } from "@/infrastructure/http";
 import { getSupabaseConfig } from "@/infrastructure/supabase/client";
 import { deriveSupabaseUrlFromDatabaseUrl } from "@/infrastructure/supabase/derive-url";
+import { poolerConnectionCandidates } from "@/infrastructure/db/connection-string";
 import { ensureSchema } from "@/infrastructure/db/schema";
 import { getPool } from "@/infrastructure/db/pool";
 
+function databaseDiagnostics() {
+  const raw = process.env.DATABASE_URL?.trim();
+  if (!raw) return { hasDatabaseUrl: false };
+  try {
+    const url = new URL(raw);
+    return {
+      hasDatabaseUrl: true,
+      host: url.hostname,
+      user: url.username,
+      passwordLength: url.password.length,
+      candidateCount: poolerConnectionCandidates(raw).length,
+    };
+  } catch {
+    return { hasDatabaseUrl: true, parseError: true };
+  }
+}
+
 export async function GET() {
+  const diagnostics = databaseDiagnostics();
   try {
     const supabase = getSupabaseConfig();
     const derivedUrl = deriveSupabaseUrlFromDatabaseUrl(process.env.DATABASE_URL);
@@ -16,8 +35,10 @@ export async function GET() {
       timestamp: result.rows[0]?.now,
       supabase: Boolean(supabase),
       supabaseUrl: supabase?.url ?? derivedUrl,
+      diagnostics,
     });
   } catch (e) {
-    return fail(e);
+    const message = e instanceof Error ? e.message : String(e);
+    return ok({ error: message, postgres: false, diagnostics }, { status: 500 });
   }
 }
