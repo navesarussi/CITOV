@@ -6,7 +6,13 @@ import {
   prepareEmployeeTurn,
   prepareEmployerTurn,
 } from "./chat";
-import { emptyCandidateCard, emptyJobCard, type StoreData } from "@/domain/types";
+import {
+  emptyCandidateCard,
+  emptyJobCard,
+  type CandidateCard,
+  type JobCard,
+  type StoreData,
+} from "@/domain/types";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 
 function seed(): StoreData {
@@ -44,14 +50,18 @@ describe("applyEmployeeTurn", () => {
       provider: "heuristic",
     });
 
-    assert.equal(result.card.desiredRole, "מלצר");
-    assert.equal(result.card.location, "תל אביב");
+    assert.equal((result.card as CandidateCard).desiredRole, "מלצר");
+    assert.equal((result.card as CandidateCard).location, "תל אביב");
     assert.equal(result.reply, "מעולה, קיבלתי!");
     assert.equal(result.chat.length, 2);
     assert.equal(result.chat[0].role, "user");
     assert.equal(result.chat[0].content, "אני מלצר בתל אביב");
     assert.equal(result.chat[1].role, "assistant");
     assert.equal(result.chat[1].content, "מעולה, קיבלתי!");
+    // deltas for scoped persistence
+    assert.equal(result.newMessages.length, 2);
+    assert.equal(result.newMessages[0].role, "user");
+    assert.equal(result.newMessages[1].content, "מעולה, קיבלתי!");
   });
 
   it("merges a field answer and clears the pending question", () => {
@@ -83,6 +93,8 @@ describe("applyEmployeeTurn", () => {
         (a) => a.questionId === "q1" && a.candidateId === "e1",
       ),
     );
+    assert.equal(result.newFieldAnswers.length, 1);
+    assert.equal(result.newFieldAnswers[0].questionId, "q1");
   });
 
   it("throws for an unknown user", () => {
@@ -109,8 +121,9 @@ describe("applyEmployerTurn", () => {
       provider: "heuristic",
     });
 
-    assert.equal(result.card.title, "מלצר");
+    assert.equal((result.card as JobCard).title, "מלצר");
     assert.equal(result.chat.length, 2);
+    assert.equal(result.newMessages.length, 2);
     assert.ok(result.jobId);
   });
 });

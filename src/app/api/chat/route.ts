@@ -7,10 +7,12 @@ import {
   type ChatTurnResult,
 } from "@/application/chat";
 import { refreshStoreMatches } from "@/application/employer-actions";
-import type { StoreData } from "@/domain/types";
+import { normalizeEmployerRecord } from "@/domain/employer-jobs";
+import type { CandidateCard, StoreData } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
 import { assertActor } from "@/infrastructure/auth-guard";
-import { writeStore, writeMatches } from "@/infrastructure/store";
+import { writeMatches } from "@/infrastructure/store";
+import { persistEmployeeTurn, persistEmployerTurn } from "@/infrastructure/db/scoped-store";
 import { hasGeminiKey } from "@/infrastructure/ai/schemas";
 import {
   extractEmployeePatch,
@@ -42,9 +44,41 @@ async function emitTyping(controller: Controller, text: string): Promise<void> {
   }
 }
 
-/** Persist the turn and refresh matches off the user's critical path. */
-async function persistTurn(result: ChatTurnResult): Promise<void> {
-  await writeStore(result.store);
+/**
+ * Persist the turn touching only this user's rows, then refresh matches off the
+ * user's critical path (deferred, or inline if the request scope is gone).
+ */
+async function persistTurn(
+  role: "employee" | "employer",
+  userId: string,
+  result: ChatTurnResult,
+): Promise<void> {
+  if (role === "employee") {
+    const emp = result.store.employees.find((e) => e.userId === userId);
+    await persistEmployeeTurn({
+      userId,
+      card: result.card as CandidateCard,
+      pendingFieldQuestionIds: emp?.pendingFieldQuestionIds ?? [],
+      newMessages: result.newMessages,
+      newFieldAnswers: result.newFieldAnswers,
+      usageRecord: result.usageRecord,
+    });
+  } else {
+    const raw = result.store.employers.find((e) => e.userId === userId);
+    if (raw) {
+      const employer = normalizeEmployerRecord(raw);
+      await persistEmployerTurn({
+        userId,
+        card: employer.card,
+        jobs: employer.jobs,
+        activeJobId: employer.activeJobId,
+        jobId: result.jobId ?? employer.activeJobId,
+        newMessages: result.newMessages,
+        usageRecord: result.usageRecord,
+      });
+    }
+  }
+
   const refreshMatches = async () => {
     try {
       await writeMatches(refreshStoreMatches(result.store).matches);
@@ -52,8 +86,6 @@ async function persistTurn(result: ChatTurnResult): Promise<void> {
       console.error("deferred match refresh failed", err);
     }
   };
-  // Prefer running after the response finishes; fall back to inline if the
-  // request scope is unavailable inside the stream.
   try {
     after(refreshMatches);
   } catch {
@@ -99,7 +131,7 @@ export async function POST(req: Request) {
               ? await runEmployeeStream(controller, store, userId, message)
               : await runEmployerStream(controller, store, userId, message, body.jobId);
 
-          await persistTurn(result);
+          await persistTurn(role, userId, result);
           frame(controller, {
             type: "final",
             reply: result.reply,

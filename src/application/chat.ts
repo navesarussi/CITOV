@@ -15,6 +15,7 @@ import type {
   AiUsageRecord,
   CandidateCard,
   ChatMessage,
+  FieldAnswer,
   FieldQuestion,
   JobCard,
   StoreData,
@@ -51,37 +52,23 @@ function applyJobPatch(card: JobCard, patch?: JobPatch): JobCard {
   };
 }
 
-function pushChat(
-  chat: ChatMessage[],
-  role: "user" | "assistant",
-  content: string,
-): ChatMessage[] {
-  return [
-    ...chat,
-    {
-      id: randomUUID(),
-      role,
-      content,
-      createdAt: new Date().toISOString(),
-    },
-  ];
+function makeMessage(role: "user" | "assistant", content: string): ChatMessage {
+  return { id: randomUUID(), role, content, createdAt: new Date().toISOString() };
 }
 
-function recordAiUsage(
-  store: StoreData,
+/** Build a usage record for the turn (or undefined) so callers can persist just it. */
+function buildUsageRecord(
   type: AiUsageRecord["type"],
   usage?: AiTokenUsage,
-): StoreData {
-  if (!usage) return store;
-  const record = createAiUsageRecord({
+): AiUsageRecord | undefined {
+  if (!usage) return undefined;
+  return createAiUsageRecord({
     id: randomUUID(),
     type,
     promptTokens: usage.promptTokens,
     completionTokens: usage.completionTokens,
     createdAt: new Date().toISOString(),
   });
-  const nextUsage = [...(store.aiUsage ?? []), record].slice(-200);
-  return { ...store, aiUsage: nextUsage };
 }
 
 export type ChatTurnResult = {
@@ -92,6 +79,10 @@ export type ChatTurnResult = {
   chat: ChatMessage[];
   pendingQuestions: { id: string; question: string }[];
   jobId?: string;
+  /** Deltas for this turn — let the route persist only what changed. */
+  newMessages: ChatMessage[];
+  newFieldAnswers: FieldAnswer[];
+  usageRecord?: AiUsageRecord;
 };
 
 /**
@@ -161,40 +152,48 @@ export function applyEmployeeTurn(params: {
   let card = applyCandidatePatch(emp.card, params.candidatePatch);
   let answers = store.fieldAnswers;
   let pendingIds = emp.pendingFieldQuestionIds;
+  const newFieldAnswers: FieldAnswer[] = [];
 
   for (const fa of params.fieldAnswers ?? []) {
     const q = store.fieldQuestions.find((x) => x.id === fa.questionId);
     if (!q) continue;
     card = mergeAnswerIntoCard(card, q, fa.answer);
+    const answer: FieldAnswer = {
+      questionId: fa.questionId,
+      candidateId: userId,
+      answer: fa.answer,
+      answeredAt: new Date().toISOString(),
+    };
     answers = [
       ...answers.filter(
         (a) => !(a.questionId === fa.questionId && a.candidateId === userId),
       ),
-      {
-        questionId: fa.questionId,
-        candidateId: userId,
-        answer: fa.answer,
-        answeredAt: new Date().toISOString(),
-      },
+      answer,
     ];
+    newFieldAnswers.push(answer);
     pendingIds = pendingIds.filter((id) => id !== fa.questionId);
   }
 
-  let next: StoreData = {
+  const newMessages = [makeMessage("user", message), makeMessage("assistant", reply)];
+  const usageRecord = buildUsageRecord("employee_intake", params.usage);
+
+  const next: StoreData = {
     ...store,
     fieldAnswers: answers,
+    aiUsage: usageRecord
+      ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
+      : store.aiUsage,
     employees: store.employees.map((e) =>
       e.userId === userId
         ? {
             ...e,
             card,
             pendingFieldQuestionIds: pendingIds,
-            chat: pushChat(pushChat(e.chat, "user", message), "assistant", reply),
+            chat: [...e.chat, ...newMessages],
           }
         : e,
     ),
   };
-  next = recordAiUsage(next, "employee_intake", params.usage);
   const empNext = next.employees.find((e) => e.userId === userId)!;
   const pendingOut = next.fieldQuestions.filter((q) =>
     empNext.pendingFieldQuestionIds.includes(q.id),
@@ -206,6 +205,9 @@ export function applyEmployeeTurn(params: {
     card: empNext.card,
     chat: empNext.chat,
     pendingQuestions: pendingOut.map((q) => ({ id: q.id, question: q.question })),
+    newMessages,
+    newFieldAnswers,
+    usageRecord,
   };
 }
 
@@ -228,15 +230,19 @@ export function applyEmployerTurn(params: {
   const active = getActiveJob(employer);
 
   const card = applyJobPatch(active.card, params.jobPatch);
-  const chat = pushChat(pushChat(active.chat, "user", message), "assistant", reply);
+  const newMessages = [makeMessage("user", message), makeMessage("assistant", reply)];
+  const chat = [...active.chat, ...newMessages];
   const updated = updateJobSlot(employer, active.id, { card, chat });
   const mirrored = withActiveJob(updated, active.id);
 
-  let next: StoreData = {
+  const usageRecord = buildUsageRecord("employer_intake", params.usage);
+  const next: StoreData = {
     ...store,
+    aiUsage: usageRecord
+      ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
+      : store.aiUsage,
     employers: store.employers.map((e) => (e.userId === userId ? mirrored : e)),
   };
-  next = recordAiUsage(next, "employer_intake", params.usage);
   return {
     store: next,
     reply,
@@ -245,6 +251,9 @@ export function applyEmployerTurn(params: {
     chat,
     pendingQuestions: [],
     jobId: active.id,
+    newMessages,
+    newFieldAnswers: [],
+    usageRecord,
   };
 }
 
