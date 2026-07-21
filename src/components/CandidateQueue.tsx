@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "@/components/LocaleProvider";
 
 type Item = {
@@ -19,7 +19,7 @@ type Item = {
   };
 };
 
-export function CandidateQueue(props: {
+function CandidateQueueBase(props: {
   employerId: string;
   items: Item[];
   onChanged: () => void;
@@ -49,18 +49,18 @@ export function CandidateQueue(props: {
 
   if (props.items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--stroke)] p-8 text-center text-sm text-[var(--muted)]">
+      <div className="view-in rounded-2xl border border-dashed border-[var(--stroke)] p-8 text-center text-sm text-[var(--muted)]">
         {t.candidates.empty}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="list-enter space-y-3">
       {props.items.map((item) => (
         <article
           key={item.matchId}
-          className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4"
+          className="card-lift rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -90,7 +90,7 @@ export function CandidateQueue(props: {
               type="button"
               disabled={busyId === item.matchId}
               onClick={() => void act(item.matchId, "approve")}
-              className="rounded-xl bg-[var(--accent)] px-3 py-2 text-sm text-white"
+              className="press focus-ring rounded-xl bg-[var(--accent)] px-3 py-2 text-sm text-white disabled:opacity-50"
             >
               {t.candidates.fit}
             </button>
@@ -98,7 +98,7 @@ export function CandidateQueue(props: {
               type="button"
               disabled={busyId === item.matchId}
               onClick={() => void act(item.matchId, "reject")}
-              className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+              className="press focus-ring rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm hover:border-[var(--accent)] disabled:opacity-50"
             >
               {t.candidates.notFit}
             </button>
@@ -111,13 +111,13 @@ export function CandidateQueue(props: {
                 setQuestionById((s) => ({ ...s, [item.matchId]: e.target.value }))
               }
               placeholder={t.candidates.askPlaceholder}
-              className="flex-1 rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm outline-none"
+              className="focus-ring flex-1 rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm outline-none transition focus:border-[var(--accent)]"
             />
             <button
               type="button"
               disabled={busyId === item.matchId}
               onClick={() => void act(item.matchId, "ask")}
-              className="rounded-xl bg-[var(--ink)] px-3 py-2 text-sm text-white"
+              className="press focus-ring rounded-xl bg-[var(--ink)] px-3 py-2 text-sm text-white disabled:opacity-50"
             >
               {t.candidates.ask}
             </button>
@@ -127,3 +127,5 @@ export function CandidateQueue(props: {
     </div>
   );
 }
+
+export const CandidateQueue = memo(CandidateQueueBase);

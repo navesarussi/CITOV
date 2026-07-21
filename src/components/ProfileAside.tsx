@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FlexibilitySlider } from "@/components/FlexibilitySlider";
 import { useTranslation } from "@/components/LocaleProvider";
 import { candidateRows, jobRows, knowledgePercent } from "@/domain/card-progress";
@@ -20,7 +20,6 @@ export function ProfileAside(props: {
 }) {
   const { t, fmt } = useTranslation();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [flex, setFlex] = useState(5);
 
   useEffect(() => {
     void fetch("/api/session")
@@ -29,30 +28,32 @@ export function ProfileAside(props: {
       .catch(() => setIsAdmin(false));
   }, []);
 
-  const c =
-    props.card ??
-    (props.kind === "employee" ? emptyCandidateCard() : emptyJobCard());
+  const c = useMemo(
+    () =>
+      props.card ??
+      (props.kind === "employee" ? emptyCandidateCard() : emptyJobCard()),
+    [props.card, props.kind],
+  );
 
-  useEffect(() => {
-    setFlex(clampFlex((c as CandidateCard | JobCard).flexibility));
-  }, [c]);
+  // Derive the slider value straight from the card (the slider keeps its own
+  // local state for immediate drag feedback), so ProfileAside no longer needs a
+  // state+effect that re-fired on every parent render (the old jank/loop).
+  const flexValue = clampFlex((c as CandidateCard | JobCard).flexibility);
 
   const labels = (props.kind === "employee"
     ? t.cardFields.candidate
     : t.cardFields.job) as Record<string, string>;
-  const rows =
-    props.kind === "employee"
-      ? candidateRows(c as CandidateCard, labels)
-      : jobRows(c as JobCard, labels);
-  const percent = knowledgePercent(rows);
-
-  function onFlex(value: number) {
-    setFlex(value);
-    props.onFlexibilityChange?.(value);
-  }
+  const rows = useMemo(
+    () =>
+      props.kind === "employee"
+        ? candidateRows(c as CandidateCard, labels)
+        : jobRows(c as JobCard, labels),
+    [c, labels, props.kind],
+  );
+  const percent = useMemo(() => knowledgePercent(rows), [rows]);
 
   return (
-    <aside className="premium-panel flex max-h-[70vh] flex-col rounded-[1.35rem] p-4">
+    <aside className="premium-panel panel-in flex max-h-[70vh] flex-col rounded-[1.35rem] p-4">
       <h2 className="text-sm font-semibold tracking-tight text-[var(--ink)]">
         {props.kind === "employee" ? t.profile.yourCard : t.profile.jobCard}
       </h2>
@@ -71,7 +72,7 @@ export function ProfileAside(props: {
           aria-label={t.profile.knowledge}
         >
           <div
-            className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-300"
+            className="progress-fill h-full rounded-full bg-[var(--accent)]"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -80,7 +81,11 @@ export function ProfileAside(props: {
         </p>
       </div>
 
-      <FlexibilitySlider userId={props.userId} value={flex} onChange={onFlex} />
+      <FlexibilitySlider
+        userId={props.userId}
+        value={flexValue}
+        onChange={(v) => props.onFlexibilityChange?.(v)}
+      />
 
       {props.pendingQuestions && props.pendingQuestions.length > 0 ? (
         <div className="mt-3 rounded-xl bg-[var(--warn-bg)] p-3 text-xs text-[var(--warn)]">

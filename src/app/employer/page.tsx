@@ -8,6 +8,7 @@ import { FileImport } from "@/components/FileImport";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { ProfileAside } from "@/components/ProfileAside";
+import { ListSkeleton, ProfileSkeleton } from "@/components/Skeletons";
 import { readStoredUser } from "@/lib/client-session";
 
 type Tab = "chat" | "candidates";
@@ -171,9 +172,10 @@ export default function EmployerPage() {
             disabled={jobBusy}
             onClick={() => void selectJob(job.id)}
             className={
-              job.id === activeJobId
-                ? "rounded-full bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white"
-                : "rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs text-[var(--ink)]"
+              "press focus-ring seg-pill rounded-full px-3 py-1.5 text-xs font-medium disabled:opacity-50 " +
+              (job.id === activeJobId
+                ? "bg-[var(--accent)] text-white"
+                : "border border-[var(--stroke)] bg-white text-[var(--ink)] hover:border-[var(--accent)]")
             }
           >
             {jobLabel(job, i)}
@@ -183,7 +185,7 @@ export default function EmployerPage() {
           type="button"
           disabled={jobBusy}
           onClick={() => void createJob()}
-          className="rounded-full border border-dashed border-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]"
+          className="press focus-ring rounded-full border border-dashed border-[var(--accent)] px-3 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--bubble)] disabled:opacity-50"
         >
           + {t.employer.newJob}
         </button>
@@ -195,56 +197,61 @@ export default function EmployerPage() {
         </p>
       ) : null}
 
-      {tab === "chat" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <div className="order-2 lg:order-1">
-            <ChatPanel
-              key={`${userId}-${activeJobId ?? "job"}-employer`}
-              userId={userId}
-              role="employer"
-              locale={locale}
-              jobId={activeJobId ?? undefined}
-              initialMessages={me?.chat ?? []}
-              placeholder={t.employer.chatPlaceholder}
-              onTurn={onTurn}
-            />
+      <div key={tab} className="view-in">
+        {tab === "chat" ? (
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            <div className="order-2 lg:order-1">
+              <ChatPanel
+                key={`${userId}-${activeJobId ?? "job"}-employer`}
+                userId={userId}
+                role="employer"
+                locale={locale}
+                jobId={activeJobId ?? undefined}
+                initialMessages={me?.chat ?? []}
+                placeholder={t.employer.chatPlaceholder}
+                onTurn={onTurn}
+              />
+            </div>
+            <div className="order-1 space-y-4 lg:order-2">
+              {me ? (
+                <ProfileAside
+                  kind="employer"
+                  userId={userId}
+                  card={(me?.card as never) ?? null}
+                  onFlexibilityChange={(value) => {
+                    setMe((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            card: { ...(prev.card as object), flexibility: value },
+                          }
+                        : prev,
+                    );
+                  }}
+                />
+              ) : (
+                <ProfileSkeleton />
+              )}
+              <FileImport
+                userId={userId}
+                endpoint="/api/job-import"
+                jobId={activeJobId ?? undefined}
+                title={t.fileImport.jobTitle}
+                hint={t.fileImport.jobHint}
+                onDone={() => void refresh(userId, activeJobId)}
+              />
+            </div>
           </div>
-          <div className="relative order-1 space-y-4 lg:order-2">
-            {hydrating && !me ? (
-              <p className="mb-2 text-xs text-[var(--muted)] opacity-70">…</p>
-            ) : null}
-            <ProfileAside
-              kind="employer"
-              userId={userId}
-              card={(me?.card as never) ?? null}
-              onFlexibilityChange={(value) => {
-                setMe((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        card: { ...(prev.card as object), flexibility: value },
-                      }
-                    : prev,
-                );
-              }}
-            />
-            <FileImport
-              userId={userId}
-              endpoint="/api/job-import"
-              jobId={activeJobId ?? undefined}
-              title={t.fileImport.jobTitle}
-              hint={t.fileImport.jobHint}
-              onDone={() => void refresh(userId, activeJobId)}
-            />
-          </div>
-        </div>
-      ) : (
-        <CandidateQueue
-          employerId={userId}
-          items={candidates}
-          onChanged={() => void refresh(userId, activeJobId)}
-        />
-      )}
+        ) : hydrating && !me ? (
+          <ListSkeleton />
+        ) : (
+          <CandidateQueue
+            employerId={userId}
+            items={candidates}
+            onChanged={() => void refresh(userId, activeJobId)}
+          />
+        )}
+      </div>
     </main>
   );
 }
@@ -259,9 +266,10 @@ function TabButton(props: {
       type="button"
       onClick={props.onClick}
       className={
-        props.active
-          ? "rounded-lg bg-white px-3 py-1.5 font-medium shadow-sm"
-          : "rounded-lg px-3 py-1.5 text-[var(--muted)]"
+        "seg-pill press focus-ring rounded-lg px-3 py-1.5 " +
+        (props.active
+          ? "bg-white font-medium text-[var(--ink)] shadow-sm"
+          : "text-[var(--muted)] hover:text-[var(--ink)]")
       }
     >
       {props.children}

@@ -8,6 +8,7 @@ import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { OpportunityList } from "@/components/OpportunityList";
 import { ProfileAside } from "@/components/ProfileAside";
+import { ListSkeleton, ProfileSkeleton } from "@/components/Skeletons";
 import { readStoredUser } from "@/lib/client-session";
 
 type Tab = "chat" | "jobs";
@@ -116,48 +117,56 @@ export default function EmployeePage() {
         </p>
       ) : null}
 
-      {tab === "chat" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <div className="order-2 lg:order-1">
-            <ChatPanel
-              key={`${userId}-employee`}
-              userId={userId}
-              role="employee"
-              locale={locale}
-              initialMessages={me?.chat ?? []}
-              placeholder={t.employee.chatPlaceholder}
-              onTurn={onTurn}
-            />
+      <div key={tab} className="view-in">
+        {tab === "chat" ? (
+          <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
+            <div className="order-2 lg:order-1">
+              <ChatPanel
+                key={`${userId}-employee`}
+                userId={userId}
+                role="employee"
+                locale={locale}
+                initialMessages={me?.chat ?? []}
+                placeholder={t.employee.chatPlaceholder}
+                onTurn={onTurn}
+              />
+            </div>
+            <div className="order-1 space-y-4 lg:order-2">
+              {me ? (
+                <ProfileAside
+                  kind="employee"
+                  userId={userId}
+                  card={(me?.card as never) ?? null}
+                  pendingQuestions={me?.pendingQuestions ?? []}
+                  onFlexibilityChange={(value) => {
+                    setMe((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            card: { ...(prev.card as object), flexibility: value },
+                          }
+                        : prev,
+                    );
+                  }}
+                />
+              ) : (
+                <ProfileSkeleton />
+              )}
+              <FileImport
+                userId={userId}
+                endpoint="/api/cv"
+                title={t.fileImport.cvTitle}
+                hint={t.fileImport.cvHint}
+                onDone={() => void refresh(userId)}
+              />
+            </div>
           </div>
-          <div className="order-1 space-y-4 lg:order-2">
-            <ProfileAside
-              kind="employee"
-              userId={userId}
-              card={(me?.card as never) ?? null}
-              pendingQuestions={me?.pendingQuestions ?? []}
-              onFlexibilityChange={(value) => {
-                setMe((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        card: { ...(prev.card as object), flexibility: value },
-                      }
-                    : prev,
-                );
-              }}
-            />
-            <FileImport
-              userId={userId}
-              endpoint="/api/cv"
-              title={t.fileImport.cvTitle}
-              hint={t.fileImport.cvHint}
-              onDone={() => void refresh(userId)}
-            />
-          </div>
-        </div>
-      ) : (
-        <OpportunityList jobs={jobs} />
-      )}
+        ) : me ? (
+          <OpportunityList jobs={jobs} />
+        ) : (
+          <ListSkeleton />
+        )}
+      </div>
     </main>
   );
 }
@@ -172,9 +181,10 @@ function TabButton(props: {
       type="button"
       onClick={props.onClick}
       className={
-        props.active
-          ? "rounded-lg bg-white px-3 py-1.5 font-medium shadow-sm"
-          : "rounded-lg px-3 py-1.5 text-[var(--muted)]"
+        "seg-pill press focus-ring rounded-lg px-3 py-1.5 " +
+        (props.active
+          ? "bg-white font-medium text-[var(--ink)] shadow-sm"
+          : "text-[var(--muted)] hover:text-[var(--ink)]")
       }
     >
       {props.children}
