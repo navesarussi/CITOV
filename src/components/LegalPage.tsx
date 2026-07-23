@@ -22,15 +22,20 @@ export function LegalPage(props: {
         : t.legal.aboutBody;
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-2xl px-5 py-8 pt-16">
-      <SettingsMenu />
-      <div className="mb-6">
-        <Link href="/" className="text-sm text-[var(--accent)]">
-          ← {t.legal.back}
-        </Link>
-      </div>
-      <h1 className="text-3xl font-semibold tracking-tight text-[var(--hero)]">{title}</h1>
-      <p className="mt-4 text-base leading-7 text-[var(--muted)]">{body}</p>
-    </main>
+    <div className="atmosphere min-h-dvh">
+      <main className="mx-auto w-full max-w-2xl px-5 py-10 pt-20">
+        <SettingsMenu />
+        <div className="enter mb-6">
+          <Link href="/" className="text-sm font-medium text-[var(--accent)] hover:underline">
+            ← {t.legal.back}
+          </Link>
+        </div>
+        <article className="panel enter-delay rounded-[var(--panel-radius)] p-6 sm:p-8">
+          <p className="eyebrow">CITOV</p>
+          <h1 className="display-text mt-2">{title}</h1>
+          <p className="mt-5 text-base leading-8 text-[var(--muted)]">{body}</p>
+        </article>
+      </main>
+    </div>
   );
 }

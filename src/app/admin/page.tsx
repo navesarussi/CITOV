@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
+import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
+import { Button } from "@/components/ui/Button";
 
 type AdminStats = {
   employers: number;
@@ -139,32 +141,34 @@ export default function AdminPage() {
 
   if ((!data && !error) && (status === "loading" || !bootTimedOut)) {
     return (
-      <main className="mx-auto max-w-5xl px-5 py-16 text-center text-[var(--muted)]">
-        <SettingsMenu />
-        <p>טוען פורטל מנהלים…</p>
-        <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)]">
-          חזרה להתחלה
-        </Link>
-      </main>
+      <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
+        <main className="text-center">
+          <SettingsMenu />
+          <p className="text-[var(--muted)]">טוען פורטל מנהלים…</p>
+          <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)]">
+            חזרה להתחלה
+          </Link>
+        </main>
+      </div>
     );
   }
 
   if (error && !data) {
     return (
-      <main className="mx-auto max-w-lg px-5 py-16 text-center">
-        <SettingsMenu />
-        <p className="text-[var(--muted)]">{error}</p>
-        <button
-          type="button"
-          onClick={() => void load()}
-          className="mt-4 me-3 text-[var(--accent)]"
-        >
-          נסו שוב
-        </button>
-        <Link href="/" className="mt-4 inline-block text-[var(--accent)]">
-          חזרה להתחלה
-        </Link>
-      </main>
+      <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
+        <main className="panel max-w-lg rounded-[var(--panel-radius)] p-8 text-center">
+          <SettingsMenu />
+          <p className="text-[var(--muted)]">{error}</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            <Button variant="secondary" onClick={() => void load()}>
+              נסו שוב
+            </Button>
+            <Link href="/" className="text-sm text-[var(--accent)] hover:underline">
+              חזרה להתחלה
+            </Link>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -173,32 +177,16 @@ export default function AdminPage() {
   const { stats, prompts } = data;
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-5xl px-4 py-6">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link href="/" className="text-sm font-medium text-[var(--accent)]">
-            שידוך
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--hero)]">
-            פורטל מנהלים
-          </h1>
-          <p className="text-sm text-[var(--muted)]">
-            סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט
-          </p>
-        </div>
-        <div className="flex items-center gap-2 pe-14">
-          <SettingsMenu />
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm"
-          >
-            רענון
-          </button>
-        </div>
-      </header>
-
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <AdminShell
+      title="פורטל מנהלים"
+      subtitle="סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט"
+      actions={
+        <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
+          רענון
+        </Button>
+      }
+    >
+      <section className="enter-delay grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="מעסיקים" value={stats.employers} />
         <StatCard label="מועמדים" value={stats.candidates} />
         <StatCard
@@ -213,7 +201,7 @@ export default function AdminPage() {
         />
       </section>
 
-      <section className="premium-panel mt-4 rounded-2xl p-4">
+      <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
         <h2 className="text-sm font-semibold text-[var(--muted)]">פירוט מאצ׳ים</h2>
         <div className="mt-2 flex flex-wrap gap-4 text-sm">
           <span>בתור: {stats.matches.queued}</span>
@@ -223,7 +211,7 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="mt-8 space-y-6">
+      <section className="enter-delay-2 mt-8 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-[var(--muted)]">
             הפרומפטים נשלחים בכל הודעת צ׳אט מ־
@@ -260,7 +248,7 @@ export default function AdminPage() {
             onChange={(e) => setCandidatePrompt(e.target.value)}
             dir="rtl"
             rows={14}
-            className="w-full rounded-2xl border border-[var(--stroke)] bg-white p-4 font-mono text-xs leading-6 outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4 font-mono text-xs leading-6 outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
           />
         </div>
 
@@ -276,27 +264,17 @@ export default function AdminPage() {
             onChange={(e) => setEmployerPrompt(e.target.value)}
             dir="rtl"
             rows={14}
-            className="w-full rounded-2xl border border-[var(--stroke)] bg-white p-4 font-mono text-xs leading-6 outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4 font-mono text-xs leading-6 outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            disabled={saving}
-            onClick={() => void savePrompts()}
-            className="rounded-xl bg-[var(--hero)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50"
-          >
+          <Button disabled={saving} onClick={() => void savePrompts()}>
             {saving ? "שומר…" : "שמירת פרומפטים (לייב)"}
-          </button>
-          <button
-            type="button"
-            disabled={resetting}
-            onClick={() => void resetPrompts()}
-            className="rounded-xl border border-[var(--stroke)] bg-white px-5 py-2.5 text-sm disabled:opacity-50"
-          >
+          </Button>
+          <Button variant="secondary" disabled={resetting} onClick={() => void resetPrompts()}>
             {resetting ? "מאפס…" : "איפוס לברירת מחדל"}
-          </button>
+          </Button>
           {saved ? <span className="text-sm text-[var(--accent)]">נשמר — פעיל מההודעה הבאה</span> : null}
           {prompts.updatedAt ? (
             <span className="text-xs text-[var(--muted)]">
@@ -306,7 +284,7 @@ export default function AdminPage() {
           ) : null}
         </div>
       </section>
-    </main>
+    </AdminShell>
   );
 }
 
@@ -320,9 +298,9 @@ function StatCard({
   sub?: string;
 }) {
   return (
-    <div className="premium-panel rounded-2xl p-5">
+    <div className="panel rounded-[var(--panel-radius)] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]">
       <p className="text-sm text-[var(--muted)]">{label}</p>
-      <p className="mt-1 text-3xl font-semibold text-[var(--hero)]">{value}</p>
+      <p className="mt-1 text-3xl font-bold text-[var(--hero)]">{value}</p>
       {sub ? <p className="mt-1 text-xs text-[var(--muted)]">{sub}</p> : null}
     </div>
   );
