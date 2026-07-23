@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ChatPanel, type ChatTurnPayload } from "@/components/ChatPanel";
@@ -87,15 +88,23 @@ export default function EmployeePage() {
 
   return (
     <main className="mx-auto min-h-full w-full max-w-6xl px-4 py-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <Link href="/" className="text-sm font-medium tracking-wide text-[var(--accent)]">
-            {t.app.name}
+      <header className="brand-enter mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <Link href="/" className="mt-1 shrink-0">
+            <Image src="/logo.png" alt="CITOV" width={40} height={40} className="object-contain" />
           </Link>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--hero)]">
-            {name}
-          </h1>
-          <p className="text-sm text-[var(--muted)]">{t.employee.subtitle}</p>
+          <div>
+            <Link
+              href="/"
+              className="text-xs font-bold tracking-[0.2em] text-[var(--hero)] uppercase"
+            >
+              CITOV
+            </Link>
+            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--hero)] sm:text-3xl">
+              {name}
+            </h1>
+            <p className="text-sm text-[var(--muted)]">{t.employee.subtitle}</p>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 pe-14">
           <SettingsMenu />
@@ -117,8 +126,8 @@ export default function EmployeePage() {
       ) : null}
 
       {tab === "chat" ? (
-        <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
-          <div className="order-2 lg:order-1">
+        <div className="brand-enter-delay grid gap-4 lg:grid-cols-[1fr_300px]">
+          <div className="order-2 min-h-[520px] lg:order-1">
             <ChatPanel
               key={`${userId}-employee`}
               userId={userId}
@@ -156,7 +165,9 @@ export default function EmployeePage() {
           </div>
         </div>
       ) : (
-        <OpportunityList jobs={jobs} />
+        <div className="brand-enter-delay">
+          <OpportunityList jobs={jobs} />
+        </div>
       )}
     </main>
   );
@@ -173,8 +184,8 @@ function TabButton(props: {
       onClick={props.onClick}
       className={
         props.active
-          ? "rounded-lg bg-white px-3 py-1.5 font-medium shadow-sm"
-          : "rounded-lg px-3 py-1.5 text-[var(--muted)]"
+          ? "cursor-pointer rounded-lg bg-white px-3 py-1.5 font-medium text-[var(--hero)] shadow-sm transition duration-200"
+          : "cursor-pointer rounded-lg px-3 py-1.5 text-[var(--muted)] transition duration-200 hover:text-[var(--ink)]"
       }
     >
       {props.children}

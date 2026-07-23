@@ -1,10 +1,10 @@
 export const en = {
   meta: {
-    title: "Shidukh — POC",
-    description: "A placement agent that matches without search",
+    title: "CITOV — There is another way",
+    description: "Smart placement through conversation — without search",
   },
   app: {
-    name: "Shidukh",
+    name: "CITOV",
   },
   language: {
     switch: "Language",
@@ -12,9 +12,9 @@ export const en = {
     hebrew: "עברית",
   },
   home: {
-    tagline: "Find work without searching",
+    tagline: "There is another way",
     description:
-      "A natural conversation with a smart placement agent. It understands you deeply, matches with precision, and shows each side only what matters.",
+      "A natural conversation with a smart placement agent. It understands you deeply, matches with precision, and shows you only the jobs that approved you.",
     googleSignIn: "Sign in with Google",
     connectedAs: "Signed in as {name}",
     continueAsEmployee: "Continue as job seeker",
@@ -32,11 +32,11 @@ export const en = {
     iAmEmployee: "I am looking for work",
     iAmEmployer: "I am hiring",
     googleNotConfigured: "Google Auth is not configured on the server yet.",
-    afterSignInHint: "After signing in, choose employee or employer.",
-    demoEmployeeDev: "Employee demo (dev only)",
+    afterSignInHint: "After signing in, continue as a candidate.",
+    demoEmployeeDev: "Candidate demo (dev only)",
     demoEmployerDev: "Employer demo (dev only)",
     adminPortal: "Admin portal",
-    openAuthHint: "Google sign-in is paused — pick a role to start chatting.",
+    openAuthHint: "Google sign-in is paused — start chatting as a candidate.",
     openingRole: "Opening your screen…",
     realUsersTitleOpen: "Choose how you want to continue",
   },
@@ -55,12 +55,12 @@ export const en = {
     report: "Report a problem",
     rate: "Rate the app",
     rateTitle: "How was your experience?",
-    rateHint: "Your rating helps us improve Shidukh.",
+    rateHint: "Your rating helps us improve CITOV.",
     cancel: "Cancel",
     sendRating: "Send",
-    reportSubject: "Shidukh — problem report",
+    reportSubject: "CITOV — problem report",
     reportBody: "Describe the problem:",
-    rateSubject: "Shidukh — app rating",
+    rateSubject: "CITOV — app rating",
     rateBody: "My rating",
     defaultRole: "Default role",
     roleEmployee: "Job seeker",
@@ -72,14 +72,14 @@ export const en = {
   legal: {
     privacyTitle: "Privacy policy",
     termsTitle: "Terms of service",
-    aboutTitle: "About Shidukh",
+    aboutTitle: "About CITOV",
     back: "Back",
     privacyBody:
-      "Shidukh stores the profile and chat information you share in order to match candidates and employers. We use Google sign-in for authentication. We do not sell your personal data. Contact us to request deletion of your account data.",
+      "CITOV stores the profile and chat information you share in order to match candidates and employers. We use Google sign-in for authentication. We do not sell your personal data. Contact us to request deletion of your account data.",
     termsBody:
-      "Shidukh is a placement matching service. Matches are recommendations, not hiring guarantees. Users are responsible for the accuracy of information they provide. Misuse, harassment, or fraudulent profiles may lead to account removal.",
+      "CITOV is a placement matching service. Matches are recommendations, not hiring guarantees. Users are responsible for the accuracy of information they provide. Misuse, harassment, or fraudulent profiles may lead to account removal.",
     aboutBody:
-      "Shidukh helps people find work and hire talent through natural conversation with an AI placement agent — without traditional search.",
+      "CITOV helps people find work through natural conversation with an AI placement agent — without traditional search. There is another way.",
   },
   employee: {
     subtitle: "Chat with the agent · Jobs approved for you",

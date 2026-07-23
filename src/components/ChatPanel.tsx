@@ -115,7 +115,7 @@ export function ChatPanel(props: {
 
   return (
     <div className="premium-panel flex h-full min-h-[440px] flex-col overflow-hidden rounded-[1.35rem]">
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--stroke)] bg-[linear-gradient(180deg,#ffffff,rgba(230,242,240,0.55))] px-4 py-3.5">
+      <div className="flex items-center justify-between gap-2 border-b border-[var(--stroke)] bg-[linear-gradient(180deg,#ffffff,rgba(232,242,252,0.7))] px-4 py-3.5">
         <div>
           <div className="flex items-center gap-2">
             <span className="live-pulse inline-block h-2 w-2 rounded-full bg-[var(--accent)]" />
@@ -135,7 +135,7 @@ export function ChatPanel(props: {
             type="button"
             onClick={() => void resetChat()}
             disabled={busy}
-            className="rounded-lg border border-[var(--stroke)] bg-white px-2.5 py-1 text-[11px] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
+            className="cursor-pointer rounded-lg border border-[var(--stroke)] bg-white px-2.5 py-1 text-[11px] text-[var(--muted)] transition duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:opacity-50"
           >
             {t.chat.reset}
           </button>
@@ -153,8 +153,8 @@ export function ChatPanel(props: {
             key={m.id}
             className={
               m.role === "user"
-                ? "chat-msg ms-8 rounded-2xl rounded-se-md bg-[var(--accent)] px-3.5 py-2.5 text-sm leading-6 text-white shadow-[0_8px_20px_rgba(12,107,102,0.22)]"
-                : "chat-msg me-8 rounded-2xl rounded-ss-md border border-[var(--stroke)] bg-white px-3.5 py-2.5 text-sm leading-6 text-[var(--ink)] shadow-[0_6px_16px_rgba(16,36,42,0.04)]"
+                ? "chat-msg ms-8 rounded-2xl rounded-se-md bg-[var(--accent)] px-3.5 py-2.5 text-sm leading-6 text-white shadow-[0_8px_20px_rgba(37,99,235,0.28)]"
+                : "chat-msg me-8 rounded-2xl rounded-ss-md border border-[var(--stroke)] bg-white px-3.5 py-2.5 text-sm leading-6 text-[var(--ink)] shadow-[0_6px_16px_rgba(15,31,61,0.05)]"
             }
           >
             {m.content}
@@ -182,13 +182,13 @@ export function ChatPanel(props: {
               if (e.key === "Enter") void send();
             }}
             placeholder={props.placeholder}
-            className="flex-1 rounded-xl border border-[var(--stroke)] bg-[var(--bg)]/40 px-3 py-2.5 text-sm outline-none transition focus:border-[var(--accent)] focus:bg-white"
+            className="flex-1 rounded-xl border border-[var(--stroke)] bg-[var(--bg)]/40 px-3 py-2.5 text-sm outline-none transition duration-200 focus:border-[var(--accent)] focus:bg-white"
           />
           <button
             type="button"
             onClick={() => void send()}
             disabled={busy}
-            className="rounded-xl bg-[var(--accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--accent)] disabled:opacity-50"
+            className="brand-gradient-bg cursor-pointer rounded-xl px-4 py-2.5 text-sm font-medium text-white transition duration-200 hover:brightness-105 disabled:opacity-50"
           >
             {t.chat.send}
           </button>

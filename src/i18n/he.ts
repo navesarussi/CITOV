@@ -2,11 +2,11 @@ import type { Messages } from "./en";
 
 export const he: Messages = {
   meta: {
-    title: "שידוך — POC",
-    description: "סוכן השמה שמשדך בלי חיפוש",
+    title: "CITOV — There is another way",
+    description: "השמה חכמה דרך שיחה — בלי חיפוש",
   },
   app: {
-    name: "שידוך",
+    name: "CITOV",
   },
   language: {
     switch: "שפה",
@@ -14,9 +14,9 @@ export const he: Messages = {
     hebrew: "עברית",
   },
   home: {
-    tagline: "מוצאים עבודה בלי לחפש",
+    tagline: "There is another way",
     description:
-      "שיחה טבעית עם סוכן השמה חכם. הוא מבין אתכם לעומק, משדך בדיוק, ומציג לכל צד רק את מה שרלוונטי.",
+      "שיחה טבעית עם סוכן השמה חכם. הוא מבין אתכם לעומק, משדך בדיוק, ומציג לכם רק משרות שאושרו עבורכם.",
     googleSignIn: "כניסה עם Google",
     connectedAs: "מחובר/ת כ־{name}",
     continueAsEmployee: "המשך כמחפש/ת עבודה",
@@ -34,11 +34,11 @@ export const he: Messages = {
     iAmEmployee: "אני מחפש/ת עבודה",
     iAmEmployer: "אני מגייס/ת",
     googleNotConfigured: "Google Auth עדיין לא מוגדר בשרת.",
-    afterSignInHint: "אחרי התחברות בוחרים תפקיד — עובד או מעסיק.",
-    demoEmployeeDev: "דמו עובד/ת (פיתוח בלבד)",
+    afterSignInHint: "אחרי התחברות ממשיכים כמועמדים.",
+    demoEmployeeDev: "דמו מועמד/ת (פיתוח בלבד)",
     demoEmployerDev: "דמו מעסיק/ה (פיתוח בלבד)",
     adminPortal: "פורטל מנהלים",
-    openAuthHint: "התחברות Google מושהית כרגע — בחרו תפקיד והתחילו לצ׳אט.",
+    openAuthHint: "התחברות Google מושהית כרגע — התחילו לצ׳אט כמועמדים.",
     openingRole: "פותחים את המסך שלכם…",
     realUsersTitleOpen: "איך תרצו להמשיך?",
   },
@@ -57,12 +57,12 @@ export const he: Messages = {
     report: "דיווח על בעיה",
     rate: "דירוג האפליקציה",
     rateTitle: "איך הייתה החוויה?",
-    rateHint: "הדירוג שלכם עוזר לנו לשפר את שידוך.",
+    rateHint: "הדירוג שלכם עוזר לנו לשפר את CITOV.",
     cancel: "ביטול",
     sendRating: "שליחה",
-    reportSubject: "שידוך — דיווח על בעיה",
+    reportSubject: "CITOV — דיווח על בעיה",
     reportBody: "תארו את הבעיה:",
-    rateSubject: "שידוך — דירוג האפליקציה",
+    rateSubject: "CITOV — דירוג האפליקציה",
     rateBody: "הדירוג שלי",
     defaultRole: "תפקיד ברירת מחדל",
     roleEmployee: "מחפש/ת עבודה",
@@ -74,14 +74,14 @@ export const he: Messages = {
   legal: {
     privacyTitle: "מדיניות פרטיות",
     termsTitle: "תנאי שירות",
-    aboutTitle: "אודות שידוך",
+    aboutTitle: "אודות CITOV",
     back: "חזרה",
     privacyBody:
-      "שידוך שומר את פרטי הפרופיל והשיחה שאתם משתפים כדי לשדך בין מועמדים למעסיקים. ההתחברות מתבצעת עם Google. אנחנו לא מוכרים את המידע האישי שלכם. ניתן לפנות אלינו בבקשה למחיקת נתוני החשבון.",
+      "CITOV שומר את פרטי הפרופיל והשיחה שאתם משתפים כדי לשדך בין מועמדים למעסיקים. ההתחברות מתבצעת עם Google. אנחנו לא מוכרים את המידע האישי שלכם. ניתן לפנות אלינו בבקשה למחיקת נתוני החשבון.",
     termsBody:
-      "שידוך הוא שירות שידוך השמה. התאמות הן המלצות ולא התחייבות להעסקה. המשתמשים אחראים לדיוק המידע שהם מוסרים. שימוש לרעה, הטרדה או פרופילים מזויפים עלולים להוביל להסרת חשבון.",
+      "CITOV הוא שירות שידוך השמה. התאמות הן המלצות ולא התחייבות להעסקה. המשתמשים אחראים לדיוק המידע שהם מוסרים. שימוש לרעה, הטרדה או פרופילים מזויפים עלולים להוביל להסרת חשבון.",
     aboutBody:
-      "שידוך עוזר למצוא עבודה ולגייס אנשים דרך שיחה טבעית עם סוכן השמה חכם — בלי חיפוש מסורתי.",
+      "CITOV עוזר למצוא עבודה דרך שיחה טבעית עם סוכן השמה חכם — בלי חיפוש מסורתי. There is another way.",
   },
   employee: {
     subtitle: "צ׳אט עם הסוכן · משרות שאושרו עבורך",

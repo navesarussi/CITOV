@@ -71,7 +71,7 @@ export function ProfileAside(props: {
           aria-label={t.profile.knowledge}
         >
           <div
-            className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-300"
+            className="brand-progress h-full rounded-full transition-[width] duration-300"
             style={{ width: `${percent}%` }}
           />
         </div>

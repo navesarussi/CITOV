@@ -25,3 +25,4 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - Schema bootstrap: additive `ALTER`s (incl. `conversation_context`) run after `CREATE TABLE IF NOT EXISTS`; context index lives in ALTERS so existing DBs migrate without failing on missing columns
 - [PENDING REFACTOR]: split `SettingsMenu.tsx` / `application/chat.ts` under 200-line cap
 - Settings sign-out clears `shidukh_user` + NextAuth session (when present) and returns to `/`
+- [PENDING REFACTOR]: restore employer/admin UI entry points (home role picker, settings default-role, admin menu) after candidate CITOV rebrand phase

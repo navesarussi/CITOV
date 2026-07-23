@@ -5,15 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/components/LocaleProvider";
 import type { Locale } from "@/i18n/types";
-import type { Role } from "@/domain/types";
-import {
-  clearStoredUser,
-  getOrCreateDeviceId,
-  readRoleDefault,
-  roleHomePath,
-  writeRoleDefault,
-  writeStoredUser,
-} from "@/lib/client-session";
+import { clearStoredUser } from "@/lib/client-session";
 import { signOut } from "next-auth/react";
 
 export function SettingsMenu() {
@@ -22,19 +14,8 @@ export function SettingsMenu() {
   const [open, setOpen] = useState(false);
   const [rateOpen, setRateOpen] = useState(false);
   const [rating, setRating] = useState(0);
-  const [roleDefault, setRoleDefault] = useState<Role | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [busyRole, setBusyRole] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-
-  useEffect(() => {
-    setRoleDefault(readRoleDefault());
-    void fetch("/api/session")
-      .then((r) => r.json())
-      .then((d) => setIsAdmin(Boolean(d.isAdmin)))
-      .catch(() => setIsAdmin(false));
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -55,35 +36,6 @@ export function SettingsMenu() {
   function switchLocale(next: Locale) {
     setLocale(next);
     setOpen(false);
-  }
-
-  async function applyRoleDefault(role: Role | null) {
-    writeRoleDefault(role);
-    setRoleDefault(role);
-    if (!role) {
-      setOpen(false);
-      return;
-    }
-    setBusyRole(true);
-    try {
-      const res = await fetch("/api/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          role,
-          deviceId: getOrCreateDeviceId(),
-          locale,
-        }),
-      });
-      const data = await res.json();
-      if (data.user?.id) {
-        writeStoredUser(data.user);
-        router.push(roleHomePath(role));
-      }
-    } finally {
-      setBusyRole(false);
-      setOpen(false);
-    }
   }
 
   function reportIssue() {
@@ -125,7 +77,7 @@ export function SettingsMenu() {
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full border-2 border-[var(--accent)] bg-white text-[var(--accent)] shadow-[var(--shadow-soft)] transition hover:bg-[var(--bubble)]"
+        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-2 border-[var(--accent)] bg-white text-[var(--accent)] shadow-[var(--shadow-soft)] transition duration-200 hover:bg-[var(--bubble)]"
       >
         <SettingsIcon />
       </button>
@@ -139,34 +91,6 @@ export function SettingsMenu() {
           <p className="px-3 py-2 text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">
             {t.settings.title}
           </p>
-          <MenuSection label={t.settings.defaultRole}>
-            <button
-              type="button"
-              role="menuitem"
-              disabled={busyRole}
-              className={itemClass(roleDefault === "employee")}
-              onClick={() => void applyRoleDefault("employee")}
-            >
-              {t.settings.roleEmployee}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              disabled={busyRole}
-              className={itemClass(roleDefault === "employer")}
-              onClick={() => void applyRoleDefault("employer")}
-            >
-              {t.settings.roleEmployer}
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              className={itemClass(roleDefault === null)}
-              onClick={() => void applyRoleDefault(null)}
-            >
-              {t.settings.roleClear}
-            </button>
-          </MenuSection>
           <MenuSection label={t.settings.language}>
             <button
               type="button"
@@ -186,16 +110,6 @@ export function SettingsMenu() {
             </button>
           </MenuSection>
           <div className="my-1 h-px bg-[var(--stroke)]" />
-          {isAdmin ? (
-            <Link
-              href="/admin"
-              role="menuitem"
-              className={itemClass(false)}
-              onClick={() => setOpen(false)}
-            >
-              {t.settings.adminPortal}
-            </Link>
-          ) : null}
           <Link href="/legal/privacy" role="menuitem" className={itemClass(false)} onClick={() => setOpen(false)}>
             {t.settings.privacy}
           </Link>
@@ -243,7 +157,7 @@ export function SettingsMenu() {
                   key={n}
                   type="button"
                   onClick={() => setRating(n)}
-                  className={`h-10 w-10 rounded-full text-lg ${
+                  className={`h-10 w-10 cursor-pointer rounded-full text-lg transition duration-200 ${
                     rating >= n ? "text-[var(--gold)]" : "text-[var(--stroke)]"
                   }`}
                   aria-label={`${n}`}
@@ -256,7 +170,7 @@ export function SettingsMenu() {
               <button
                 type="button"
                 onClick={() => setRateOpen(false)}
-                className="flex-1 rounded-xl border border-[var(--stroke)] px-3 py-2.5 text-sm"
+                className="flex-1 cursor-pointer rounded-xl border border-[var(--stroke)] px-3 py-2.5 text-sm"
               >
                 {t.settings.cancel}
               </button>
@@ -264,7 +178,7 @@ export function SettingsMenu() {
                 type="button"
                 disabled={rating < 1}
                 onClick={submitRating}
-                className="flex-1 rounded-xl bg-[var(--accent)] px-3 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--accent)] px-3 py-2.5 text-sm font-medium text-white disabled:opacity-50"
               >
                 {t.settings.sendRating}
               </button>
@@ -286,7 +200,7 @@ function MenuSection(props: { label: string; children: React.ReactNode }) {
 }
 
 function itemClass(active: boolean) {
-  return `block w-full px-3 py-2.5 text-start transition ${
+  return `block w-full cursor-pointer px-3 py-2.5 text-start transition duration-200 ${
     active
       ? "bg-[var(--bubble)] font-medium text-[var(--accent)]"
       : "text-[var(--ink)] hover:bg-[var(--chip)]"

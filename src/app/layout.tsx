@@ -9,8 +9,12 @@ const heebo = Heebo({
 });
 
 export const metadata: Metadata = {
-  title: "שידוך — השמה חכמה",
-  description: "סוכן השמה שמכיר אתכם לעומק ומשדך בלי חיפוש",
+  title: "CITOV — There is another way",
+  description: "Smart placement through conversation — without search",
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
