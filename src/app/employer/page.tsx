@@ -120,13 +120,13 @@ export default function EmployerPage() {
   }
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-6xl px-4 py-6">
+    <div className="workspace-shell atmosphere">
       <WorkspaceHeader
         name={name}
         subtitle={t.employer.subtitle}
         tabs={
           <>
-            <SettingsMenu />
+            <SettingsMenu variant="inline" />
             <SegmentedTabs
               value={tab}
               onChange={(id) => setTab(id as Tab)}
@@ -141,6 +141,7 @@ export default function EmployerPage() {
           </>
         }
       />
+      <main className="workspace-main">
       <JobFilterBar
         label={t.employer.jobsFilter}
         jobs={jobs}
@@ -182,6 +183,7 @@ export default function EmployerPage() {
           onChanged={() => void refresh(userId, activeJobId)}
         />
       )}
-    </main>
+      </main>
+    </div>
   );
 }

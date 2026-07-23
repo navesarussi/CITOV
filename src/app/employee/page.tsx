@@ -88,13 +88,13 @@ export default function EmployeePage() {
   }
 
   return (
-    <main className="mx-auto min-h-full w-full max-w-6xl px-4 py-6">
+    <div className="workspace-shell atmosphere">
       <WorkspaceHeader
         name={name}
         subtitle={t.employee.subtitle}
         tabs={
           <>
-            <SettingsMenu />
+            <SettingsMenu variant="inline" />
             <SegmentedTabs
               value={tab}
               onChange={(id) => setTab(id as Tab)}
@@ -107,6 +107,7 @@ export default function EmployeePage() {
         }
       />
 
+      <main className="workspace-main">
       {me?.error ? (
         <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
           {me.error}
@@ -158,6 +159,7 @@ export default function EmployeePage() {
           <OpportunityList jobs={jobs} />
         </div>
       )}
-    </main>
+      </main>
+    </div>
   );
 }

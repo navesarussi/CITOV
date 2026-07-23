@@ -101,81 +101,88 @@ export default function HomePage() {
   const canEnter = openAuth || (status === "authenticated" && session?.user);
 
   return (
-    <main className="relative mx-auto flex min-h-full w-full max-w-xl flex-col items-center px-5 py-16 pt-24 text-center sm:py-20">
-      <SettingsMenu />
+    <div className="atmosphere">
+      <main className="landing-scene">
+        <div className="landing-orb landing-orb--1" aria-hidden />
+        <div className="landing-orb landing-orb--2" aria-hidden />
+        <div className="landing-orb landing-orb--3" aria-hidden />
+        <SettingsMenu />
 
-      <div className="enter">
-        <BrandMark size={112} showWordmark />
-      </div>
+        <div className="enter relative z-10">
+          <BrandMark size={128} showWordmark />
+        </div>
 
-      <p className="enter-delay mt-8 max-w-md text-base leading-7 text-[var(--muted)] sm:text-lg">
-        {t.home.description}
-      </p>
+        <p className="enter-delay relative z-10 mt-8 max-w-lg text-center text-lg leading-8 text-[var(--muted)]">
+          {t.home.description}
+        </p>
 
-      <section className="enter-delay-2 mt-10 w-full space-y-4">
-        {error ? (
-          <p className="rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
-            {error}
-          </p>
-        ) : null}
-        {busy ? (
-          <p className="text-sm text-[var(--muted)]">{t.home.openingRole}</p>
-        ) : null}
-
-        {canEnter ? (
-          <div className="space-y-3">
-            {status === "authenticated" && session?.user ? (
-              <p className="text-sm text-[var(--muted)]">
-                {fmt(t.home.connectedAs, {
-                  name: session.user.name ?? session.user.email ?? "",
-                })}
-              </p>
-            ) : (
-              <p className="text-xs leading-5 text-[var(--muted)]">{t.home.openAuthHint}</p>
-            )}
-            <Button
-              disabled={!!busy}
-              onClick={() => void startCandidate(false)}
-              className="brand-gradient-bg w-full border-0 shadow-[0_14px_32px_rgba(16,42,80,0.28)] hover:bg-transparent hover:brightness-105"
-            >
-              {t.home.iAmEmployee}
-            </Button>
-            {status === "authenticated" ? (
-              <Button
-                variant="ghost"
-                onClick={() => void signOut({ callbackUrl: "/" })}
-                className="w-full text-xs underline-offset-2 hover:underline"
-              >
-                {t.home.signOut}
-              </Button>
-            ) : null}
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <Button
-              disabled={!googleAuth || status === "loading"}
-              onClick={() => void signIn("google", { callbackUrl: "/" })}
-              className="w-full"
-            >
-              {t.home.googleSignIn}
-            </Button>
-            <p className="text-xs leading-5 text-[var(--muted)]">
-              {googleAuth ? t.home.afterSignInHint : t.home.googleNotConfigured}
+        <section className="enter-delay-2 relative z-10 mt-12 w-full max-w-md space-y-4">
+          {error ? (
+            <p className="rounded-2xl bg-[var(--warn-bg)] px-4 py-3 text-sm text-[var(--warn)]">
+              {error}
             </p>
-          </div>
-        )}
+          ) : null}
+          {busy ? (
+            <p className="text-center text-sm text-[var(--muted)]">{t.home.openingRole}</p>
+          ) : null}
 
-        {allowDemo ? (
-          <Button
-            variant="secondary"
-            onClick={() => void startCandidate(true)}
-            disabled={!!busy}
-            className="w-full border-dashed bg-white/40"
-          >
-            {t.home.demoEmployeeDev}
-          </Button>
-        ) : null}
-      </section>
-    </main>
+          {canEnter ? (
+            <div className="space-y-3">
+              {status === "authenticated" && session?.user ? (
+                <p className="text-center text-sm text-[var(--muted)]">
+                  {fmt(t.home.connectedAs, {
+                    name: session.user.name ?? session.user.email ?? "",
+                  })}
+                </p>
+              ) : (
+                <p className="text-center text-xs leading-5 text-[var(--muted)]">
+                  {t.home.openAuthHint}
+                </p>
+              )}
+              <Button
+                disabled={!!busy}
+                onClick={() => void startCandidate(false)}
+                className="cta-glow brand-gradient-bg w-full border-0 py-4 text-base hover:bg-transparent hover:brightness-105"
+              >
+                {t.home.iAmEmployee}
+              </Button>
+              {status === "authenticated" ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => void signOut({ callbackUrl: "/" })}
+                  className="w-full text-xs"
+                >
+                  {t.home.signOut}
+                </Button>
+              ) : null}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Button
+                disabled={!googleAuth || status === "loading"}
+                onClick={() => void signIn("google", { callbackUrl: "/" })}
+                className="cta-glow w-full py-4 text-base"
+              >
+                {t.home.googleSignIn}
+              </Button>
+              <p className="text-center text-xs leading-5 text-[var(--muted)]">
+                {googleAuth ? t.home.afterSignInHint : t.home.googleNotConfigured}
+              </p>
+            </div>
+          )}
+
+          {allowDemo ? (
+            <Button
+              variant="secondary"
+              onClick={() => void startCandidate(true)}
+              disabled={!!busy}
+              className="w-full border-dashed bg-white/50 py-3"
+            >
+              {t.home.demoEmployeeDev}
+            </Button>
+          ) : null}
+        </section>
+      </main>
+    </div>
   );
 }

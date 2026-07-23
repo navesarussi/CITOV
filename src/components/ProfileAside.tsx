@@ -53,32 +53,31 @@ export function ProfileAside(props: {
   }
 
   return (
-    <Panel as="aside" className="flex max-h-[70vh] flex-col p-4">
-      <h2 className="text-sm font-semibold tracking-tight text-[var(--hero)]">
+    <Panel as="aside" className="flex max-h-[70vh] flex-col p-5">
+      <h2 className="text-sm font-bold text-[var(--hero)]">
         {props.kind === "employee" ? t.profile.yourCard : t.profile.jobCard}
       </h2>
 
-      <div className="mt-3">
-        <div className="mb-1 flex items-center justify-between text-[11px] text-[var(--muted)]">
-          <span>{t.profile.knowledge}</span>
-          <span>{fmt(t.profile.knowledgePercent, { percent })}</span>
-        </div>
+      <div className="mt-4 flex items-center gap-4">
         <div
-          className="h-2.5 overflow-hidden rounded-full bg-[var(--chip)]"
+          className="knowledge-ring shrink-0"
+          style={{
+            background: `conic-gradient(from -90deg, var(--accent) 0%, var(--accent) ${percent}%, rgba(59,130,246,0.15) ${percent}%)`,
+          }}
           role="progressbar"
           aria-valuenow={percent}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={t.profile.knowledge}
         >
-          <div
-            className="brand-progress h-full rounded-full transition-[width] duration-300"
-            style={{ width: `${percent}%` }}
-          />
+          <span>{percent}%</span>
         </div>
-        <p className="mt-1 text-[10px] leading-4 text-[var(--muted)]">
-          {t.profile.knowledgeHint}
-        </p>
+        <div>
+          <p className="text-xs font-semibold text-[var(--hero)]">{t.profile.knowledge}</p>
+          <p className="mt-1 text-[10px] leading-4 text-[var(--muted)]">
+            {t.profile.knowledgeHint}
+          </p>
+        </div>
       </div>
 
       <FlexibilitySlider userId={props.userId} value={flex} onChange={onFlex} />

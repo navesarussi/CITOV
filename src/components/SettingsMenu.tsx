@@ -9,7 +9,10 @@ import { AppVersionBadge } from "@/components/AppVersion";
 import { clearStoredUser } from "@/lib/client-session";
 import { signOut } from "next-auth/react";
 
-export function SettingsMenu() {
+export function SettingsMenu(props: { variant?: "fixed" | "inline" }) {
+  const variant = props.variant ?? "fixed";
+  const wrapClass =
+    variant === "inline" ? "relative" : "fixed top-3 end-3 z-50 sm:top-4 sm:end-4";
   const { t, locale, setLocale } = useTranslation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -70,7 +73,7 @@ export function SettingsMenu() {
   }
 
   return (
-    <div ref={rootRef} className="fixed top-3 end-3 z-50 sm:top-4 sm:end-4">
+    <div ref={rootRef} className={wrapClass}>
       <button
         type="button"
         aria-label={t.settings.title}
