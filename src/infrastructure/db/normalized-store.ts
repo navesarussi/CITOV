@@ -116,6 +116,7 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
       userId: e.user_id,
       card: e.card,
       pendingFieldQuestionIds: e.pending_field_question_ids ?? [],
+      cv: e.cv && typeof e.cv === "object" && Object.keys(e.cv).length ? e.cv : undefined,
       chat: [],
     })),
     employers: employers.rows.map((e) =>
@@ -251,17 +252,19 @@ async function persistStore(client: PoolClient, store: StoreData): Promise<void>
   await bulkInsert(
     client,
     "employee_profiles",
-    ["user_id", "card", "pending_field_question_ids", "updated_at"],
-    [null, "jsonb", "jsonb", null],
+    ["user_id", "card", "pending_field_question_ids", "cv", "updated_at"],
+    [null, "jsonb", "jsonb", "jsonb", null],
     normalized.employees.map((e) => [
       e.userId,
       JSON.stringify(e.card),
       JSON.stringify(e.pendingFieldQuestionIds),
+      JSON.stringify(e.cv ?? {}),
       now,
     ]),
     `on conflict (user_id) do update set
        card = excluded.card,
        pending_field_question_ids = excluded.pending_field_question_ids,
+       cv = excluded.cv,
        updated_at = excluded.updated_at`,
   );
   await deleteNotIn(client, "employee_profiles", "user_id", normalized.employees.map((e) => e.userId));

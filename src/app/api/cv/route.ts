@@ -1,9 +1,10 @@
 import { randomUUID } from "crypto";
 import { applyCvExtraction } from "@/application/chat";
 import { createAiUsageRecord } from "@/domain/admin";
-import type { StoreData } from "@/domain/types";
+import type { CandidateDocument, StoreData } from "@/domain/types";
 import { runCvExtraction } from "@/infrastructure/ai/intake";
 import { assertActor } from "@/infrastructure/auth-guard";
+import { saveCandidateDocumentBlob } from "@/infrastructure/files/cv-storage";
 import { extractTextFromUpload, MAX_UPLOAD_BYTES } from "@/infrastructure/files/extract-text";
 import { ok, fail } from "@/infrastructure/http";
 import { writeStore } from "@/infrastructure/store";
@@ -37,11 +38,42 @@ export async function POST(req: Request) {
     const emp = store.employees.find((e) => e.userId === userId);
     if (!emp) return ok({ error: "משתמש לא נמצא" }, { status: 404 });
 
-    const { patch, provider, usage } = await runCvExtraction({ text, card: emp.card });
-    const applied = applyCvExtraction(store, userId, patch, text);
+    const docId = randomUUID();
+    const storageKey = await saveCandidateDocumentBlob({
+      id: docId,
+      userId,
+      content: buffer,
+    });
+
+    const extracted = await runCvExtraction({ text, card: emp.card });
+    const document: CandidateDocument = {
+      id: docId,
+      kind: "cv",
+      fileName: file.name,
+      mimeType: file.type || "application/octet-stream",
+      byteSize: buffer.length,
+      storageKey,
+      uploadedAt: new Date().toISOString(),
+      textCharCount: text.length,
+      extractedText: text,
+      extractionStatus: extracted.provider === "heuristic" ? "partial" : "ok",
+    };
+
+    const applied = applyCvExtraction(
+      store,
+      userId,
+      {
+        patch: extracted.patch,
+        workHistory: extracted.workHistory,
+        educationHistory: extracted.educationHistory,
+        unmappedFacts: extracted.unmappedFacts,
+        fieldConfidence: extracted.fieldConfidence,
+      },
+      document,
+    );
 
     let next: StoreData = applied.store;
-    if (usage) {
+    if (extracted.usage) {
       next = {
         ...next,
         aiUsage: [
@@ -49,8 +81,8 @@ export async function POST(req: Request) {
           createAiUsageRecord({
             id: randomUUID(),
             type: "cv_import",
-            promptTokens: usage.promptTokens,
-            completionTokens: usage.completionTokens,
+            promptTokens: extracted.usage.promptTokens,
+            completionTokens: extracted.usage.completionTokens,
             createdAt: new Date().toISOString(),
           }),
         ].slice(-200),
@@ -58,7 +90,12 @@ export async function POST(req: Request) {
     }
 
     await writeStore(next);
-    return ok({ ok: true, provider, card: applied.card });
+    return ok({
+      ok: true,
+      provider: extracted.provider,
+      summary: applied.summary,
+      documentId: docId,
+    });
   } catch (e) {
     return fail(e);
   }

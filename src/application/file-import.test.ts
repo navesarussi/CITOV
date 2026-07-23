@@ -19,7 +19,13 @@ function seed(): StoreData {
       },
     ],
     employers: [
-      normalizeEmployerRecord({ userId: "b1", card: emptyJobCard(), chat: [], jobs: [], activeJobId: "" } as never),
+      normalizeEmployerRecord({
+        userId: "b1",
+        card: emptyJobCard(),
+        chat: [],
+        jobs: [],
+        activeJobId: "",
+      } as never),
     ],
     fieldQuestions: [],
     fieldAnswers: [],
@@ -27,25 +33,39 @@ function seed(): StoreData {
   };
 }
 
+const doc = {
+  id: "d1",
+  kind: "cv" as const,
+  fileName: "cv.pdf",
+  mimeType: "application/pdf",
+  byteSize: 12,
+  storageKey: "pg:d1",
+  uploadedAt: "2026-07-23T00:00:00.000Z",
+  textCharCount: 100,
+  extractedText: "טקסט קורות חיים מלא ".repeat(200),
+  extractionStatus: "ok" as const,
+};
+
 describe("applyCvExtraction", () => {
-  it("applies the extracted patch and keeps the raw CV in the narrative", () => {
-    const { store, card } = applyCvExtraction(
+  it("merges patch into the card and stores the document without dumping raw CV into narrative", () => {
+    const { store, card, summary } = applyCvExtraction(
       seed(),
       "e1",
-      { desiredRole: "מלצר", field: "מסעדנות", skills: ["שירות"] },
-      "טקסט קורות חיים מלא",
+      { patch: { desiredRole: "מלצר", field: "מסעדנות", skills: ["שירות"] } },
+      doc,
     );
     assert.equal(card.desiredRole, "מלצר");
     assert.equal(card.field, "מסעדנות");
     assert.deepEqual(card.skills, ["שירות"]);
-    assert.match(card.narrative, /קיים/);
-    assert.match(card.narrative, /קורות חיים שהועלו/);
-    assert.equal(store.employees[0].card.desiredRole, "מלצר");
+    assert.equal(card.narrative, "קיים");
+    assert.ok(!card.narrative.includes("טקסט קורות חיים מלא"));
+    assert.equal(store.employees[0].cv?.documents[0]?.fileName, "cv.pdf");
+    assert.ok(summary.fieldsUpdated >= 2);
   });
 
   it("does not mutate the input store", () => {
     const input = seed();
-    applyCvExtraction(input, "e1", { desiredRole: "מלצר" }, "x");
+    applyCvExtraction(input, "e1", { patch: { desiredRole: "מלצר" } }, doc);
     assert.equal(input.employees[0].card.desiredRole, "");
   });
 });

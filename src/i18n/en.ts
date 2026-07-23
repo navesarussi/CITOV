@@ -118,7 +118,9 @@ export const en = {
     done: "Added to your card",
     error: "Could not read the file",
     cvTitle: "Upload CV",
-    cvHint: "PDF, DOCX or TXT — the agent reads it and fills your card.",
+    cvHint: "PDF, DOCX or TXT — deep analysis fills your profile.",
+    cvSummary: "CV received · ~{fields} details updated · {roles} roles in history",
+    cvConflictsHint: "We'll clarify a few points in chat.",
     jobTitle: "Upload job description",
     jobHint: "PDF, DOCX or TXT — the agent reads it and fills the job card.",
   },
@@ -145,6 +147,7 @@ export const en = {
     askPlaceholder: "Field question (shown to all candidates in this field)",
     ask: "Ask",
     defaultName: "Candidate",
+    viewCv: "View CV",
   },
   jobs: {
     empty:

@@ -8,6 +8,8 @@ type Item = {
   score: number;
   reason: string;
   name: string;
+  candidateId?: string;
+  cvDocumentId?: string | null;
   card?: {
     summary: string;
     desiredRole: string;
@@ -45,6 +47,16 @@ export function CandidateQueue(props: {
     } finally {
       setBusyId(null);
     }
+  }
+
+  function openCv(item: Item) {
+    if (!item.candidateId || !item.cvDocumentId) return;
+    const qs = new URLSearchParams({
+      viewerId: props.employerId,
+      candidateId: item.candidateId,
+      documentId: item.cvDocumentId,
+    });
+    window.open(`/api/cv/document?${qs.toString()}`, "_blank", "noopener,noreferrer");
   }
 
   if (props.items.length === 0) {
@@ -86,6 +98,15 @@ export function CandidateQueue(props: {
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
+            {item.cvDocumentId ? (
+              <button
+                type="button"
+                onClick={() => openCv(item)}
+                className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+              >
+                {t.candidates.viewCv}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={busyId === item.matchId}

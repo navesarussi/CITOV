@@ -11,9 +11,17 @@ import {
   mergeAnswerIntoCard,
   unansweredQuestionsForCandidate,
 } from "@/domain/field-questions";
+import {
+  formatPendingConflictsForPrompt,
+  mergeCvIntoEmployee,
+  resolveConflictsFromPatch,
+  type CvImportSummary,
+  type CvPatchInput,
+} from "@/domain/cv-merge";
 import type {
   AiUsageRecord,
   CandidateCard,
+  CandidateDocument,
   ChatMessage,
   JobCard,
   StoreData,
@@ -115,9 +123,11 @@ export async function handleEmployeeChat(
     chat: emp.chat,
     pendingQuestions: pending,
     systemPrompt: prompts.candidatePrompt,
+    pendingConflicts: formatPendingConflictsForPrompt(emp.cv),
   });
 
   let card = applyCandidatePatch(emp.card, intake.candidatePatch);
+  const cv = resolveConflictsFromPatch(emp.cv, intake.candidatePatch ?? {});
   let answers = store.fieldAnswers;
   let pendingIds = emp.pendingFieldQuestionIds;
 
@@ -147,6 +157,7 @@ export async function handleEmployeeChat(
         ? {
             ...e,
             card,
+            cv,
             pendingFieldQuestionIds: pendingIds,
             chat: pushChat(pushChat(e.chat, "user", message), "assistant", intake.reply),
           }
@@ -210,29 +221,25 @@ export async function handleEmployerChat(
   };
 }
 
-/** Apply a CV extraction to the candidate card and capture the raw text in the narrative. */
+/** Apply a deep CV extraction: merge into card + provenance; keep raw text on the document. */
 export function applyCvExtraction(
   store: StoreData,
   userId: string,
-  patch: CandidatePatch,
-  sourceText: string,
-): { store: StoreData; card: CandidateCard } {
+  extraction: CvPatchInput,
+  document: CandidateDocument,
+): { store: StoreData; card: CandidateCard; summary: CvImportSummary } {
   const emp = store.employees.find((e) => e.userId === userId);
   if (!emp) throw new NotFoundError("Employee");
 
-  const patched = applyCandidatePatch(emp.card, patch);
-  const snippet = sourceText.trim().slice(0, 3000);
-  const narrative = [patched.narrative, snippet ? `קורות חיים שהועלו:\n${snippet}` : ""]
-    .filter(Boolean)
-    .join("\n\n");
-  const card: CandidateCard = { ...patched, narrative };
+  const { employee, summary } = mergeCvIntoEmployee(emp, extraction, document);
 
   return {
     store: {
       ...store,
-      employees: store.employees.map((e) => (e.userId === userId ? { ...e, card } : e)),
+      employees: store.employees.map((e) => (e.userId === userId ? employee : e)),
     },
-    card,
+    card: employee.card,
+    summary,
   };
 }
 

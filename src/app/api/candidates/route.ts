@@ -20,12 +20,18 @@ export async function GET(req: Request) {
     const candidates = matches.map((m) => {
       const emp = store.employees.find((e) => e.userId === m.candidateId);
       const user = store.users.find((u) => u.id === m.candidateId);
+      const latestCv = emp?.cv?.documents
+        ?.filter((d) => d.kind === "cv")
+        .slice()
+        .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))[0];
       return {
         matchId: m.id,
         jobId: m.jobId || m.jobOwnerId,
         score: m.score,
         reason: m.reason,
         name: user?.name ?? "מועמד/ת",
+        candidateId: m.candidateId,
+        cvDocumentId: latestCv?.id ?? null,
         card: emp?.card,
       };
     });

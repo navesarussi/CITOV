@@ -5,6 +5,13 @@ import { useTranslation } from "@/components/LocaleProvider";
 
 type Status = "idle" | "busy" | "done" | "error";
 
+type ImportSummary = {
+  fieldsUpdated?: number;
+  rolesFound?: number;
+  conflictsPending?: number;
+  fileName?: string;
+};
+
 export function FileImport(props: {
   userId: string;
   endpoint: string;
@@ -12,17 +19,20 @@ export function FileImport(props: {
   title: string;
   hint: string;
   onDone?: () => void;
+  minimalSummary?: boolean;
 }) {
-  const { t } = useTranslation();
+  const { t, fmt } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState<ImportSummary | null>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setStatus("busy");
     setError("");
+    setSummary(null);
     try {
       const form = new FormData();
       form.append("userId", props.userId);
@@ -32,6 +42,9 @@ export function FileImport(props: {
       const data = await res.json();
       if (res.ok && data.ok) {
         setStatus("done");
+        if (props.minimalSummary && data.summary) {
+          setSummary(data.summary as ImportSummary);
+        }
         props.onDone?.();
       } else {
         setStatus("error");
@@ -65,11 +78,22 @@ export function FileImport(props: {
         >
           {status === "busy" ? t.fileImport.processing : t.fileImport.choose}
         </button>
-        {status === "done" ? (
+        {status === "done" && !summary ? (
           <span className="text-xs text-[var(--accent)]">{t.fileImport.done}</span>
         ) : null}
         {status === "error" ? <span className="text-xs text-[var(--warn)]">{error}</span> : null}
       </div>
+      {summary ? (
+        <p className="mt-2 text-xs leading-5 text-[var(--muted)]">
+          {fmt(t.fileImport.cvSummary, {
+            fields: String(summary.fieldsUpdated ?? 0),
+            roles: String(summary.rolesFound ?? 0),
+          })}
+          {(summary.conflictsPending ?? 0) > 0
+            ? ` ${t.fileImport.cvConflictsHint}`
+            : ""}
+        </p>
+      ) : null}
     </div>
   );
 }

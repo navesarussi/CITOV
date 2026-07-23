@@ -129,12 +129,92 @@ export type User = {
   createdAt: string;
 };
 
+export type EvidenceSource = "cv" | "chat" | "user";
+export type EvidenceConfidence = "high" | "medium" | "low";
+
+export type WorkHistoryEntry = {
+  company: string;
+  title: string;
+  startDate?: string;
+  endDate?: string;
+  isCurrent?: boolean;
+  description?: string;
+  achievements?: string[];
+};
+
+export type EducationHistoryEntry = {
+  institution: string;
+  degreeOrProgram: string;
+  fieldOfStudy?: string;
+  startDate?: string;
+  endDate?: string;
+  details?: string;
+};
+
+export type UnmappedFact = {
+  label: string;
+  value: string;
+  confidence?: EvidenceConfidence;
+};
+
+export type FieldEvidence = {
+  fieldKey: string;
+  value: string;
+  source: EvidenceSource;
+  confidence?: EvidenceConfidence;
+  at: string;
+  documentId?: string;
+};
+
+export type FieldConflict = {
+  id: string;
+  fieldKey: string;
+  values: { value: string; source: EvidenceSource; at: string }[];
+  status: "pending" | "resolved";
+  resolvedValue?: string;
+};
+
+export type CandidateDocument = {
+  id: string;
+  kind: "cv";
+  fileName: string;
+  mimeType: string;
+  byteSize: number;
+  storageKey: string;
+  uploadedAt: string;
+  textCharCount: number;
+  extractedText: string;
+  extractionStatus?: "ok" | "partial" | "failed";
+};
+
+export type CandidateCvProfile = {
+  workHistory: WorkHistoryEntry[];
+  educationHistory: EducationHistoryEntry[];
+  unmappedFacts: UnmappedFact[];
+  fieldEvidence: FieldEvidence[];
+  conflicts: FieldConflict[];
+  documents: CandidateDocument[];
+};
+
 export type EmployeeRecord = {
   userId: string;
   card: CandidateCard;
   chat: ChatMessage[];
   pendingFieldQuestionIds: string[];
+  /** CV extraction artifacts (histories, provenance, documents). */
+  cv?: CandidateCvProfile;
 };
+
+export function emptyCvProfile(): CandidateCvProfile {
+  return {
+    workHistory: [],
+    educationHistory: [],
+    unmappedFacts: [],
+    fieldEvidence: [],
+    conflicts: [],
+    documents: [],
+  };
+}
 
 export type JobSlot = {
   id: string;

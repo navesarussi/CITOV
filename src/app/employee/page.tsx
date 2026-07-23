@@ -160,6 +160,7 @@ export default function EmployeePage() {
               endpoint="/api/cv"
               title={t.fileImport.cvTitle}
               hint={t.fileImport.cvHint}
+              minimalSummary
               onDone={() => void refresh(userId)}
             />
           </div>

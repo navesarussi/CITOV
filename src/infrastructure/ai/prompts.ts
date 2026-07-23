@@ -106,6 +106,7 @@ export function buildEmployeeConversation(params: {
   card: CandidateCard;
   chat: ChatMessage[];
   pendingQuestions: FieldQuestion[];
+  pendingConflicts?: string;
 }): BuiltConversation {
   const pending = params.pendingQuestions
     .map((q) => `- [${q.id}] ${q.question}`)
@@ -114,15 +115,20 @@ export function buildEmployeeConversation(params: {
   const recent = recentAssistantReplies(params.chat)
     .map((q) => `- ${q}`)
     .join("\n");
+  const conflicts = params.pendingConflicts?.trim();
+  const conflictBlock = conflicts
+    ? `\n\nקונפליקטים ממקורות שונים (CV מול שיחה) — ברר/י בעדינות מה מעודכן, בלי למחוק מקורות:\n${conflicts}`
+    : "";
 
   return {
-    system: renderSystem(params.template, {
-      current_card: JSON.stringify(compactCard(params.card), null, 2),
-      known_facts: knownFactsText(params.card),
-      missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
-      pending_field_questions: pending || "אין",
-      recent_agent_questions: recent || "אין עדיין",
-    }),
+    system:
+      renderSystem(params.template, {
+        current_card: JSON.stringify(compactCard(params.card), null, 2),
+        known_facts: knownFactsText(params.card),
+        missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
+        pending_field_questions: pending || "אין",
+        recent_agent_questions: recent || "אין עדיין",
+      }) + conflictBlock,
     messages: toModelMessages(params.chat, params.message),
   };
 }

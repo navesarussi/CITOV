@@ -120,7 +120,9 @@ export const he: Messages = {
     done: "נוסף לכרטיס שלך",
     error: "לא הצלחתי לקרוא את הקובץ",
     cvTitle: "העלאת קורות חיים",
-    cvHint: "PDF, DOCX או TXT — הסוכן קורא וממלא את הכרטיס.",
+    cvHint: "PDF, DOCX או TXT — ניתוח מעמיק ומלא של הכרטיס.",
+    cvSummary: "קלטו את קורות החיים · עודכנו כ־{fields} פרטים · {roles} תפקידים בהיסטוריה",
+    cvConflictsHint: "יש כמה נקודות שנברר יחד בצ׳אט.",
     jobTitle: "העלאת תיאור משרה",
     jobHint: "PDF, DOCX או TXT — הסוכן קורא וממלא את כרטיס המשרה.",
   },
@@ -147,6 +149,7 @@ export const he: Messages = {
     askPlaceholder: "שאלה לתחום (תוקפץ לכל המועמדים בתחום)",
     ask: "שאל",
     defaultName: "מועמד/ת",
+    viewCv: "צפייה בקורות חיים",
   },
   jobs: {
     empty:

@@ -1,7 +1,7 @@
 import { getPool } from "./pool";
 import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 
-const MIGRATION_VERSION = "003_chat_context";
+const MIGRATION_VERSION = "004_cv_profile";
 
 const ALTERS = `
 alter table employer_profiles add column if not exists jobs jsonb not null default '[]'::jsonb;
@@ -34,6 +34,16 @@ alter table chat_messages alter column conversation_context set not null;
 
 create index if not exists chat_messages_context_idx
   on chat_messages (owner_user_id, conversation_context, job_id, created_at);
+
+alter table employee_profiles add column if not exists cv jsonb not null default '{}'::jsonb;
+
+create table if not exists candidate_document_blobs (
+  id text primary key,
+  user_id text not null references app_users (id) on delete cascade,
+  content bytea not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists candidate_document_blobs_user_idx on candidate_document_blobs (user_id);
 `;
 
 let schemaReady: Promise<void> | undefined;

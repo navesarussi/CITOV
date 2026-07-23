@@ -58,6 +58,44 @@ export const candidatePatchSchema = z.object({
   extras: z.record(z.string(), z.string()).optional(),
 });
 
+const confidenceSchema = z.enum(["high", "medium", "low"]).optional();
+
+export const workHistoryEntrySchema = z.object({
+  company: z.string(),
+  title: z.string(),
+  startDate: optStr,
+  endDate: optStr,
+  isCurrent: z.boolean().optional(),
+  description: optStr,
+  achievements: optArr,
+});
+
+export const educationHistoryEntrySchema = z.object({
+  institution: z.string(),
+  degreeOrProgram: z.string(),
+  fieldOfStudy: optStr,
+  startDate: optStr,
+  endDate: optStr,
+  details: optStr,
+});
+
+export const unmappedFactSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+  confidence: confidenceSchema,
+});
+
+/** Deep CV extraction payload (patch + structured histories + leftovers). */
+export const cvExtractionSchema = z.object({
+  patch: candidatePatchSchema,
+  workHistory: z.array(workHistoryEntrySchema).optional(),
+  educationHistory: z.array(educationHistoryEntrySchema).optional(),
+  unmappedFacts: z.array(unmappedFactSchema).optional(),
+  fieldConfidence: z.record(z.string(), z.enum(["high", "medium", "low"])).optional(),
+});
+
+export type CvExtractionPayload = z.infer<typeof cvExtractionSchema>;
+
 export const jobPatchSchema = z.object({
   summary: optStr,
   title: optStr,

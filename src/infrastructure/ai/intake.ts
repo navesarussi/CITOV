@@ -6,6 +6,7 @@ import { heuristicEmployeeIntake, heuristicEmployerIntake } from "./heuristic";
 import { buildEmployeeConversation, buildEmployerConversation } from "./prompts";
 import {
   candidatePatchSchema,
+  cvExtractionSchema,
   hasGeminiKey,
   jobPatchSchema,
   type AiTokenUsage,
@@ -49,6 +50,7 @@ export async function runEmployeeIntake(params: {
   chat: ChatMessage[];
   pendingQuestions: FieldQuestion[];
   systemPrompt: string;
+  pendingConflicts?: string;
 }): Promise<IntakeResult> {
   if (!hasGeminiKey()) {
     return heuristicEmployeeIntake(
@@ -66,6 +68,7 @@ export async function runEmployeeIntake(params: {
       card: params.card,
       chat: params.chat,
       pendingQuestions: params.pendingQuestions,
+      pendingConflicts: params.pendingConflicts,
     });
 
     const { object, usage } = await generateObject({
@@ -147,18 +150,30 @@ export type CardExtraction<P> = {
   usage?: AiTokenUsage;
 };
 
-const CV_EXTRACTION_SYSTEM = `את/ה עוזר/ת השמה שמחלץ/ת מידע מקורות חיים אל כרטיס מועמד/ת.
-- חלץ/י אך ורק מה שמופיע במפורש בטקסט. אל תמציא/י ואל תנחש/י.
-- ערכים תמציתיים ומדויקים. שדה שלא מופיע בטקסט — אל תכלול/י אותו ב-patch.
-- העדף/י למלא: desiredRole, field, location, skills, softSkills, languages, experienceYears, education, certifications, licenses.
-- סכם/י את הרקע/הסיפור המקצועי בשדה narrative.
-החזר/י JSON עם השדה patch בלבד.`;
+const CV_EXTRACTION_SYSTEM = `את/ה מגייס/ת מקצועית שמנתחת קורות חיים לעומק ומדייקת לכרטיס מועמד/ת.
+כללים מחייבים:
+1. חלץ/י אך ורק מידע שמופיע במפורש בטקסט. אל תמציא/י, אל תנחש/י, אל תשלימ/י פערי ניסיון.
+2. מלא/י כמה שיותר שדות רלוונטיים ב-patch (תפקיד, תחום, מיקום, כישורים, שפות, השכלה, הסמכות, רישיונות, ניסיון, קישורים וכו').
+3. בנה/י workHistory מלאה לכל תפקיד (חברה, תפקיד, תאריכים אם יש, תיאור/הישגים).
+4. בנה/י educationHistory לכל מוסד/תואר/קורס משמעותי.
+5. כל פרט מפורש שלא נכנס לשדה קבוע — העבר/י ל-unmappedFacts (label+value). אסור לאבד מידע.
+6. narrative = סיכום מקצועי קצר של הרקע בלבד (לא העתקת כל הקורות חיים).
+7. fieldConfidence: סמן/י high/medium/low לשדות עמומים.
+8. שדה שלא מופיע — אל תכלול/י אותו ב-patch.
+החזר/י JSON לפי הסכמה בלבד.`;
 
-/** Extract candidate card fields from raw CV / résumé text. */
+/** Extract candidate card fields + histories from raw CV / résumé text. */
 export async function runCvExtraction(params: {
   text: string;
   card: CandidateCard;
-}): Promise<CardExtraction<CandidatePatch>> {
+}): Promise<
+  CardExtraction<CandidatePatch> & {
+    workHistory?: import("@/domain/types").WorkHistoryEntry[];
+    educationHistory?: import("@/domain/types").EducationHistoryEntry[];
+    unmappedFacts?: import("@/domain/types").UnmappedFact[];
+    fieldConfidence?: Record<string, "high" | "medium" | "low">;
+  }
+> {
   if (!hasGeminiKey()) {
     const h = heuristicEmployeeIntake(params.text, params.card, [], []);
     return { patch: h.candidatePatch ?? {}, provider: "heuristic" };
@@ -166,17 +181,25 @@ export async function runCvExtraction(params: {
   try {
     const { object, usage } = await generateObject({
       model: model(),
-      temperature: 0.2,
-      schema: z.object({ patch: candidatePatchSchema }),
+      temperature: 0.15,
+      schema: cvExtractionSchema,
       system: CV_EXTRACTION_SYSTEM,
       messages: [
         {
           role: "user",
-          content: `קורות חיים:\n\n${params.text}\n\nכרטיס נוכחי (למניעת דריסה מיותרת):\n${JSON.stringify(params.card)}`,
+          content: `קורות חיים לניתוח מעמיק:\n\n${params.text}\n\nכרטיס נוכחי (למודעות בלבד; מיזוג יטופל בשרת):\n${JSON.stringify(params.card)}`,
         },
       ],
     });
-    return { patch: object.patch, provider: "gemini", usage: extractUsage(usage) };
+    return {
+      patch: object.patch,
+      workHistory: object.workHistory,
+      educationHistory: object.educationHistory,
+      unmappedFacts: object.unmappedFacts,
+      fieldConfidence: object.fieldConfidence,
+      provider: "gemini",
+      usage: extractUsage(usage),
+    };
   } catch (err) {
     console.error("cv extraction Gemini failed, using heuristic", err);
     const h = heuristicEmployeeIntake(params.text, params.card, [], []);
