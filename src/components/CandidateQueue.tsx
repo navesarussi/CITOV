@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "@/components/LocaleProvider";
+import { Button } from "@/components/ui/Button";
 
 type Item = {
   matchId: string;
@@ -61,29 +62,29 @@ export function CandidateQueue(props: {
 
   if (props.items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-[var(--stroke)] p-8 text-center text-sm text-[var(--muted)]">
+      <div className="panel rounded-[var(--panel-radius)] border-dashed p-8 text-center text-sm text-[var(--muted)]">
         {t.candidates.empty}
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="tab-fade space-y-3">
       {props.items.map((item) => (
         <article
           key={item.matchId}
-          className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4"
+          className="panel rounded-[var(--panel-radius)] p-4 transition duration-200 hover:border-[var(--accent)]"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-semibold text-[var(--ink)]">{item.name}</h3>
+              <h3 className="font-semibold text-[var(--hero)]">{item.name}</h3>
               <p className="mt-1 text-sm text-[var(--muted)]">
                 {item.card?.desiredRole || t.candidates.roleNotSpecified}
                 {item.card?.field ? ` · ${item.card.field}` : ""}
                 {item.card?.location ? ` · ${item.card.location}` : ""}
               </p>
             </div>
-            <span className="rounded-full bg-[var(--chip)] px-2.5 py-1 text-xs font-medium text-[var(--ink)]">
+            <span className="rounded-full bg-[var(--bubble)] px-2.5 py-1 text-xs font-medium text-[var(--accent-strong)]">
               {Math.round(item.score * 100)}%
             </span>
           </div>
@@ -99,30 +100,29 @@ export function CandidateQueue(props: {
 
           <div className="mt-4 flex flex-wrap gap-2">
             {item.cvDocumentId ? (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={() => openCv(item)}
-                className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                className="min-h-0 px-3 py-2"
               >
                 {t.candidates.viewCv}
-              </button>
+              </Button>
             ) : null}
-            <button
-              type="button"
+            <Button
               disabled={busyId === item.matchId}
               onClick={() => void act(item.matchId, "approve")}
-              className="rounded-xl bg-[var(--accent)] px-3 py-2 text-sm text-white"
+              className="min-h-0 bg-[var(--accent)] px-3 py-2 hover:bg-[var(--accent-strong)]"
             >
               {t.candidates.fit}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
               disabled={busyId === item.matchId}
               onClick={() => void act(item.matchId, "reject")}
-              className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+              className="min-h-0 px-3 py-2"
             >
               {t.candidates.notFit}
-            </button>
+            </Button>
           </div>
 
           <div className="mt-3 flex gap-2">
@@ -132,16 +132,15 @@ export function CandidateQueue(props: {
                 setQuestionById((s) => ({ ...s, [item.matchId]: e.target.value }))
               }
               placeholder={t.candidates.askPlaceholder}
-              className="flex-1 rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm outline-none"
+              className="min-h-11 flex-1 rounded-[var(--control-radius)] border border-[var(--stroke)] bg-[var(--surface)] px-3 py-2 text-sm outline-none transition duration-200 focus:border-[var(--accent)]"
             />
-            <button
-              type="button"
+            <Button
               disabled={busyId === item.matchId}
               onClick={() => void act(item.matchId, "ask")}
-              className="rounded-xl bg-[var(--ink)] px-3 py-2 text-sm text-white"
+              className="min-h-11 px-3"
             >
               {t.candidates.ask}
-            </button>
+            </Button>
           </div>
         </article>
       ))}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { FlexibilitySlider } from "@/components/FlexibilitySlider";
 import { useTranslation } from "@/components/LocaleProvider";
+import { Panel } from "@/components/ui/Panel";
 import { candidateRows, jobRows, knowledgePercent } from "@/domain/card-progress";
 import {
   emptyCandidateCard,
@@ -52,8 +53,8 @@ export function ProfileAside(props: {
   }
 
   return (
-    <aside className="premium-panel flex max-h-[70vh] flex-col rounded-[1.35rem] p-4">
-      <h2 className="text-sm font-semibold tracking-tight text-[var(--ink)]">
+    <Panel as="aside" className="flex max-h-[70vh] flex-col p-4">
+      <h2 className="text-sm font-semibold tracking-tight text-[var(--hero)]">
         {props.kind === "employee" ? t.profile.yourCard : t.profile.jobCard}
       </h2>
 
@@ -101,7 +102,7 @@ export function ProfileAside(props: {
           </dl>
         </>
       ) : null}
-    </aside>
+    </Panel>
   );
 }
 

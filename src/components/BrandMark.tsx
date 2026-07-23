@@ -14,14 +14,14 @@ export function BrandMark(props: {
         width={size}
         height={size}
         priority
-        className="object-contain"
+        className="object-contain drop-shadow-[0_12px_28px_rgba(16,42,80,0.18)]"
       />
       {props.showWordmark ? (
-        <div className="mt-3 text-center">
-          <p className="text-2xl font-bold tracking-[0.22em] text-[var(--hero)] sm:text-3xl">
+        <div className="mt-4 text-center">
+          <p className="text-3xl font-bold tracking-[0.22em] text-[var(--hero)] sm:text-4xl">
             CITOV
           </p>
-          <p className="mt-1 text-sm font-light tracking-wide text-[var(--muted)]">
+          <p className="mt-2 text-sm font-light tracking-[0.04em] text-[var(--muted)] sm:text-base">
             There is another way
           </p>
         </div>

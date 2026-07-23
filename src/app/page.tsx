@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
 import { SettingsMenu } from "@/components/SettingsMenu";
+import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
 import {
   getOrCreateDeviceId,
@@ -84,7 +85,6 @@ export default function HomePage() {
   useEffect(() => {
     if (!flagsReady || autoStarted.current) return;
     const stored = readStoredUser();
-    // Candidate-only phase: resume employee sessions; skip employer redirects.
     if (stored?.role === "employee") {
       autoStarted.current = true;
       router.replace(roleHomePath("employee"));
@@ -101,29 +101,29 @@ export default function HomePage() {
   const canEnter = openAuth || (status === "authenticated" && session?.user);
 
   return (
-    <main className="mx-auto flex min-h-full w-full max-w-2xl flex-col items-center px-5 py-12 pt-20 text-center">
+    <main className="relative mx-auto flex min-h-full w-full max-w-xl flex-col items-center px-5 py-16 pt-24 text-center sm:py-20">
       <SettingsMenu />
 
-      <div className="brand-enter">
-        <BrandMark size={96} showWordmark />
+      <div className="enter">
+        <BrandMark size={112} showWordmark />
       </div>
 
-      <p className="brand-enter-delay mt-8 max-w-md text-base leading-7 text-[var(--muted)]">
+      <p className="enter-delay mt-8 max-w-md text-base leading-7 text-[var(--muted)] sm:text-lg">
         {t.home.description}
       </p>
 
-      <section className="brand-enter-delay-2 premium-panel mt-10 w-full rounded-[1.5rem] p-6 sm:p-8">
+      <section className="enter-delay-2 mt-10 w-full space-y-4">
         {error ? (
-          <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
+          <p className="rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
             {error}
           </p>
         ) : null}
         {busy ? (
-          <p className="mb-4 text-sm text-[var(--muted)]">{t.home.openingRole}</p>
+          <p className="text-sm text-[var(--muted)]">{t.home.openingRole}</p>
         ) : null}
 
         {canEnter ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {status === "authenticated" && session?.user ? (
               <p className="text-sm text-[var(--muted)]">
                 {fmt(t.home.connectedAs, {
@@ -133,51 +133,49 @@ export default function HomePage() {
             ) : (
               <p className="text-xs leading-5 text-[var(--muted)]">{t.home.openAuthHint}</p>
             )}
-            <button
-              type="button"
+            <Button
               disabled={!!busy}
               onClick={() => void startCandidate(false)}
-              className="brand-gradient-bg w-full cursor-pointer rounded-xl px-4 py-3.5 text-sm font-medium text-white shadow-[0_12px_28px_rgba(16,42,80,0.28)] transition duration-200 hover:brightness-105 disabled:opacity-50"
+              className="brand-gradient-bg w-full border-0 shadow-[0_14px_32px_rgba(16,42,80,0.28)] hover:bg-transparent hover:brightness-105"
             >
               {t.home.iAmEmployee}
-            </button>
+            </Button>
             {status === "authenticated" ? (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
                 onClick={() => void signOut({ callbackUrl: "/" })}
-                className="cursor-pointer text-xs text-[var(--muted)] underline-offset-2 transition hover:underline"
+                className="w-full text-xs underline-offset-2 hover:underline"
               >
                 {t.home.signOut}
-              </button>
+              </Button>
             ) : null}
           </div>
         ) : (
           <div className="space-y-3">
-            <button
-              type="button"
+            <Button
               disabled={!googleAuth || status === "loading"}
               onClick={() => void signIn("google", { callbackUrl: "/" })}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[var(--hero)] px-4 py-3.5 text-sm font-medium text-white transition duration-200 hover:bg-[var(--accent-strong)] disabled:opacity-50"
+              className="w-full"
             >
               {t.home.googleSignIn}
-            </button>
+            </Button>
             <p className="text-xs leading-5 text-[var(--muted)]">
               {googleAuth ? t.home.afterSignInHint : t.home.googleNotConfigured}
             </p>
           </div>
         )}
-      </section>
 
-      {allowDemo ? (
-        <button
-          type="button"
-          onClick={() => void startCandidate(true)}
-          disabled={!!busy}
-          className="mt-6 w-full cursor-pointer rounded-2xl border border-dashed border-[var(--stroke)] bg-white/60 p-4 text-sm text-[var(--muted)] transition duration-200 hover:border-[var(--accent)] hover:text-[var(--accent)]"
-        >
-          {t.home.demoEmployeeDev}
-        </button>
-      ) : null}
+        {allowDemo ? (
+          <Button
+            variant="secondary"
+            onClick={() => void startCandidate(true)}
+            disabled={!!busy}
+            className="w-full border-dashed bg-white/40"
+          >
+            {t.home.demoEmployeeDev}
+          </Button>
+        ) : null}
+      </section>
     </main>
   );
 }

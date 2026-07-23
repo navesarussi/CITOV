@@ -78,7 +78,7 @@ export function SettingsMenu() {
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-2 border-[var(--accent)] bg-white text-[var(--accent)] shadow-[var(--shadow-soft)] transition duration-200 hover:bg-[var(--bubble)]"
+        className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-[var(--stroke)] bg-[var(--surface)] text-[var(--accent)] shadow-[var(--shadow-soft)] transition duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)] hover:bg-[var(--bubble)]"
       >
         <SettingsIcon />
       </button>
@@ -87,7 +87,7 @@ export function SettingsMenu() {
         <div
           id={menuId}
           role="menu"
-          className="premium-panel absolute end-0 top-12 max-h-[80vh] w-72 overflow-y-auto rounded-2xl py-1 text-sm"
+          className="panel absolute end-0 top-12 max-h-[80vh] w-72 overflow-y-auto rounded-2xl py-1 text-sm"
         >
           <p className="px-3 py-2 text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">
             {t.settings.title}
@@ -151,8 +151,8 @@ export function SettingsMenu() {
 
       {rateOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 p-4 sm:items-center">
-          <div className="premium-panel w-full max-w-sm rounded-2xl p-5">
-            <h2 className="text-base font-semibold text-[var(--ink)]">{t.settings.rateTitle}</h2>
+          <div className="panel w-full max-w-sm rounded-2xl p-5">
+            <h2 className="text-base font-semibold text-[var(--hero)]">{t.settings.rateTitle}</h2>
             <p className="mt-1 text-sm text-[var(--muted)]">{t.settings.rateHint}</p>
             <div className="mt-4 flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((n) => (
@@ -181,7 +181,7 @@ export function SettingsMenu() {
                 type="button"
                 disabled={rating < 1}
                 onClick={submitRating}
-                className="flex-1 cursor-pointer rounded-xl bg-[var(--accent)] px-3 py-2.5 text-sm font-medium text-white disabled:opacity-50"
+                className="flex-1 cursor-pointer rounded-xl bg-[var(--accent)] px-3 py-2.5 text-sm font-medium text-white transition duration-200 hover:bg-[var(--accent-strong)] disabled:opacity-50"
               >
                 {t.settings.sendRating}
               </button>

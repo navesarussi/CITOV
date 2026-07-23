@@ -59,8 +59,8 @@ export function FileImport(props: {
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-3">
-      <p className="text-sm font-semibold text-[var(--ink)]">{props.title}</p>
+    <div className="panel rounded-[1.25rem] p-3.5">
+      <p className="text-sm font-semibold text-[var(--hero)]">{props.title}</p>
       <p className="mt-0.5 text-xs text-[var(--muted)]">{props.hint}</p>
       <input
         ref={inputRef}
@@ -69,12 +69,12 @@ export function FileImport(props: {
         onChange={(e) => void onFile(e)}
         className="hidden"
       />
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={status === "busy"}
           onClick={() => inputRef.current?.click()}
-          className="rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+          className="cursor-pointer rounded-lg bg-[var(--accent)] px-3 py-2 text-xs font-medium text-white transition duration-200 hover:bg-[var(--accent-strong)] disabled:opacity-50"
         >
           {status === "busy" ? t.fileImport.processing : t.fileImport.choose}
         </button>

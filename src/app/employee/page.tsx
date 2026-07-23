@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { ChatPanel, type ChatTurnPayload } from "@/components/ChatPanel";
@@ -9,6 +8,8 @@ import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { OpportunityList } from "@/components/OpportunityList";
 import { ProfileAside } from "@/components/ProfileAside";
+import { WorkspaceHeader } from "@/components/WorkspaceHeader";
+import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { readStoredUser } from "@/lib/client-session";
 
 type Tab = "chat" | "jobs";
@@ -88,36 +89,23 @@ export default function EmployeePage() {
 
   return (
     <main className="mx-auto min-h-full w-full max-w-6xl px-4 py-6">
-      <header className="brand-enter mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <Link href="/" className="mt-1 shrink-0">
-            <Image src="/logo.png" alt="CITOV" width={40} height={40} className="object-contain" />
-          </Link>
-          <div>
-            <Link
-              href="/"
-              className="text-xs font-bold tracking-[0.2em] text-[var(--hero)] uppercase"
-            >
-              CITOV
-            </Link>
-            <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--hero)] sm:text-3xl">
-              {name}
-            </h1>
-            <p className="text-sm text-[var(--muted)]">{t.employee.subtitle}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3 pe-14">
-          <SettingsMenu />
-          <div className="flex rounded-xl bg-[var(--chip)] p-1 text-sm">
-            <TabButton active={tab === "chat"} onClick={() => setTab("chat")}>
-              {t.employee.chatTab}
-            </TabButton>
-            <TabButton active={tab === "jobs"} onClick={() => setTab("jobs")}>
-              {fmt(t.employee.jobsTab, { count: jobs.length })}
-            </TabButton>
-          </div>
-        </div>
-      </header>
+      <WorkspaceHeader
+        name={name}
+        subtitle={t.employee.subtitle}
+        tabs={
+          <>
+            <SettingsMenu />
+            <SegmentedTabs
+              value={tab}
+              onChange={(id) => setTab(id as Tab)}
+              tabs={[
+                { id: "chat", label: t.employee.chatTab },
+                { id: "jobs", label: fmt(t.employee.jobsTab, { count: jobs.length }) },
+              ]}
+            />
+          </>
+        }
+      />
 
       {me?.error ? (
         <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
@@ -126,7 +114,7 @@ export default function EmployeePage() {
       ) : null}
 
       {tab === "chat" ? (
-        <div className="brand-enter-delay grid gap-4 lg:grid-cols-[1fr_300px]">
+        <div className="enter-delay grid gap-4 lg:grid-cols-[1fr_300px]">
           <div className="order-2 min-h-[520px] lg:order-1">
             <ChatPanel
               key={`${userId}-employee`}
@@ -166,30 +154,10 @@ export default function EmployeePage() {
           </div>
         </div>
       ) : (
-        <div className="brand-enter-delay">
+        <div className="enter-delay">
           <OpportunityList jobs={jobs} />
         </div>
       )}
     </main>
-  );
-}
-
-function TabButton(props: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      className={
-        props.active
-          ? "cursor-pointer rounded-lg bg-white px-3 py-1.5 font-medium text-[var(--hero)] shadow-sm transition duration-200"
-          : "cursor-pointer rounded-lg px-3 py-1.5 text-[var(--muted)] transition duration-200 hover:text-[var(--ink)]"
-      }
-    >
-      {props.children}
-    </button>
   );
 }
