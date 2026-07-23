@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/components/LocaleProvider";
 import type { Locale } from "@/i18n/types";
+import { AppVersionBadge } from "@/components/AppVersion";
 import { clearStoredUser } from "@/lib/client-session";
 import { signOut } from "next-auth/react";
 
@@ -143,6 +144,8 @@ export function SettingsMenu() {
           >
             {t.settings.signOut}
           </button>
+          <div className="my-1 h-px bg-[var(--stroke)]" />
+          <AppVersionBadge />
         </div>
       ) : null}
 

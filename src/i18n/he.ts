@@ -7,6 +7,7 @@ export const he: Messages = {
   },
   app: {
     name: "CITOV",
+    versionLabel: "גרסה {version}",
   },
   language: {
     switch: "שפה",

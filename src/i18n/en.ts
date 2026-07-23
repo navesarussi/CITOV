@@ -5,6 +5,7 @@ export const en = {
   },
   app: {
     name: "CITOV",
+    versionLabel: "Version {version}",
   },
   language: {
     switch: "Language",
