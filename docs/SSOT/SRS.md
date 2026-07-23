@@ -65,6 +65,17 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 | FR-JOB-01 | Approved employers may publish multiple jobs |
 | FR-JOB-02 | Employer screen filters by active job; each job has its own chat and candidate list |
 
+### FR-CV (candidate résumé upload & deep analysis)
+Design: `docs/superpowers/specs/2026-07-23-cv-deep-analysis-design.md`
+
+| ID | Requirement |
+|---|---|
+| FR-CV-01 | Candidates may upload a CV (PDF/DOCX/TXT); the original file is persisted for later viewing |
+| FR-CV-02 | AI performs deep, professional extraction into the candidate profile: structured card fields, work/education history, and unmapped facts so no explicit CV content is dropped |
+| FR-CV-03 | Field provenance is retained; conflicting values from CV vs existing data are both kept; the candidate agent clarifies which value is current in chat (no silent overwrite) |
+| FR-CV-04 | After upload, the candidate sees only a minimal summary that data was captured — not the full rich card (aligns with FR-UI-07) |
+| FR-CV-05 | Admins may always view/download a candidate CV; employers may view/download only for candidates matched to their job (`queued` or `approved`) |
+
 ## Non-goals (current POC)
 
 - Zoom intake, WhatsApp, payments, native apps, trained custom ML models
