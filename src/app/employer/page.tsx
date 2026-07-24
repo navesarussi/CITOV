@@ -10,7 +10,7 @@ import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import { readStoredUser } from "@/lib/client-session";
+import { useStoredUser } from "@/lib/use-stored-user";
 
 type Tab = "chat" | "candidates";
 type JobMeta = { id: string; title?: string; field?: string };
@@ -18,10 +18,7 @@ type JobMeta = { id: string; title?: string; field?: string };
 export default function EmployerPage() {
   const { t, fmt, locale } = useTranslation();
   const [tab, setTab] = useState<Tab>("chat");
-  const [sessionUser] = useState(() => {
-    const u = readStoredUser();
-    return u?.role === "employer" ? u : null;
-  });
+  const { user: sessionUser, ready: sessionReady } = useStoredUser("employer");
   const userId = sessionUser?.id ?? null;
   const name = sessionUser?.name ?? "";
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -32,7 +29,7 @@ export default function EmployerPage() {
     error?: string;
   } | null>(null);
   const [candidates, setCandidates] = useState([]);
-  const [hydrating, setHydrating] = useState(Boolean(userId));
+  const [hydrating, setHydrating] = useState(false);
   const [jobBusy, setJobBusy] = useState(false);
 
   const refreshLists = useCallback(
@@ -61,6 +58,7 @@ export default function EmployerPage() {
 
   useEffect(() => {
     if (!userId) return;
+    setHydrating(true);
     void refresh(userId).finally(() => setHydrating(false));
   }, [refresh, userId]);
 
@@ -105,6 +103,14 @@ export default function EmployerPage() {
 
   function jobLabel(job: JobMeta, index: number) {
     return job.title?.trim() || job.field?.trim() || fmt(t.employer.jobFallback, { n: String(index + 1) });
+  }
+
+  if (!sessionReady) {
+    return (
+      <main className="mx-auto max-w-lg px-5 py-16 text-center">
+        <p className="text-[var(--muted)]">{t.session.loading}</p>
+      </main>
+    );
   }
 
   if (!userId) {

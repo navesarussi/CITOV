@@ -53,6 +53,7 @@ export async function POST(req: Request) {
       reply: result.reply,
       provider: result.provider,
       aiMode: hasGeminiKey() ? "gemini" : "heuristic",
+      aiDegraded: result.aiDegraded ?? false,
       role,
       card: result.card,
       chat: result.chat,

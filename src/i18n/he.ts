@@ -123,6 +123,7 @@ export const he: Messages = {
     title: "שיחה עם הסוכן",
     subtitle: "שיחה חיה — בקצב שלכם",
     localMode: "מצב מקומי",
+    degradedMode: "מוגבל (עומס Gemini)",
     employeeEmptyHint:
       "ספרו לי על עצמכם בחופשיות — מה מחפשים, מה חשוב לכם, ואיך נראה יום עבודה טוב.",
     employerEmptyHint:

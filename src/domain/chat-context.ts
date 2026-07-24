@@ -1,7 +1,7 @@
 import type { CandidateCard, ChatMessage, JobCard } from "@/domain/types";
 
-const MAX_HISTORY_MESSAGES = 48;
-const MAX_HISTORY_CHARS = 14_000;
+const MAX_HISTORY_MESSAGES = 32;
+const MAX_HISTORY_CHARS = 10_000;
 
 /** Keep recent turns; never send only the latest message in isolation. */
 export function selectChatHistory(chat: ChatMessage[]): ChatMessage[] {

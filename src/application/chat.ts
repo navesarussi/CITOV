@@ -95,6 +95,7 @@ export type ChatTurnResult = {
   store: StoreData;
   reply: string;
   provider: string;
+  aiDegraded?: boolean;
   card: CandidateCard | JobCard;
   chat: ChatMessage[];
   pendingQuestions: { id: string; question: string }[];
@@ -173,6 +174,7 @@ export async function handleEmployeeChat(
     store: next,
     reply: intake.reply,
     provider: intake.provider,
+    aiDegraded: intake.degraded,
     card: empNext.card,
     chat: empNext.chat,
     pendingQuestions: pendingOut.map((q) => ({ id: q.id, question: q.question })),
@@ -214,6 +216,7 @@ export async function handleEmployerChat(
     store: next,
     reply: intake.reply,
     provider: intake.provider,
+    aiDegraded: intake.degraded,
     card,
     chat,
     pendingQuestions: [],

@@ -121,6 +121,7 @@ export const en = {
     title: "Chat with the agent",
     subtitle: "A live conversation — at your pace",
     localMode: "Local mode",
+    degradedMode: "Limited (Gemini load)",
     employeeEmptyHint:
       "Tell me about yourself freely — what you’re looking for, what matters, and what a good workday looks like.",
     employerEmptyHint:

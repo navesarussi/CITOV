@@ -164,12 +164,11 @@ export type IntakeResult = {
   jobPatch?: JobPatch;
   fieldAnswers?: { questionId: string; answer: string }[];
   provider: "gemini" | "heuristic";
+  degraded?: boolean;
   usage?: AiTokenUsage;
 };
 
-export function hasGeminiKey(): boolean {
-  return Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim());
-}
+export { hasGeminiKey } from "./gemini-client";
 
 export {
   allowDemoMode,

@@ -12,6 +12,7 @@ export type ChatTurnPayload = {
   error?: string;
   provider?: string;
   aiMode?: string;
+  aiDegraded?: boolean;
   card?: unknown;
   chat?: Msg[];
   pendingQuestions?: { id: string; question: string }[];
@@ -33,6 +34,7 @@ export function ChatPanel(props: {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [provider, setProvider] = useState("");
+  const [degraded, setDegraded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -70,6 +72,7 @@ export function ChatPanel(props: {
         return;
       }
       setProvider(data.provider ?? data.aiMode ?? "");
+      setDegraded(Boolean(data.aiDegraded));
       setMessages((m) => [
         ...m,
         {
@@ -127,7 +130,11 @@ export function ChatPanel(props: {
         <div className="flex items-center gap-2">
           {provider ? (
             <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white/90">
-              {provider === "gemini" ? "Gemini" : t.chat.localMode}
+              {degraded
+                ? t.chat.degradedMode
+                : provider === "gemini"
+                  ? "Gemini"
+                  : t.chat.localMode}
             </span>
           ) : null}
           <button

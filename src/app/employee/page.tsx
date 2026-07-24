@@ -10,17 +10,14 @@ import { OpportunityList } from "@/components/OpportunityList";
 import { ProfileAside } from "@/components/ProfileAside";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import { readStoredUser } from "@/lib/client-session";
+import { useStoredUser } from "@/lib/use-stored-user";
 
 type Tab = "chat" | "jobs";
 
 export default function EmployeePage() {
   const { t, fmt, locale } = useTranslation();
   const [tab, setTab] = useState<Tab>("chat");
-  const [sessionUser] = useState(() => {
-    const u = readStoredUser();
-    return u?.role === "employee" ? u : null;
-  });
+  const { user: sessionUser, ready: sessionReady } = useStoredUser("employee");
   const userId = sessionUser?.id ?? null;
   const name = sessionUser?.name ?? "";
   const [me, setMe] = useState<{
@@ -81,6 +78,14 @@ export default function EmployeePage() {
           },
     );
     if (userId) void refreshLists(userId);
+  }
+
+  if (!sessionReady) {
+    return (
+      <main className="mx-auto max-w-lg px-5 py-16 text-center">
+        <p className="text-[var(--muted)]">{t.session.loading}</p>
+      </main>
+    );
   }
 
   if (!userId) {
