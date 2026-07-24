@@ -177,6 +177,7 @@ export const he: Messages = {
     cvCaptured: "קו״ח נקלטו",
     saving: "שומר…",
     analyzing: "מנתח…",
+    analyzingProgress: "מנתח… {percent}%",
     saved: "קורות החיים נשמרו בהצלחה",
     analyzed: "הניתוח הושלם — הפרופיל עודכן",
     processing: "קורא…",

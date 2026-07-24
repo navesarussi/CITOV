@@ -277,23 +277,27 @@ export function ChatPanel(props: {
                   : "chat-msg me-6 max-w-[90%] rounded-2xl rounded-ss-sm border border-[var(--stroke)] bg-white px-4 py-3 text-sm leading-6 text-[var(--ink)] shadow-sm"
               }
             >
-              <span>{displayContent(m)}</span>
               {props.role === "employee" &&
               m.role === "user" &&
               isCvUploadChatContent(m.content) &&
               props.onCvUpdated ? (
-                <FileImport
-                  userId={props.userId}
-                  endpoint="/api/cv"
-                  title={t.fileImport.cvTitle}
-                  hint={t.fileImport.cvHint}
-                  variant="message-button"
-                  minimalSummary
-                  cvMode
-                  hasExisting
-                  onDone={props.onCvUpdated}
-                />
-              ) : null}
+                <div className="cv-upload-message">
+                  <span>{displayContent(m)}</span>
+                  <FileImport
+                    userId={props.userId}
+                    endpoint="/api/cv"
+                    title={t.fileImport.cvTitle}
+                    hint={t.fileImport.cvHint}
+                    variant="message-button"
+                    minimalSummary
+                    cvMode
+                    hasExisting
+                    onDone={props.onCvUpdated}
+                  />
+                </div>
+              ) : (
+                <span>{displayContent(m)}</span>
+              )}
               {m.id === streamingId && m.content ? (
                 <span className="ms-0.5 inline-block h-3 w-0.5 animate-pulse bg-[var(--accent)] align-middle" />
               ) : null}

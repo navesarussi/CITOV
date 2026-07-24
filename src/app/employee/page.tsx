@@ -140,16 +140,6 @@ export default function EmployeePage() {
           placeholder={t.employee.chatPlaceholder}
           onTurn={onTurn}
           onCvDone={() => void refresh(userId)}
-          onFlexibilityChange={(value) => {
-            setMe((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    card: { ...(prev.card as object), flexibility: value },
-                  }
-                : prev,
-            );
-          }}
         />
       ) : (
         <div className="workspace-stack enter-delay tab-fade">

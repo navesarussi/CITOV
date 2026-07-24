@@ -175,6 +175,7 @@ export const en = {
     cvCaptured: "CV captured",
     saving: "Saving…",
     analyzing: "Analyzing…",
+    analyzingProgress: "Analyzing… {percent}%",
     saved: "CV saved successfully",
     analyzed: "Analysis complete — profile updated",
     processing: "Reading…",

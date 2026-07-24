@@ -1,6 +1,5 @@
 "use client";
 
-import { CandidateProfileStrip } from "@/components/CandidateProfileStrip";
 import { InlineInfoHint } from "@/components/InlineInfoHint";
 import { ChatPanel, type ChatTurnPayload } from "@/components/ChatPanel";
 import { FileImport } from "@/components/FileImport";
@@ -38,7 +37,6 @@ export function EmployeeChatLayout(props: {
   placeholder: string;
   onTurn: (payload: ChatTurnPayload) => void;
   onCvDone: () => void;
-  onFlexibilityChange: (value: number) => void;
 }) {
   const { t } = useTranslation();
   const blockedReason = props.hasCv ? undefined : "blocked";
@@ -81,51 +79,39 @@ export function EmployeeChatLayout(props: {
     <div className="employee-workspace enter-delay">
       <ApplicationProgress percent={knowledge} />
 
-      <div className="employee-workspace__grid">
-        <aside className="employee-sidebar">
-          <section className="employee-sidebar__section">
-            <CandidateProfileStrip
-              card={props.card}
-              userId={props.userId}
-              onFlexibilityChange={props.onFlexibilityChange}
-            />
-          </section>
-        </aside>
-
-        <section className="employee-chat-main" aria-label={t.chat.title}>
-          {props.cvPending && props.hasCv ? (
-            <div className="hidden" aria-hidden>
-              {cvUpload}
-            </div>
-          ) : null}
-          <div className="employee-chat-main__panel">
-            <ChatPanel
-              key={`${props.userId}-employee`}
-              userId={props.userId}
-              role="employee"
-              locale={props.locale}
-              initialMessages={props.chat}
-              placeholder={props.placeholder}
-              blockedReason={blockedReason}
-              onTurn={props.onTurn}
-              onCvUpdated={props.onCvDone}
-              composerAddon={props.hasCv && !props.cvPending ? cvAttach : undefined}
-              lockedOverlay={
-                props.hasCv ? undefined : (
-                  <div className="employee-chat-locked">
-                    <div className="employee-chat-locked__icon" aria-hidden>
-                      💬
-                    </div>
-                    <h3 className="employee-chat-locked__title">{t.employee.chatLockedTitle}</h3>
-                    <p className="employee-chat-locked__body">{t.employee.chatLockedBody}</p>
-                    {cvUpload}
-                  </div>
-                )
-              }
-            />
+      <section className="employee-chat-main" aria-label={t.chat.title}>
+        {props.cvPending && props.hasCv ? (
+          <div className="hidden" aria-hidden>
+            {cvUpload}
           </div>
-        </section>
-      </div>
+        ) : null}
+        <div className="employee-chat-main__panel">
+          <ChatPanel
+            key={`${props.userId}-employee`}
+            userId={props.userId}
+            role="employee"
+            locale={props.locale}
+            initialMessages={props.chat}
+            placeholder={props.placeholder}
+            blockedReason={blockedReason}
+            onTurn={props.onTurn}
+            onCvUpdated={props.onCvDone}
+            composerAddon={props.hasCv && !props.cvPending ? cvAttach : undefined}
+            lockedOverlay={
+              props.hasCv ? undefined : (
+                <div className="employee-chat-locked">
+                  <div className="employee-chat-locked__icon" aria-hidden>
+                    💬
+                  </div>
+                  <h3 className="employee-chat-locked__title">{t.employee.chatLockedTitle}</h3>
+                  <p className="employee-chat-locked__body">{t.employee.chatLockedBody}</p>
+                  {cvUpload}
+                </div>
+              )
+            }
+          />
+        </div>
+      </section>
     </div>
   );
 }

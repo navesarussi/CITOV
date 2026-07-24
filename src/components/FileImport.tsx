@@ -35,7 +35,22 @@ export function FileImport(props: {
   const [error, setError] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const analyzingRef = useRef(false);
+
+  useEffect(() => {
+    if (status !== "analyzing") {
+      return;
+    }
+    setAnalysisProgress(0);
+    const start = Date.now();
+    const id = window.setInterval(() => {
+      const elapsed = Date.now() - start;
+      const next = Math.min(94, Math.round(94 * (1 - Math.exp(-elapsed / 5500))));
+      setAnalysisProgress(next);
+    }, 80);
+    return () => window.clearInterval(id);
+  }, [status]);
 
   function bindInputRef(node: HTMLInputElement | null) {
     localRef.current = node;
@@ -68,6 +83,7 @@ export function FileImport(props: {
       });
       const data = await res.json();
       if (res.ok && data.ok) {
+        setAnalysisProgress(100);
         setStatus("done");
         setPhase("analyzed");
         setExpanded(false);
@@ -132,9 +148,23 @@ export function FileImport(props: {
 
   function buttonLabel() {
     if (status === "saving") return t.fileImport.saving;
-    if (status === "analyzing") return t.fileImport.analyzing;
+    if (status === "analyzing") {
+      return fmt(t.fileImport.analyzingProgress, { percent: String(analysisProgress) });
+    }
     if (hasCv) return t.fileImport.changeCv;
     return props.cvMode ? t.fileImport.uploadCv : t.fileImport.choose;
+  }
+
+  function busyLabel(spinnerClass = "h-3 w-3") {
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <span
+          className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${spinnerClass}`}
+          aria-hidden
+        />
+        <span className="tabular-nums">{buttonLabel()}</span>
+      </span>
+    );
   }
 
   const uploadButton = (
@@ -148,17 +178,7 @@ export function FileImport(props: {
           : "cta-glow brand-gradient-bg cursor-pointer whitespace-nowrap rounded-lg px-4 py-2.5 text-xs font-semibold text-white transition duration-200 hover:brightness-105 disabled:cursor-wait disabled:opacity-70"
       }
     >
-      {busy ? (
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
-            aria-hidden
-          />
-          {buttonLabel()}
-        </span>
-      ) : (
-        buttonLabel()
-      )}
+      {busy ? busyLabel() : buttonLabel()}
     </button>
   );
 
@@ -313,18 +333,39 @@ export function FileImport(props: {
           type="button"
           disabled={busy}
           onClick={() => localRef.current?.click()}
-          className="mt-2.5 inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-white/35 bg-white/15 px-3 py-1.5 text-xs font-semibold text-white transition duration-200 hover:bg-white/25 disabled:cursor-wait disabled:opacity-70"
+          className="cv-message-btn"
         >
           {busy ? (
-            <span className="inline-flex items-center gap-1.5">
-              <span
-                className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
-                aria-hidden
-              />
-              {buttonLabel()}
-            </span>
+            busyLabel()
           ) : (
-            t.chat.attachCv
+            <>
+              <svg
+                className="cv-message-btn__icon"
+                viewBox="0 0 20 20"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M11 3.5H6.8A2.3 2.3 0 0 0 4.5 5.8v8.4A2.3 2.3 0 0 0 6.8 16.5h6.4a2.3 2.3 0 0 0 2.3-2.3V8.2L11 3.5Z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M11 3.5V8.2h4.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M7.2 11.2h5.6M7.2 13.4h3.4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span>{t.chat.attachCv}</span>
+            </>
           )}
         </button>
       </>
@@ -350,10 +391,23 @@ export function FileImport(props: {
           className="chat-attach-btn inline-flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-full border border-[var(--stroke)] bg-[var(--chip)] text-[var(--hero)] transition duration-200 hover:border-[var(--accent)] hover:bg-white hover:text-[var(--accent)] disabled:cursor-wait disabled:opacity-60"
         >
           {busy ? (
-            <span
-              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
-              aria-hidden
-            />
+            status === "analyzing" ? (
+              <span
+                className="inline-flex flex-col items-center gap-0.5 text-[9px] font-bold leading-none"
+                aria-label={fmt(t.fileImport.analyzingProgress, { percent: String(analysisProgress) })}
+              >
+                <span
+                  className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                  aria-hidden
+                />
+                <span className="tabular-nums">{analysisProgress}%</span>
+              </span>
+            ) : (
+              <span
+                className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                aria-hidden
+              />
+            )
           ) : (
             <svg
               viewBox="0 0 24 24"
