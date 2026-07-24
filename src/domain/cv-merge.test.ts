@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { mergeCvIntoEmployee, resolveConflictsFromPatch } from "./cv-merge";
+import { candidateRows } from "./card-progress";
 import { emptyCandidateCard, emptyCvProfile, type EmployeeRecord } from "./types";
 
 function emp(partial?: Partial<EmployeeRecord>): EmployeeRecord {
@@ -52,6 +53,7 @@ describe("mergeCvIntoEmployee", () => {
     assert.equal(summary.conflictsPending, 1);
     assert.equal(employee.cv?.conflicts[0]?.status, "pending");
     assert.equal(employee.cv?.conflicts[0]?.values.length, 2);
+    assert.ok((employee.cv?.reliability.score ?? 100) < 100);
   });
 
   it("unions skills without duplicates", () => {
@@ -75,6 +77,7 @@ describe("mergeCvIntoEmployee", () => {
     );
     assert.equal(summary.rolesFound, 1);
     assert.equal(employee.cv?.workHistory.length, 1);
+    assert.equal(employee.card.workHistory.length, 1);
     assert.equal(employee.cv?.unmappedFacts.length, 1);
   });
 
@@ -95,6 +98,45 @@ describe("mergeCvIntoEmployee", () => {
     assert.equal(conflicted.employee.card.narrative, "סיפור קיים");
     assert.equal(conflicted.summary.conflictsPending, 1);
   });
+
+  it("high inference fills empty field; low becomes pendingInference only", () => {
+    const { employee } = mergeCvIntoEmployee(
+      emp(),
+      {
+        patch: {},
+        inferences: [
+          {
+            fieldKey: "managementExperience",
+            value: "כן",
+            evidence: "led a team of 8",
+            confidence: "high",
+          },
+          {
+            fieldKey: "personality",
+            value: "יסודי",
+            evidence: "detail-oriented wording",
+            confidence: "low",
+          },
+        ],
+      },
+      doc,
+    );
+    assert.equal(employee.card.managementExperience, "כן");
+    assert.equal(employee.card.personality, "");
+    assert.equal(employee.cv?.pendingInferences.length, 1);
+    assert.equal(employee.cv?.pendingInferences[0].fieldKey, "personality");
+  });
+
+  it("projects workHistory onto card and counts toward knowledge", () => {
+    const { employee } = mergeCvIntoEmployee(
+      emp(),
+      { patch: {}, workHistory: [{ company: "Acme", title: "Dev" }] },
+      doc,
+    );
+    assert.equal(employee.card.workHistory.length, 1);
+    const rows = candidateRows(employee.card);
+    assert.ok(rows.find((r) => r.key === "workHistory")?.filled);
+  });
 });
 
 describe("resolveConflictsFromPatch", () => {
@@ -107,5 +149,6 @@ describe("resolveConflictsFromPatch", () => {
     const cv = resolveConflictsFromPatch(base.cv, { desiredRole: "מלצר" });
     assert.equal(cv?.conflicts[0]?.status, "resolved");
     assert.equal(cv?.conflicts[0]?.resolvedValue, "מלצר");
+    assert.equal(cv?.reliability.score, 100);
   });
 });

@@ -10,7 +10,9 @@ import type {
   UnmappedFact,
   WorkHistoryEntry,
 } from "./types";
-import { emptyCvProfile } from "./types";
+import { emptyCvProfile, emptyReliability } from "./types";
+import { applyInferences, type CvInference } from "./cv-inference-merge";
+import { openReliabilityNote, recomputeReliability, resolveReliabilityNotesForField } from "./reliability";
 
 export type CvPatchInput = {
   patch: Partial<CandidateCard> & {
@@ -25,6 +27,7 @@ export type CvPatchInput = {
   educationHistory?: EducationHistoryEntry[];
   unmappedFacts?: UnmappedFact[];
   fieldConfidence?: Record<string, EvidenceConfidence>;
+  inferences?: CvInference[];
 };
 
 export type CvImportSummary = {
@@ -37,11 +40,18 @@ export type CvImportSummary = {
 };
 
 const ARRAY_KEYS = ["skills", "softSkills", "languages"] as const;
-const SKIP_KEYS = new Set(["flexibility", "extras"]);
+const SKIP_KEYS = new Set(["flexibility", "extras", "workHistory", "educationHistory"]);
 
 function norm(v: unknown): string {
   if (v == null) return "";
-  if (Array.isArray(v)) return v.map(String).map((s) => s.trim()).filter(Boolean).join(", ");
+  if (Array.isArray(v)) {
+    if (v.length && typeof v[0] === "object") {
+      return v
+        .map((row) => JSON.stringify(row))
+        .join("|");
+    }
+    return v.map(String).map((s) => s.trim()).filter(Boolean).join(", ");
+  }
   return String(v).trim();
 }
 
@@ -116,6 +126,40 @@ function pendingConflicts(cv: CandidateCvProfile): FieldConflict[] {
   return cv.conflicts.filter((c) => c.status === "pending");
 }
 
+function openConflict(
+  cv: CandidateCvProfile,
+  fieldKey: string,
+  existingValue: string,
+  existingSource: FieldEvidence["source"],
+  cvValue: string,
+  now: string,
+): void {
+  const pending = cv.conflicts.find((c) => c.fieldKey === fieldKey && c.status === "pending");
+  if (pending) {
+    const hasCv = pending.values.some((v) => v.source === "cv" && v.value === cvValue);
+    if (!hasCv) pending.values.push({ value: cvValue, source: "cv", at: now });
+    return;
+  }
+  cv.conflicts.push({
+    id: `conflict-${fieldKey}-${now}`,
+    fieldKey,
+    values: [
+      { value: existingValue, source: existingSource, at: now },
+      { value: cvValue, source: "cv", at: now },
+    ],
+    status: "pending",
+  });
+  cv.reliability = openReliabilityNote(
+    cv.reliability,
+    {
+      kind: existingSource === "chat" ? "cv_vs_chat" : "cv_vs_chat",
+      fieldKey,
+      summary: `Conflict on ${fieldKey}: existing (${existingSource}) "${existingValue}" vs cv "${cvValue}"`,
+    },
+    now,
+  );
+}
+
 /** Merge CV extraction into employee card + cv profile without silent overwrites. */
 export function mergeCvIntoEmployee(
   emp: EmployeeRecord,
@@ -123,18 +167,25 @@ export function mergeCvIntoEmployee(
   document: CandidateDocument,
   now = new Date().toISOString(),
 ): { employee: EmployeeRecord; summary: CvImportSummary } {
+  const prior = emp.cv;
   const cv: CandidateCvProfile = {
     ...emptyCvProfile(),
-    ...(emp.cv ?? {}),
-    workHistory: [...(emp.cv?.workHistory ?? [])],
-    educationHistory: [...(emp.cv?.educationHistory ?? [])],
-    unmappedFacts: [...(emp.cv?.unmappedFacts ?? [])],
-    fieldEvidence: [...(emp.cv?.fieldEvidence ?? [])],
-    conflicts: [...(emp.cv?.conflicts ?? [])],
-    documents: [...(emp.cv?.documents ?? [])],
+    ...(prior ?? {}),
+    workHistory: [...(prior?.workHistory ?? [])],
+    educationHistory: [...(prior?.educationHistory ?? [])],
+    unmappedFacts: [...(prior?.unmappedFacts ?? [])],
+    fieldEvidence: [...(prior?.fieldEvidence ?? [])],
+    conflicts: [...(prior?.conflicts ?? [])],
+    documents: [...(prior?.documents ?? [])],
+    pendingInferences: [...(prior?.pendingInferences ?? [])],
+    reliability: prior?.reliability ?? emptyReliability(now),
   };
 
-  let card: CandidateCard = { ...emp.card };
+  let card: CandidateCard = {
+    ...emp.card,
+    workHistory: [...(emp.card.workHistory ?? [])],
+    educationHistory: [...(emp.card.educationHistory ?? [])],
+  };
   let fieldsUpdated = 0;
   const patch = input.patch ?? {};
   const confidence = input.fieldConfidence ?? {};
@@ -218,7 +269,6 @@ export function mergeCvIntoEmployee(
       continue;
     }
 
-    // Different value — keep card, open conflict
     openConflict(cv, fieldKey, norm(prevVal), "chat", nextNorm, now);
     cv.fieldEvidence.push({
       fieldKey,
@@ -230,6 +280,17 @@ export function mergeCvIntoEmployee(
     });
   }
 
+  const inferred = applyInferences(
+    card,
+    cv,
+    input.inferences ?? [],
+    now,
+    document.id,
+    openConflict,
+  );
+  card = inferred.card;
+  fieldsUpdated += inferred.fieldsUpdated;
+
   const beforeRoles = cv.workHistory.length;
   cv.workHistory = appendUniqueWork(cv.workHistory, input.workHistory ?? []);
   const rolesAdded = cv.workHistory.length - beforeRoles;
@@ -237,6 +298,12 @@ export function mergeCvIntoEmployee(
   const beforeEdu = cv.educationHistory.length;
   cv.educationHistory = appendUniqueEdu(cv.educationHistory, input.educationHistory ?? []);
   const eduAdded = cv.educationHistory.length - beforeEdu;
+
+  card = {
+    ...card,
+    workHistory: appendUniqueWork(card.workHistory ?? [], cv.workHistory),
+    educationHistory: appendUniqueEdu(card.educationHistory ?? [], cv.educationHistory),
+  };
 
   for (const fact of input.unmappedFacts ?? []) {
     if (!fact.label?.trim() || !fact.value?.trim()) continue;
@@ -246,9 +313,20 @@ export function mergeCvIntoEmployee(
         f.value.trim().toLowerCase() === fact.value.trim().toLowerCase(),
     );
     if (!dup) cv.unmappedFacts.push(fact);
+    const extrasKey = fact.label.trim();
+    if (extrasKey && !card.extras[extrasKey]) {
+      card = { ...card, extras: { ...card.extras, [extrasKey]: fact.value.trim() } };
+      fieldsUpdated += 1;
+    }
   }
 
   cv.documents = [...cv.documents.filter((d) => d.id !== document.id), document];
+  cv.reliability = recomputeReliability({
+    conflicts: cv.conflicts,
+    pendingInferences: cv.pendingInferences,
+    notes: cv.reliability.notes,
+    now,
+  });
 
   const summary: CvImportSummary = {
     fieldsUpdated,
@@ -265,39 +343,16 @@ export function mergeCvIntoEmployee(
   };
 }
 
-function openConflict(
-  cv: CandidateCvProfile,
-  fieldKey: string,
-  existingValue: string,
-  existingSource: FieldEvidence["source"],
-  cvValue: string,
-  now: string,
-): void {
-  const pending = cv.conflicts.find((c) => c.fieldKey === fieldKey && c.status === "pending");
-  if (pending) {
-    const hasCv = pending.values.some((v) => v.source === "cv" && v.value === cvValue);
-    if (!hasCv) pending.values.push({ value: cvValue, source: "cv", at: now });
-    return;
-  }
-  cv.conflicts.push({
-    id: `conflict-${fieldKey}-${now}`,
-    fieldKey,
-    values: [
-      { value: existingValue, source: existingSource, at: now },
-      { value: cvValue, source: "cv", at: now },
-    ],
-    status: "pending",
-  });
-}
-
 /** When a patch sets a field to one of the conflict values, mark it resolved. */
 export function resolveConflictsFromPatch(
   cv: CandidateCvProfile | undefined,
   patch: Partial<CandidateCard>,
   now = new Date().toISOString(),
 ): CandidateCvProfile | undefined {
-  if (!cv?.conflicts.length) return cv;
-  const conflicts = cv.conflicts.map((c) => {
+  if (!cv) return cv;
+  if (!cv.conflicts.length && !cv.pendingInferences?.length) return cv;
+
+  const conflicts = (cv.conflicts ?? []).map((c) => {
     if (c.status !== "pending") return c;
     const raw = (patch as Record<string, unknown>)[c.fieldKey];
     if (raw === undefined) return c;
@@ -307,7 +362,9 @@ export function resolveConflictsFromPatch(
     if (!match) return c;
     return { ...c, status: "resolved" as const, resolvedValue: chosen };
   });
+
   const evidence: FieldEvidence[] = [...cv.fieldEvidence];
+  let reliability = cv.reliability ?? emptyReliability(now);
   for (const c of conflicts) {
     if (c.status === "resolved" && c.resolvedValue) {
       evidence.push({
@@ -316,9 +373,44 @@ export function resolveConflictsFromPatch(
         source: "chat",
         at: now,
       });
+      reliability = resolveReliabilityNotesForField(reliability, c.fieldKey, now);
     }
   }
-  return { ...cv, conflicts, fieldEvidence: evidence };
+
+  reliability = recomputeReliability({
+    conflicts,
+    pendingInferences: cv.pendingInferences ?? [],
+    notes: reliability.notes,
+    now,
+  });
+
+  return { ...cv, conflicts, fieldEvidence: evidence, reliability };
+}
+
+export function resolvePendingInferencesFromPatch(
+  cv: CandidateCvProfile | undefined,
+  patch: Partial<CandidateCard>,
+  now = new Date().toISOString(),
+): CandidateCvProfile | undefined {
+  if (!cv?.pendingInferences?.length) return cv;
+  const pendingInferences = cv.pendingInferences.map((p) => {
+    if (p.status !== "pending") return p;
+    const raw = (patch as Record<string, unknown>)[p.fieldKey];
+    if (raw === undefined) return p;
+    const chosen = norm(raw);
+    if (!chosen) return p;
+    if (chosen.toLowerCase() === p.value.toLowerCase()) {
+      return { ...p, status: "accepted" as const };
+    }
+    return { ...p, status: "rejected" as const };
+  });
+  const reliability = recomputeReliability({
+    conflicts: cv.conflicts,
+    pendingInferences,
+    notes: cv.reliability?.notes ?? [],
+    now,
+  });
+  return { ...cv, pendingInferences, reliability };
 }
 
 export function formatPendingConflictsForPrompt(cv?: CandidateCvProfile): string {
@@ -330,4 +422,64 @@ export function formatPendingConflictsForPrompt(cv?: CandidateCvProfile): string
       return `- ${c.fieldKey}: ${opts}`;
     })
     .join("\n");
+}
+
+export function formatPendingInferencesForPrompt(cv?: CandidateCvProfile): string {
+  const pending = (cv?.pendingInferences ?? []).filter((p) => p.status === "pending");
+  if (!pending.length) return "";
+  return pending
+    .map((p) => `- ${p.fieldKey}: "${p.value}" (רמז מהקו״ח: ${p.evidence})`)
+    .join("\n");
+}
+
+export function formatOpenReliabilityNotesForPrompt(cv?: CandidateCvProfile): string {
+  const open = (cv?.reliability?.notes ?? []).filter((n) => n.status === "open");
+  if (!open.length) return "";
+  return open.map((n) => `- ${n.fieldKey ?? n.kind}: ${n.summary}`).join("\n");
+}
+
+/** Open a chat_internal conflict when chat patch differs from card. */
+export function openChatConflictOnCard(
+  cv: CandidateCvProfile,
+  fieldKey: string,
+  existingValue: string,
+  newValue: string,
+  now: string,
+): CandidateCvProfile {
+  const next: CandidateCvProfile = {
+    ...cv,
+    conflicts: [...cv.conflicts],
+    reliability: cv.reliability ?? emptyReliability(now),
+  };
+  const pending = next.conflicts.find((c) => c.fieldKey === fieldKey && c.status === "pending");
+  if (pending) {
+    const has = pending.values.some((v) => v.source === "chat" && v.value === newValue);
+    if (!has) pending.values.push({ value: newValue, source: "chat", at: now });
+  } else {
+    next.conflicts.push({
+      id: `conflict-${fieldKey}-${now}`,
+      fieldKey,
+      values: [
+        { value: existingValue, source: "chat", at: now },
+        { value: newValue, source: "chat", at: now },
+      ],
+      status: "pending",
+    });
+  }
+  next.reliability = openReliabilityNote(
+    next.reliability,
+    {
+      kind: "chat_internal",
+      fieldKey,
+      summary: `Chat inconsistency on ${fieldKey}: "${existingValue}" vs "${newValue}"`,
+    },
+    now,
+  );
+  next.reliability = recomputeReliability({
+    conflicts: next.conflicts,
+    pendingInferences: next.pendingInferences,
+    notes: next.reliability.notes,
+    now,
+  });
+  return next;
 }
