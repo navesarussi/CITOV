@@ -59,6 +59,10 @@ export type CandidateCard = {
   referencesAvailable: string;
   /** Free-form narrative / stories from conversation */
   narrative: string;
+  /** Structured employment history (also mirrored on cv profile). */
+  workHistory: WorkHistoryEntry[];
+  /** Structured education history (also mirrored on cv profile). */
+  educationHistory: EducationHistoryEntry[];
   /** 1 = גמיש מאוד, 10 = חייב התאמה מדויקת */
   flexibility: number;
   extras: Record<string, string>;
@@ -187,6 +191,32 @@ export type CandidateDocument = {
   extractionStatus?: "pending" | "ok" | "partial" | "failed";
 };
 
+export type PendingInference = {
+  id: string;
+  fieldKey: string;
+  value: string;
+  evidence: string;
+  confidence: "low";
+  status: "pending" | "accepted" | "rejected";
+  at: string;
+};
+
+export type ReliabilityNote = {
+  id: string;
+  kind: "cv_vs_chat" | "chat_internal" | "cv_internal" | "unresolved_inference";
+  fieldKey?: string;
+  summary: string;
+  status: "open" | "resolved";
+  createdAt: string;
+  resolvedAt?: string;
+};
+
+export type CandidateReliability = {
+  score: number;
+  notes: ReliabilityNote[];
+  updatedAt: string;
+};
+
 export type CandidateCvProfile = {
   workHistory: WorkHistoryEntry[];
   educationHistory: EducationHistoryEntry[];
@@ -194,7 +224,13 @@ export type CandidateCvProfile = {
   fieldEvidence: FieldEvidence[];
   conflicts: FieldConflict[];
   documents: CandidateDocument[];
+  pendingInferences: PendingInference[];
+  reliability: CandidateReliability;
 };
+
+export function emptyReliability(now = ""): CandidateReliability {
+  return { score: 100, notes: [], updatedAt: now };
+}
 
 export type EmployeeRecord = {
   userId: string;
@@ -213,6 +249,8 @@ export function emptyCvProfile(): CandidateCvProfile {
     fieldEvidence: [],
     conflicts: [],
     documents: [],
+    pendingInferences: [],
+    reliability: emptyReliability(),
   };
 }
 
@@ -355,6 +393,8 @@ export function emptyCandidateCard(): CandidateCard {
     linkedinUrl: "",
     referencesAvailable: "",
     narrative: "",
+    workHistory: [],
+    educationHistory: [],
     flexibility: 5,
     extras: {},
   };
