@@ -1,5 +1,7 @@
 import { RoleLandingPage } from "@/components/RoleLandingPage";
+import { getSessionFlags } from "@/lib/session-flags-server";
 
-export default function EmployerHomePage() {
-  return <RoleLandingPage role="employer" />;
+export default async function EmployerHomePage() {
+  const initialFlags = await getSessionFlags();
+  return <RoleLandingPage role="employer" initialFlags={initialFlags} />;
 }
