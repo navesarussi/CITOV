@@ -2,42 +2,17 @@ import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import type { Role, User } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
-import {
-  allowDemoMode,
-  allowOpenAuth,
-  hasGoogleAuth,
-} from "@/infrastructure/auth-flags";
-import { listDevUsers } from "@/application/dev-login";
-import { isAdminEmail } from "@/infrastructure/admin-config";
-import {
-  devSessionIsAdmin,
-  getDevSession,
-  isDevAuthEnabled,
-} from "@/infrastructure/dev-auth";
-import { shouldUseMemoryStore } from "@/infrastructure/db/memory-store";
+import { allowOpenAuth } from "@/infrastructure/auth-flags";
 import { allowDemo } from "@/infrastructure/auth-guard";
 import {
   findUserByEmailOrGoogle,
   upsertSessionRole,
 } from "@/infrastructure/db/normalized-store";
+import { getSessionFlags } from "@/lib/session-flags-server";
 import { readStore } from "@/infrastructure/store";
 
 export async function GET() {
-  const devSession = await getDevSession();
-  const session = await auth();
-  const email = devSession?.email ?? session?.user?.email ?? null;
-  const isAdmin = devSessionIsAdmin(devSession) || isAdminEmail(session?.user?.email);
-  const devAuth = isDevAuthEnabled();
-  return ok({
-    googleAuth: hasGoogleAuth(),
-    allowDemo: allowDemoMode(),
-    openAuth: allowOpenAuth(),
-    devAuth,
-    memoryStore: shouldUseMemoryStore(),
-    devUsers: devAuth ? listDevUsers() : [],
-    isAdmin,
-    email,
-  });
+  return ok(await getSessionFlags());
 }
 
 export async function POST(req: Request) {

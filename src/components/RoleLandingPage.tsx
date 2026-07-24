@@ -9,6 +9,7 @@ import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
 import type { Role } from "@/domain/types";
+import type { SessionFlagsPayload } from "@/lib/session-flags-server";
 import {
   adminHomePath,
   clearSessionOnLogout,
@@ -21,15 +22,9 @@ import {
 
 type DevUser = { id: string; name: string; role: Role; email?: string };
 
-type SessionFlags = {
-  googleAuth: boolean;
-  openAuth: boolean;
-  devAuth: boolean;
-  isAdmin: boolean;
-  devUsers: DevUser[];
-};
+type SessionFlags = SessionFlagsPayload;
 
-export function RoleLandingPage(props: { role: Role }) {
+export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags }) {
   const { role } = props;
   const landingPath = roleLandingPath(role);
   const router = useRouter();
@@ -38,14 +33,19 @@ export function RoleLandingPage(props: { role: Role }) {
   const [error, setError] = useState<string | null>(null);
   const [loginOpen, setLoginOpen] = useState(false);
   const [entering, setEntering] = useState(false);
-  const [flags, setFlags] = useState<SessionFlags>({
-    googleAuth: false,
-    openAuth: false,
-    devAuth: true,
-    isAdmin: false,
-    devUsers: [],
-  });
-  const [flagsReady, setFlagsReady] = useState(false);
+  const [flags, setFlags] = useState<SessionFlags>(
+    props.initialFlags ?? {
+      googleAuth: false,
+      openAuth: false,
+      devAuth: true,
+      allowDemo: false,
+      memoryStore: false,
+      isAdmin: false,
+      devUsers: [],
+      email: null,
+    },
+  );
+  const [flagsReady, setFlagsReady] = useState(Boolean(props.initialFlags));
   const autoStarted = useRef(false);
 
   const copy =
@@ -68,26 +68,33 @@ export function RoleLandingPage(props: { role: Role }) {
     const d = (await r.json()) as Partial<SessionFlags & { devUsers?: DevUser[] }>;
     setFlags({
       googleAuth: Boolean(d.googleAuth),
+      allowDemo: Boolean(d.allowDemo),
       openAuth: Boolean(d.openAuth),
       devAuth: Boolean(d.devAuth),
+      memoryStore: Boolean(d.memoryStore),
       isAdmin: Boolean(d.isAdmin),
+      email: typeof d.email === "string" ? d.email : null,
       devUsers: Array.isArray(d.devUsers) ? d.devUsers : [],
     });
   }
 
   useEffect(() => {
+    if (props.initialFlags) return;
     void loadFlags()
       .catch(() => {
         setFlags({
           googleAuth: false,
+          allowDemo: false,
           openAuth: false,
           devAuth: true,
+          memoryStore: false,
           isAdmin: false,
+          email: null,
           devUsers: [],
         });
       })
       .finally(() => setFlagsReady(true));
-  }, []);
+  }, [props.initialFlags]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
