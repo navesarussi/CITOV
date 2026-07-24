@@ -70,7 +70,9 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 | FR-JOB-02 | Employer screen filters by active job; each job has its own chat and candidate list |
 
 ### FR-CV (candidate résumé upload & deep analysis)
-Design: `docs/superpowers/specs/2026-07-23-cv-deep-analysis-design.md`
+Design: `docs/superpowers/specs/2026-07-23-cv-deep-analysis-design.md`  
+Subtext + reliability: `docs/superpowers/specs/2026-07-24-cv-subtext-reliability-design.md`
+Plan: `docs/superpowers/plans/2026-07-24-cv-subtext-reliability.md`
 
 | ID | Requirement |
 |---|---|
