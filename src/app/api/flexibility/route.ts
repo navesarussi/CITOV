@@ -1,10 +1,9 @@
 import { after } from "next/server";
 import { applyFlexibility } from "@/application/update-flexibility";
-import { refreshStoreMatches } from "@/application/employer-actions";
 import type { CandidateCard, JobCard } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
 import { assertActor } from "@/infrastructure/auth-guard";
-import { writeMatches } from "@/infrastructure/store";
+import { rebuildAndWriteMatches } from "@/infrastructure/store";
 import {
   persistEmployeeProfile,
   persistEmployerProfile,
@@ -45,7 +44,7 @@ export async function PATCH(req: Request) {
 
     after(async () => {
       try {
-        await writeMatches(refreshStoreMatches(applied.store).matches);
+        await rebuildAndWriteMatches();
       } catch (err) {
         console.error("deferred flexibility match refresh failed", err);
       }

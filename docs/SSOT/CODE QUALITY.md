@@ -7,12 +7,13 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - AI provider swappable (Gemini / heuristic)
 - Product chat behavior is defined in `docs/SSOT/CHAT_AGENTS.md` and SRS FR-CHAT-*
 - Chat intake uses `generateObject({ system, messages })` with full recent history; match rebuild is deferred via `after()`
-- Hot paths: single `readStore` via `assertActor`, chat returns card without full page refetch
-- Interactive writes use `scoped-store` (per-user upsert / chat insert / chat clear) — not whole-DB `persistStore`
-- Match rebuild deferred via `after()` on chat + flexibility; in-process store read cache invalidated on writes
+- Hot paths: `assertActor` loads an **actor slice** (self profile/chat/prompts only); list endpoints use opportunity/queue slices
+- Interactive writes use `scoped-store` (per-user upsert / chat insert / chat clear / match status) — not whole-DB `persistStore`
+- Match rebuild deferred via `after()` + `readMatchingStore()` (cards+matches, no chats)
+- In-process full-store cache invalidated on writes; DB pool default max 12 (`DB_POOL_MAX`), prefer cached pooler host on connect
 - Admin prompts: live DB override + reset-to-file defaults (`DELETE /api/admin/prompts`)
-- [PENDING REFACTOR]: split `scoped-store.ts` / `application/chat.ts` under 200-line cap
-- [PENDING REFACTOR]: scope `assertActor` reads (per-user slice) instead of full-store load
+- [PENDING REFACTOR]: split `scoped-store.ts` / `slice-store.ts` / `application/chat.ts` under 200-line cap
+- [PENDING REFACTOR]: SQL-scope field-question broadcast (still rare full-store path)
 
 ## Data layer (Supabase)
 

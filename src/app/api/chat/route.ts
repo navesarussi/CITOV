@@ -1,12 +1,11 @@
 import { after } from "next/server";
 import { handleEmployeeChat, handleEmployerChat } from "@/application/chat";
-import { refreshStoreMatches } from "@/application/employer-actions";
 import { employeeHasCv } from "@/domain/candidate-mini-card";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { CandidateCard } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
 import { assertActor } from "@/infrastructure/auth-guard";
-import { writeMatches } from "@/infrastructure/store";
+import { rebuildAndWriteMatches } from "@/infrastructure/store";
 import {
   persistEmployeeTurn,
   persistEmployerTurn,
@@ -83,9 +82,10 @@ export async function POST(req: Request) {
       }
     }
 
+    // Rebuild from a fresh matching snapshot — actor slice must not drive global matches.
     after(async () => {
       try {
-        await writeMatches(refreshStoreMatches(result.store).matches);
+        await rebuildAndWriteMatches();
       } catch (err) {
         console.error("deferred match refresh failed", err);
       }

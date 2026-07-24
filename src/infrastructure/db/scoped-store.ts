@@ -297,6 +297,40 @@ export async function clearConversationChat(params: {
   });
 }
 
+/** Approve/reject a single match row — no whole-store rewrite. */
+export async function updateMatchStatus(params: {
+  matchId: string;
+  employerId: string;
+  status: "approved" | "rejected";
+}): Promise<boolean> {
+  if (shouldUseMemoryStore()) {
+    const data = readMemoryStore();
+    const hit = data.matches.find(
+      (m) => m.id === params.matchId && m.jobOwnerId === params.employerId,
+    );
+    if (!hit) return false;
+    writeMemory({
+      ...data,
+      matches: data.matches.map((m) =>
+        m.id === params.matchId
+          ? { ...m, status: params.status, updatedAt: new Date().toISOString() }
+          : m,
+      ),
+    });
+    return true;
+  }
+  await ensureSchema();
+  const pool = await getPool();
+  const result = await pool.query(
+    `update matches
+     set status = $1, updated_at = now()
+     where id = $2 and job_owner_id = $3`,
+    [params.status, params.matchId, params.employerId],
+  );
+  invalidateStoreCache();
+  return (result.rowCount ?? 0) > 0;
+}
+
 /** Re-export for tests / callers that need the in-memory snapshot after scoped memory writes. */
 export function peekMemoryStore(): StoreData {
   return readMemoryStore();
