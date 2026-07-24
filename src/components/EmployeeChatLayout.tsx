@@ -65,8 +65,8 @@ export function EmployeeChatLayout(props: {
   scheduledInterviews: number;
   placeholder: string;
   onTurn: (payload: ChatTurnPayload) => void;
-  onFlexibilityChange: (value: number) => void;
   onCvDone: () => void;
+  onFlexibilityChange: (value: number) => void;
 }) {
   const { t } = useTranslation();
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -119,22 +119,14 @@ export function EmployeeChatLayout(props: {
               </div>
             </header>
             <CandidateProfileStrip
-              userId={props.userId}
               card={props.card}
-              variant="sidebar"
+              userId={props.userId}
               onFlexibilityChange={props.onFlexibilityChange}
             />
           </section>
         </aside>
 
         <section className="employee-chat-main" aria-label={t.chat.title}>
-          <header className="employee-chat-main__header">
-            <div>
-              <h2 className="employee-chat-main__title">{t.employee.chatHeroTitle}</h2>
-              <p className="employee-chat-main__lead">{t.employee.chatHeroLead}</p>
-            </div>
-          </header>
-
           <div className="employee-chat-main__panel">
             <ChatPanel
               key={`${props.userId}-employee`}

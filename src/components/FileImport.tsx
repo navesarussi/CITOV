@@ -27,12 +27,13 @@ export function FileImport(props: {
   variant?: "default" | "toolbar" | "footer" | "sidebar";
   inputRef?: Ref<HTMLInputElement>;
 }) {
-  const { t, fmt } = useTranslation();
+  const { t, fmt, locale } = useTranslation();
   const localRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [phase, setPhase] = useState<"saved" | "analyzed" | null>(null);
   const [error, setError] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const analyzingRef = useRef(false);
 
   function bindInputRef(node: HTMLInputElement | null) {
@@ -56,12 +57,13 @@ export function FileImport(props: {
       const res = await fetch("/api/cv/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: props.userId, documentId }),
+        body: JSON.stringify({ userId: props.userId, documentId, locale }),
       });
       const data = await res.json();
       if (res.ok && data.ok) {
         setStatus("done");
         setPhase("analyzed");
+        setExpanded(false);
         if (props.minimalSummary && data.summary) {
           setSummary(data.summary as ImportSummary);
         }
@@ -168,7 +170,46 @@ export function FileImport(props: {
     </>
   );
 
+  const summaryLine = summary ? (
+    <p className="employee-cv-card__summary">
+      {fmt(t.fileImport.cvSummary, {
+        fields: String(summary.fieldsUpdated ?? 0),
+        roles: String(summary.rolesFound ?? 0),
+      })}
+    </p>
+  ) : null;
+
   if (variant === "sidebar") {
+    if (hasCv && !expanded && !busy) {
+      return (
+        <div className="employee-cv-card employee-cv-card--collapsed">
+          <input
+            ref={bindInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            onChange={(e) => void onFile(e)}
+            className="hidden"
+          />
+          <div className="employee-cv-card__compact">
+            <span className="employee-cv-card__compact-check" aria-hidden>
+              ✓
+            </span>
+            <span className="employee-cv-card__compact-name">
+              {props.existingFileName || t.fileImport.cvCaptured}
+            </span>
+            <button
+              type="button"
+              className="employee-cv-card__compact-btn"
+              onClick={() => setExpanded(true)}
+            >
+              {t.fileImport.expandCv}
+            </button>
+          </div>
+          {summaryLine}
+        </div>
+      );
+    }
+
     return (
       <div className={`employee-cv-card ${hasCv ? "employee-cv-card--done" : "employee-cv-card--pending"}`}>
         <input
@@ -196,16 +237,19 @@ export function FileImport(props: {
         </div>
         <div className="employee-cv-card__actions">
           {uploadButton}
+          {hasCv ? (
+            <button
+              type="button"
+              className="employee-cv-card__compact-btn"
+              onClick={() => setExpanded(false)}
+              disabled={busy}
+            >
+              {t.fileImport.collapseCv}
+            </button>
+          ) : null}
           {statusLine}
         </div>
-        {summary ? (
-          <p className="employee-cv-card__summary">
-            {fmt(t.fileImport.cvSummary, {
-              fields: String(summary.fieldsUpdated ?? 0),
-              roles: String(summary.rolesFound ?? 0),
-            })}
-          </p>
-        ) : null}
+        {summaryLine}
       </div>
     );
   }

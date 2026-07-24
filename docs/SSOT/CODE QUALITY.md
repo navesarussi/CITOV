@@ -34,4 +34,5 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - [PENDING REFACTOR]: split `SettingsMenu.tsx` under 200-line cap
 - [PENDING REFACTOR]: split `domain/cv-merge.ts` under 200-line cap
 - Settings sign-out clears `shidukh_user` + NextAuth session (when present) and returns to `/`
+- [PENDING REFACTOR]: split `FileImport.tsx` under 200-line cap
 - [PENDING REFACTOR]: restore employer/admin UI entry points (home role picker, settings default-role, admin menu) after candidate CITOV rebrand phase

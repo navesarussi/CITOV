@@ -135,6 +135,7 @@ export default function EmployeePage() {
           scheduledInterviews={jobs.length}
           placeholder={t.employee.chatPlaceholder}
           onTurn={onTurn}
+          onCvDone={() => void refresh(userId)}
           onFlexibilityChange={(value) => {
             setMe((prev) =>
               prev
@@ -145,7 +146,6 @@ export default function EmployeePage() {
                 : prev,
             );
           }}
-          onCvDone={() => void refresh(userId)}
         />
       ) : (
         <div className="workspace-stack enter-delay tab-fade">

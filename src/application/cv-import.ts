@@ -1,8 +1,10 @@
 import { randomUUID } from "crypto";
 import { applyCvExtraction } from "@/application/chat";
+import { translateCandidateCardForDisplay } from "@/application/translate-candidate-display";
 import { createAiUsageRecord } from "@/domain/admin";
 import { NotFoundError } from "@/domain/errors";
 import { emptyCvProfile, type CandidateDocument, type StoreData } from "@/domain/types";
+import type { Locale } from "@/i18n/types";
 import { runCvExtraction } from "@/infrastructure/ai/intake";
 
 export type SaveCvInput = {
@@ -56,6 +58,7 @@ export async function analyzeCandidateCv(
   store: StoreData,
   userId: string,
   documentId?: string,
+  locale: Locale = "he",
 ): Promise<{
   store: StoreData;
   provider: string;
@@ -92,6 +95,19 @@ export async function analyzeCandidateCv(
   );
 
   let next: StoreData = applied.store;
+  const appliedEmp = next.employees.find((e) => e.userId === userId);
+  if (appliedEmp) {
+    const displayCard = await translateCandidateCardForDisplay(appliedEmp.card, locale);
+    if (displayCard !== appliedEmp.card) {
+      next = {
+        ...next,
+        employees: next.employees.map((e) =>
+          e.userId === userId ? { ...e, card: displayCard } : e,
+        ),
+      };
+    }
+  }
+
   let usageRecord: ReturnType<typeof createAiUsageRecord> | undefined;
   if (extracted.usage) {
     usageRecord = createAiUsageRecord({
