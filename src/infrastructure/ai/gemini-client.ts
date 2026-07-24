@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
 
 let keyIndex = 0;
 const modelCache = new Map<string, ReturnType<ReturnType<typeof createGoogleGenerativeAI>>>();
