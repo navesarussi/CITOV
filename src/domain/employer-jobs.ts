@@ -7,11 +7,14 @@ function newJobId(): string {
 
 export function createJobSlot(partial?: {
   id?: string;
+  name?: string;
   card?: Partial<JobCard>;
   chat?: ChatMessage[];
 }): JobSlot {
+  const name = partial?.name?.trim();
   return {
     id: partial?.id ?? newJobId(),
+    ...(name ? { name } : {}),
     card: normalizeJobCard(partial?.card),
     chat: partial?.chat ?? [],
   };
@@ -26,11 +29,15 @@ export function normalizeEmployerRecord(
 ): EmployerRecord {
   const legacyCard = normalizeJobCard(raw.card);
   const legacyChat = raw.chat ?? [];
-  let jobs = (raw.jobs ?? []).map((j) => ({
-    id: j.id,
-    card: normalizeJobCard(j.card),
-    chat: j.chat ?? [],
-  }));
+  let jobs = (raw.jobs ?? []).map((j) => {
+    const name = typeof j.name === "string" ? j.name.trim() : "";
+    return {
+      id: j.id,
+      ...(name ? { name } : {}),
+      card: normalizeJobCard(j.card),
+      chat: j.chat ?? [],
+    };
+  });
 
   if (jobs.length === 0) {
     jobs = [
@@ -77,30 +84,52 @@ export function withActiveJob(employer: EmployerRecord, jobId: string): Employer
 export function updateJobSlot(
   employer: EmployerRecord,
   jobId: string,
-  patch: { card?: JobCard; chat?: ChatMessage[] },
+  patch: { card?: JobCard; chat?: ChatMessage[]; name?: string },
 ): EmployerRecord {
   const normalized = normalizeEmployerRecord(employer);
-  const jobs = normalized.jobs.map((j) =>
-    j.id === jobId
-      ? {
-          ...j,
-          card: patch.card ?? j.card,
-          chat: patch.chat ?? j.chat,
-        }
-      : j,
-  );
+  const jobs = normalized.jobs.map((j) => {
+    if (j.id !== jobId) return j;
+    const nextName =
+      patch.name !== undefined ? patch.name.trim() : (j.name?.trim() ?? "");
+    const { name: _removed, ...rest } = j;
+    return {
+      ...rest,
+      ...(nextName ? { name: nextName } : {}),
+      card: patch.card ?? j.card,
+      chat: patch.chat ?? j.chat,
+    };
+  });
   const next = { ...normalized, jobs };
   return withActiveJob(next, normalized.activeJobId);
 }
 
-export function addEmployerJob(employer: EmployerRecord): EmployerRecord {
+export function renameEmployerJob(
+  employer: EmployerRecord,
+  jobId: string,
+  name: string,
+): EmployerRecord {
+  const trimmed = name.trim();
+  if (!trimmed) return normalizeEmployerRecord(employer);
+  return updateJobSlot(employer, jobId, { name: trimmed });
+}
+
+export function addEmployerJob(
+  employer: EmployerRecord,
+  opts?: { name?: string },
+): EmployerRecord {
   const normalized = normalizeEmployerRecord(employer);
-  const job = createJobSlot({ card: emptyJobCard(), chat: [] });
+  const job = createJobSlot({
+    card: emptyJobCard(),
+    chat: [],
+    name: opts?.name,
+  });
   const jobs = [...normalized.jobs, job];
   return withActiveJob({ ...normalized, jobs }, job.id);
 }
 
 export function jobLabel(job: JobSlot, fallbackIndex: number): string {
+  const name = job.name?.trim();
+  if (name) return name;
   const title = job.card.title?.trim();
   if (title) return title;
   const field = job.card.field?.trim();

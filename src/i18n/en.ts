@@ -153,6 +153,8 @@ export const en = {
     chatPlaceholder: "e.g. Looking for a waiter for a restaurant in Tel Aviv…",
     jobsFilter: "Jobs",
     newJob: "New job",
+    renameJob: "Rename job",
+    jobNamePrompt: "Job name (e.g. Dizengoff branch / evening shift)",
     jobFallback: "Job {n}",
   },
   chat: {

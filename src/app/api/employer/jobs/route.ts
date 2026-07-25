@@ -4,15 +4,26 @@ import { persistEmployerProfile } from "@/infrastructure/db/scoped-store";
 import {
   addEmployerJob,
   normalizeEmployerRecord,
+  renameEmployerJob,
   withActiveJob,
 } from "@/domain/employer-jobs";
+
+function jobSummaries(employer: ReturnType<typeof normalizeEmployerRecord>) {
+  return employer.jobs.map((j) => ({
+    id: j.id,
+    name: j.name ?? "",
+    title: j.card.title,
+    field: j.card.field,
+  }));
+}
 
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as {
       userId?: string;
-      action?: "create" | "select";
+      action?: "create" | "select" | "rename";
       jobId?: string;
+      name?: string;
     };
     if (!body.userId) return ok({ error: "חסר userId" }, { status: 400 });
     const gate = await assertActor(body.userId);
@@ -26,8 +37,14 @@ export async function POST(req: Request) {
     if (body.action === "select") {
       if (!body.jobId) return ok({ error: "חסר jobId" }, { status: 400 });
       employer = withActiveJob(employer, body.jobId);
+    } else if (body.action === "rename") {
+      if (!body.jobId) return ok({ error: "חסר jobId" }, { status: 400 });
+      const name = String(body.name ?? "").trim();
+      if (!name) return ok({ error: "חסר שם משרה" }, { status: 400 });
+      employer = renameEmployerJob(employer, body.jobId, name);
     } else {
-      employer = addEmployerJob(employer);
+      const name = String(body.name ?? "").trim();
+      employer = addEmployerJob(employer, name ? { name } : undefined);
     }
 
     const next = {
@@ -45,11 +62,7 @@ export async function POST(req: Request) {
     });
 
     return ok({
-      jobs: employer.jobs.map((j) => ({
-        id: j.id,
-        title: j.card.title,
-        field: j.card.field,
-      })),
+      jobs: jobSummaries(employer),
       activeJobId: employer.activeJobId,
       card: employer.card,
       chat: employer.chat,

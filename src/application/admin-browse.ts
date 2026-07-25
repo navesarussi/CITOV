@@ -172,7 +172,7 @@ export function getAdminEmployerDetail(
       const je = jobEngagement(j);
       return {
         jobId: j.id,
-        title: j.card.title || j.id,
+        title: j.name?.trim() || j.card.title || j.id,
         knowledgePercent: je.knowledgePercent,
         userMessageCount: je.userMessageCount,
         flexibility: je.flexibility,
@@ -194,7 +194,7 @@ export function getAdminJobDetail(
   const je = jobEngagement(job);
   return {
     jobId: job.id,
-    title: job.card.title || job.id,
+    title: job.name?.trim() || job.card.title || job.id,
     knowledgePercent: je.knowledgePercent,
     userMessageCount: je.userMessageCount,
     flexibility: je.flexibility,

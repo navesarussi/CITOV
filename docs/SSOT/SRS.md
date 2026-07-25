@@ -77,6 +77,7 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 |---|---|
 | FR-JOB-01 | Approved employers may publish multiple jobs |
 | FR-JOB-02 | Employer screen filters by active job; each job has its own chat and candidate list |
+| FR-JOB-03 | Employers may set a specific display name per job (create + rename); used in the jobs filter |
 
 ### FR-CV (candidate résumé upload & deep analysis)
 Design: `docs/superpowers/specs/2026-07-23-cv-deep-analysis-design.md`
