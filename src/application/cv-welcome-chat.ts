@@ -27,6 +27,8 @@ export async function runCvWelcomeAfterUpload(params: {
     pendingQuestions: prep.pendingQuestions,
     systemPrompt: prep.systemPrompt,
     pendingConflicts: prep.pendingConflicts,
+    pendingInferences: prep.pendingInferences,
+    openReliabilityNotes: prep.openReliabilityNotes,
     isCvUpdate: params.isCvUpdate,
     locale: params.locale,
     candidateName: candidateFirstName(params.store, params.userId),

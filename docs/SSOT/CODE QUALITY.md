@@ -35,6 +35,8 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - Approved opportunities use `jobCardForMatch` (matched job, not active-job mirror) and surface contact fields
 - [PENDING REFACTOR]: split `SettingsMenu.tsx` under 200-line cap
 - [PENDING REFACTOR]: split `domain/cv-merge.ts` under 200-line cap
+- [PENDING REFACTOR]: split `application/chat.ts` under 200-line cap after CV reliability work
+- [PENDING REFACTOR]: during CV subtext work, prefer new files (`cv-sanitize.ts`, `reliability.ts`, `cv-extraction.ts`) over growing `intake.ts` / `cv-merge.ts` further
 - Settings sign-out clears `shidukh_user` + NextAuth session (when present) and returns to `/`
 - [PENDING REFACTOR]: split `FileImport.tsx` under 200-line cap
 - [PENDING REFACTOR]: restore default-role switch in Settings (FR-UI-01 / FR-UI-04) — landings are split; memory key still written on session start

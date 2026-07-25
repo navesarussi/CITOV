@@ -127,6 +127,8 @@ export function buildEmployeeConversation(params: {
   chat: ChatMessage[];
   pendingQuestions: FieldQuestion[];
   pendingConflicts?: string;
+  pendingInferences?: string;
+  openReliabilityNotes?: string;
 }): BuiltConversation {
   const pending = params.pendingQuestions
     .map((q) => `- [${q.id}] ${q.question}`)
@@ -136,8 +138,16 @@ export function buildEmployeeConversation(params: {
     .map((q) => `- ${q}`)
     .join("\n");
   const conflicts = params.pendingConflicts?.trim();
+  const inferences = params.pendingInferences?.trim();
+  const notes = params.openReliabilityNotes?.trim();
   const conflictBlock = conflicts
     ? `\n\nקונפליקטים ממקורות שונים (CV מול שיחה) — ברר/י בעדינות מה מעודכן, בלי למחוק מקורות:\n${conflicts}`
+    : "";
+  const inferenceBlock = inferences
+    ? `\n\nהסקות חלשות מהקו״ח לאישור (אל תציין שמדובר ב״הסקה״ או ציון):\n${inferences}`
+    : "";
+  const notesBlock = notes
+    ? `\n\nסתירות פתוחות לבירור (בלי להזכיר אמינות/ציונים):\n${notes}`
     : "";
 
   return {
@@ -148,7 +158,10 @@ export function buildEmployeeConversation(params: {
         missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
         pending_field_questions: pending || "אין",
         recent_agent_questions: recent || "אין עדיין",
-      }) + conflictBlock,
+      }) +
+      conflictBlock +
+      inferenceBlock +
+      notesBlock,
     messages: toModelMessages(params.chat, params.message),
   };
 }

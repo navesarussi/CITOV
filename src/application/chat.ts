@@ -49,6 +49,8 @@ export async function handleEmployeeChat(
     pendingQuestions: prep.pendingQuestions,
     systemPrompt: prep.systemPrompt,
     pendingConflicts: prep.pendingConflicts,
+    pendingInferences: prep.pendingInferences,
+    openReliabilityNotes: prep.openReliabilityNotes,
   });
   return applyEmployeeTurn({
     store,

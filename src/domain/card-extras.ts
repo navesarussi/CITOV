@@ -18,7 +18,20 @@ function isEmpty(value: unknown): boolean {
 
 export function formatCardValue(value: unknown): string {
   if (value == null) return "";
-  if (Array.isArray(value)) return value.join(", ");
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "";
+    if (typeof value[0] === "object" && value[0] !== null) {
+      const first = value[0] as Record<string, unknown>;
+      if ("company" in first || "title" in first) {
+        return `${value.length} תפקידים`;
+      }
+      if ("institution" in first || "degreeOrProgram" in first) {
+        return `${value.length} רשומות השכלה`;
+      }
+      return `${value.length} פריטים`;
+    }
+    return value.join(", ");
+  }
   if (typeof value === "number") return String(value);
   return String(value);
 }
