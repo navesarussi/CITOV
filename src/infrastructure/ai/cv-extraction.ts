@@ -5,6 +5,7 @@ import {
   hasGeminiKey,
 } from "./gemini-client";
 import type { CandidateCard } from "@/domain/types";
+import { compactCard } from "@/domain/chat-context";
 import { isExtractTextUsable, sanitizeCvPatch } from "@/domain/cv-sanitize";
 import { heuristicEmployeeIntake } from "./heuristic";
 import {
@@ -13,6 +14,11 @@ import {
   type AiTokenUsage,
   type CandidatePatch,
 } from "./schemas";
+
+/** Without caps Gemini can hit finishReason=length (~65k tokens) and fail structured parse. */
+const PASS_A_MAX_TOKENS = 4096;
+const PASS_B_MAX_TOKENS = 2048;
+const MAX_CV_CHARS = 14_000;
 
 function extractUsage(usage?: {
   promptTokens?: number;
@@ -32,26 +38,31 @@ function extractUsage(usage?: {
   };
 }
 
+function clipCvText(text: string): string {
+  const t = text.trim();
+  if (t.length <= MAX_CV_CHARS) return t;
+  return `${t.slice(0, MAX_CV_CHARS)}\n\n[…טקסט קו״ח קוצר לניתוח…]`;
+}
+
 const PASS_A_SYSTEM = `את/ה מגייס/ת מקצועית שמחלצת מקורות חיים עובדות מפורשות בלבד אל כרטיס מועמד/ת.
 כללים מחייבים:
-1. חלץ/י אך ורק מידע שמופיע במפורש בטקסט. אל תמציא/י, אל תנחש/י, אל תשלימ/י פערי ניסיון.
-2. מלא/י כמה שיותר שדות רלוונטיים ב-patch (תפקיד, תחום, מיקום, כישורים, שפות, השכלה, הסמכות, רישיונות, ניסיון, קישורים וכו').
-3. בנה/י workHistory מלאה לכל תפקיד (חברה, תפקיד, תאריכים אם יש, תיאור/הישגים).
-4. בנה/י educationHistory לכל מוסד/תואר/קורס משמעותי.
-5. כל פרט מפורש שלא נכנס לשדה קבוע — העבר/י ל-unmappedFacts (label+value). אסור לאבד מידע.
-6. narrative = סיכום מקצועי קצר של הרקע בלבד (לא העתקת כל הקורות חיים, עד ~3 משפטים).
-7. fieldConfidence: סמן/י high/medium/low לשדות עמומים.
-8. שדה שלא מופיע — אל תכלול/י אותו ב-patch.
-החזר/י JSON לפי הסכמה בלבד. אל תכלול inferences בשלב זה.`;
+1. חלץ/י אך ורק מידע שמופיע במפורש בטקסט. אל תמציא/י, אל תנחש/י.
+2. מלא/י רק שדות שיש להם ערך אמיתי בטקסט. שדה ריק = אל תכלול/י אותו ב-patch.
+3. ערכים קצרים ותמציתיים (מילים בודדות עד משפט קצר). אסור טקסט חוזר / מילוי מלאכותי.
+4. workHistory: רשומה לכל תפקיד (חברה, תפקיד, תאריכים אם יש, description קצר עד ~2 משפטים).
+5. educationHistory: מוסד/תואר משמעותי בלבד.
+6. unmappedFacts: רק פרטים מפורשים שלא נכנסו לשדה קבוע (label+value קצרים).
+7. narrative: עד 3 משפטים מקצועיים — לא להעתיק את כל הקו״ח.
+8. fieldConfidence רק לשדות עמומים.
+החזר/י JSON קצר לפי הסכמה. אל תכלול inferences. אל תמלא שדות סתם.`;
 
-const PASS_B_SYSTEM = `את/ה אנליסט/ית השמה. בהינתן טקסט קורות חיים + חילוץ מובנה קיים, הפק/י הסקות סאבטקסט מבוקרות בלבד.
+const PASS_B_SYSTEM = `את/ה אנליסט/ית השמה. הפק/י הסקות סאבטקסט מבוקרות בלבד.
 כללים:
-1. כל פריט חייב evidence (ציטוט/פרפרזה קצרה מהטקסט) + confidence high|medium|low.
-2. מותר: ניסיון ניהולי מ"ניהלתי צוות", בכירות משנים+תארים, תחום מתפקידים, סגנון עבודה מניסוח.
-3. אסור: להמציא מעסיקים, תאריכים, שכר, מיקום, או עובדות שלא נתמכות.
-4. fieldKey חייב להיות שם שדה כרטיס מוכר (למשל managementExperience, experienceLevel, personality, industryExperience).
-5. אם אין הסקה מבוססת — החזר/י מערך inferences ריק.
-החזר/י JSON עם inferences בלבד.`;
+1. כל פריט: fieldKey + value קצר + evidence (ציטוט קצר) + confidence high|medium|low.
+2. מותר: ניהול מ"הובלתי צוות", בכירות מתואר/שנים, תחום מתפקידים, סגנון מניסוח.
+3. אסור להמציא מעסיקים/תאריכים/שכר/מיקום. מקסימום 12 הסקות. אם אין — מערך ריק.
+4. fieldKey משדות כרטיס מוכרים (managementExperience, teamSizeManaged, experienceLevel, industryExperience, personality, workStyle, customerFacingOk).
+החזר/י JSON עם inferences בלבד — קצר.`;
 
 export type CvExtractionResult = {
   patch: CandidatePatch;
@@ -91,16 +102,19 @@ export async function runCvExtraction(params: {
   }
 
   try {
+    const cvText = clipCvText(params.text);
+    const cardHint = compactCard(params.card);
     const passA = await callGeminiWithRetry(() =>
       generateObject({
         model: getGeminiModel(),
         temperature: 0.1,
+        maxOutputTokens: PASS_A_MAX_TOKENS,
         schema: cvExtractionSchema,
         system: PASS_A_SYSTEM,
         messages: [
           {
             role: "user",
-            content: `קורות חיים לניתוח מעמיק (עובדות מפורשות):\n\n${params.text}\n\nכרטיס נוכחי (למודעות בלבד):\n${JSON.stringify(params.card)}`,
+            content: `קורות חיים לניתוח (עובדות מפורשות בלבד):\n\n${cvText}\n\nכרטיס נוכחי (לא ריק בלבד):\n${JSON.stringify(cardHint)}`,
           },
         ],
       }),
@@ -113,12 +127,13 @@ export async function runCvExtraction(params: {
         generateObject({
           model: getGeminiModel(),
           temperature: 0.2,
+          maxOutputTokens: PASS_B_MAX_TOKENS,
           schema: cvInferencePassSchema,
           system: PASS_B_SYSTEM,
           messages: [
             {
               role: "user",
-              content: `טקסט קורות חיים:\n\n${params.text}\n\nחילוץ מובנה קיים:\n${JSON.stringify({
+              content: `טקסט קורות חיים:\n\n${cvText}\n\nחילוץ מובנה קיים:\n${JSON.stringify({
                 patch: passA.object.patch,
                 workHistory: passA.object.workHistory,
                 educationHistory: passA.object.educationHistory,
@@ -127,7 +142,7 @@ export async function runCvExtraction(params: {
           ],
         }),
       );
-      inferences = passB.object.inferences ?? [];
+      inferences = (passB.object.inferences ?? []).slice(0, 12);
       usageB = extractUsage(passB.usage);
     } catch (err) {
       console.error("cv subtext pass B failed; keeping pass A only", err);

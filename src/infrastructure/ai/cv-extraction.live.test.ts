@@ -21,12 +21,17 @@ loadEnvLocal();
 const live = hasGeminiKey();
 
 describe("live CV extraction (Gemini)", { skip: !live }, () => {
-  it("extracts leadership subtext onto the candidate card", async () => {
+  it("extracts leadership subtext onto the candidate card", { timeout: 120_000 }, async () => {
     const extracted = await runCvExtraction({
       text: SUBTEXT_RICH_CV,
       card: emptyCandidateCard(),
     });
 
+    assert.notEqual(
+      extracted.provider,
+      "heuristic",
+      "Gemini failed and fell back to heuristic — check maxOutputTokens / API errors",
+    );
     assert.equal(extracted.failed, undefined);
     assert.equal(extracted.provider, "gemini");
     assert.ok(
