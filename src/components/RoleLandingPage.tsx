@@ -5,6 +5,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
+import { DevLoginDialog } from "@/components/DevLoginDialog";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
@@ -24,6 +25,18 @@ type SessionFlags = SessionFlagsPayload;
 
 const PILLAR_ICONS = ["💬", "✦", "✓"] as const;
 
+const EMPTY_FLAGS: SessionFlags = {
+  googleAuth: false,
+  openAuth: false,
+  devAuth: false,
+  testLoginOnLanding: false,
+  allowDemo: false,
+  memoryStore: false,
+  isAdmin: false,
+  devUsers: [],
+  email: null,
+};
+
 export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags }) {
   const { role } = props;
   const landingPath = roleLandingPath(role);
@@ -33,18 +46,8 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   const { t, fmt } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [entering, setEntering] = useState(false);
-  const [flags, setFlags] = useState<SessionFlags>(
-    props.initialFlags ?? {
-      googleAuth: false,
-      openAuth: false,
-      devAuth: false,
-      allowDemo: false,
-      memoryStore: false,
-      isAdmin: false,
-      devUsers: [],
-      email: null,
-    },
-  );
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [flags, setFlags] = useState<SessionFlags>(props.initialFlags ?? EMPTY_FLAGS);
   const [flagsReady, setFlagsReady] = useState(Boolean(props.initialFlags));
   const autoStarted = useRef(false);
 
@@ -83,10 +86,11 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
       allowDemo: Boolean(d.allowDemo),
       openAuth: Boolean(d.openAuth),
       devAuth: Boolean(d.devAuth),
+      testLoginOnLanding: Boolean(d.testLoginOnLanding),
       memoryStore: Boolean(d.memoryStore),
       isAdmin: Boolean(d.isAdmin),
       email: typeof d.email === "string" ? d.email : null,
-      devUsers: [],
+      devUsers: Array.isArray(d.devUsers) ? d.devUsers : [],
     });
   }
 
@@ -94,16 +98,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
     if (props.initialFlags) return;
     void loadFlags()
       .catch(() => {
-        setFlags({
-          googleAuth: false,
-          allowDemo: false,
-          openAuth: false,
-          devAuth: false,
-          memoryStore: false,
-          isAdmin: false,
-          email: null,
-          devUsers: [],
-        });
+        setFlags(EMPTY_FLAGS);
       })
       .finally(() => setFlagsReady(true));
   }, [props.initialFlags]);
@@ -182,8 +177,9 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
 
   const isAuthed = status === "authenticated" && Boolean(session?.user);
   const showGoogle = flags.googleAuth && !isAuthed;
-  /** Test/demo login lives only on `/demo` — never on public landings. */
-  const showOpenEnter = flags.openAuth && !flags.googleAuth;
+  const showDevLogin = flags.testLoginOnLanding && !isAuthed;
+  /** Open-enter only when neither Google nor test-login dialog is available. */
+  const showOpenEnter = flags.openAuth && !flags.googleAuth && !showDevLogin;
   const bootstrapping = entering || (isAuthed && flags.googleAuth && !flags.isAdmin);
 
   return (
@@ -250,6 +246,23 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
                   </>
                 ) : null}
 
+                {showDevLogin ? (
+                  <Button
+                    variant={showGoogle ? "secondary" : undefined}
+                    onClick={() => {
+                      setError(null);
+                      setLoginOpen(true);
+                    }}
+                    className={
+                      showGoogle
+                        ? "min-h-12 w-full py-3.5 text-base"
+                        : "cta-glow brand-gradient-bg min-h-12 w-full border-0 py-3.5 text-base font-semibold hover:bg-transparent hover:brightness-105"
+                    }
+                  >
+                    {t.home.devSignIn}
+                  </Button>
+                ) : null}
+
                 {showOpenEnter ? (
                   <>
                     <p className="text-center text-xs leading-5 text-[var(--muted)]">
@@ -265,7 +278,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
                   </>
                 ) : null}
 
-                {!showGoogle && !showOpenEnter ? (
+                {!showGoogle && !showOpenEnter && !showDevLogin ? (
                   <p className="text-center text-xs leading-5 text-[var(--muted)]">
                     {t.home.googleNotConfigured}
                   </p>
@@ -288,6 +301,18 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
           </section>
         </div>
       </main>
+
+      <DevLoginDialog
+        open={loginOpen}
+        users={flags.devUsers}
+        defaultRole={role}
+        onClose={() => setLoginOpen(false)}
+        onDone={(redirect) => {
+          setLoginOpen(false);
+          router.replace(redirect);
+        }}
+        onError={setError}
+      />
     </div>
   );
 }

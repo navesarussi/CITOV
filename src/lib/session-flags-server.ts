@@ -19,6 +19,8 @@ export type SessionFlagsPayload = {
   allowDemo: boolean;
   openAuth: boolean;
   devAuth: boolean;
+  /** DevLoginDialog on `/` and `/for-employers` — local/dev only. */
+  testLoginOnLanding: boolean;
   memoryStore: boolean;
   devUsers: { id: string; name: string; role: Role; email?: string }[];
   isAdmin: boolean;
@@ -36,6 +38,7 @@ export async function getSessionFlags(): Promise<SessionFlagsPayload> {
     allowDemo: allowDemoMode(),
     openAuth: allowOpenAuth(),
     devAuth,
+    testLoginOnLanding: devAuth && process.env.NODE_ENV === "development",
     memoryStore: shouldUseMemoryStore(),
     devUsers: devAuth ? listDevUsers() : [],
     isAdmin,
