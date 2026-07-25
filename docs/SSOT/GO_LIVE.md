@@ -17,17 +17,19 @@
 
 ## Before first marketing users
 
+**Do these yourself:** `docs/SSOT/HUMAN_ONLY.md` (OAuth, Vercel flags, smoke, invites).
+
 ### Ops (human)
 
-1. **Gemini on Vercel** — see below; verify `/api/health/ai` → `geminiConfigured: true`
+1. Confirm Production deploy from `main` is Ready on Vercel
 2. **Google OAuth** origins + redirects for `citov.tech` + Vercel app (see below)
 3. **OAuth consent** — publish app, or add every tester email while in Testing
 4. **Prod flags on Vercel**
    - `ALLOW_DEMO=false` (or unset)
-   - Prefer `ALLOW_TEST_LOGIN=false` on public Production if `/demo` must be fully closed
-   - Keep `ALLOW_TEST_LOGIN=true` only if the team still needs `/demo` internally
-5. **Smoke the loop** with two Google accounts: candidate uploads CV → chats → employer chats → sees queue → approve → candidate sees job **with contact**
-6. **Employer job cards** must collect `contactName` / `contactPhone` in chat (otherwise candidates see “contact pending”)
+   - Leave `ALLOW_TEST_LOGIN` unset (production code defaults **off**) or set `true` only if you need `/demo`. If Production still has `ALLOW_TEST_LOGIN=true`, remove/set false and redeploy
+5. **Reset admin prompts** after this PR deploys so employer agent picks up contact collection from file
+6. **Smoke the loop** with two Google accounts: candidate CV → chat → employer chat (+ contact) → approve → candidate sees job **with contact**
+7. **Invite** 2 employers + 5–10 candidates using copy in `HUMAN_ONLY.md`
 
 ### Product / trust checklist
 

@@ -5,9 +5,11 @@ export function isGoogleAuthEnabled(): boolean {
   return process.env.GOOGLE_AUTH_ENABLED === "true";
 }
 
-/** Test login dialog — on by default; set ALLOW_TEST_LOGIN=false to disable. */
+/** Test login at `/demo` — explicit true/false wins; else off in production, on in local/dev. */
 export function isTestLoginEnabled(): boolean {
-  return process.env.ALLOW_TEST_LOGIN !== "false";
+  if (process.env.ALLOW_TEST_LOGIN === "true") return true;
+  if (process.env.ALLOW_TEST_LOGIN === "false") return false;
+  return process.env.NODE_ENV !== "production";
 }
 
 export function hasGoogleCredentials(): boolean {
