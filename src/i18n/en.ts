@@ -62,6 +62,14 @@ export const en = {
     switchToEmployer: "Hiring? Go to the employer entry",
     switchToCandidate: "Job seeking? Go to the candidate entry",
   },
+  demoPage: {
+    title: "Test / demo sign-in",
+    body: "Internal path only — not shown on public landings. For team and development use.",
+    disabledTitle: "Test sign-in is disabled",
+    disabledBody: "Set ALLOW_TEST_LOGIN=true in the environment to enable /demo.",
+    publicCandidate: "Candidate entry",
+    publicEmployer: "Employer entry",
+  },
   devLogin: {
     title: "Development sign-in",
     hint: "Pick how to enter — no Google required for internal testing.",
@@ -219,6 +227,9 @@ export const en = {
     ask: "Ask",
     defaultName: "Candidate",
     viewCv: "View CV",
+    employerCardBadge: "Employer view",
+    fullCardBadge: "Full card · admin",
+    fullCardTitle: "Full card — {name}",
   },
   jobs: {
     empty:
@@ -228,6 +239,10 @@ export const en = {
     salary: "Salary: {value}",
     interviewSlots: "Interview availability: {value}",
     defaultEmployerName: "Employer",
+    nextStep: "Next step — get in touch",
+    contactName: "Contact: {value}",
+    contactPhone: "Phone: {value}",
+    contactPending: "Contact details will appear here once the employer fills them on the job card.",
   },
   api: {
     missingDetails: "Missing required details",

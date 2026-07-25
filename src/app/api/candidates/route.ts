@@ -1,5 +1,6 @@
 import { ok, fail } from "@/infrastructure/http";
 import { authorizeActor } from "@/infrastructure/auth-guard";
+import { projectCandidateCard } from "@/domain/candidate-card-views";
 import { readCandidateQueueStore } from "@/infrastructure/store";
 
 export async function GET(req: Request) {
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
         name: user?.name ?? "מועמד/ת",
         candidateId: m.candidateId,
         cvDocumentId: latestCv?.id ?? null,
-        card: emp?.card,
+        card: emp?.card ? projectCandidateCard(emp.card, "employer") : undefined,
       };
     });
     return ok({ candidates });

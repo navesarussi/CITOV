@@ -5,7 +5,6 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
-import { DevLoginDialog } from "@/components/DevLoginDialog";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
@@ -21,7 +20,6 @@ import {
   startRoleSession,
 } from "@/lib/client-session";
 
-type DevUser = { id: string; name: string; role: Role; email?: string };
 type SessionFlags = SessionFlagsPayload;
 
 const PILLAR_ICONS = ["💬", "✦", "✓"] as const;
@@ -34,13 +32,12 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   const { data: session, status } = useSession();
   const { t, fmt } = useTranslation();
   const [error, setError] = useState<string | null>(null);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [entering, setEntering] = useState(false);
   const [flags, setFlags] = useState<SessionFlags>(
     props.initialFlags ?? {
       googleAuth: false,
       openAuth: false,
-      devAuth: true,
+      devAuth: false,
       allowDemo: false,
       memoryStore: false,
       isAdmin: false,
@@ -80,7 +77,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
 
   async function loadFlags() {
     const r = await fetch("/api/session");
-    const d = (await r.json()) as Partial<SessionFlags & { devUsers?: DevUser[] }>;
+    const d = (await r.json()) as Partial<SessionFlags>;
     setFlags({
       googleAuth: Boolean(d.googleAuth),
       allowDemo: Boolean(d.allowDemo),
@@ -89,7 +86,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
       memoryStore: Boolean(d.memoryStore),
       isAdmin: Boolean(d.isAdmin),
       email: typeof d.email === "string" ? d.email : null,
-      devUsers: Array.isArray(d.devUsers) ? d.devUsers : [],
+      devUsers: [],
     });
   }
 
@@ -101,7 +98,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
           googleAuth: false,
           allowDemo: false,
           openAuth: false,
-          devAuth: true,
+          devAuth: false,
           memoryStore: false,
           isAdmin: false,
           email: null,
@@ -183,16 +180,10 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
     }
   }
 
-  function onDevLoginDone(redirect: string) {
-    setLoginOpen(false);
-    setError(null);
-    router.replace(redirect);
-  }
-
   const isAuthed = status === "authenticated" && Boolean(session?.user);
   const showGoogle = flags.googleAuth && !isAuthed;
-  const showTestLogin = flags.devAuth;
-  const showOpenEnter = flags.openAuth && !flags.googleAuth && !flags.devAuth;
+  /** Test/demo login lives only on `/demo` — never on public landings. */
+  const showOpenEnter = flags.openAuth && !flags.googleAuth;
   const bootstrapping = entering || (isAuthed && flags.googleAuth && !flags.isAdmin);
 
   return (
@@ -259,25 +250,6 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
                   </>
                 ) : null}
 
-                {showTestLogin ? (
-                  <>
-                    <Button
-                      onClick={() => setLoginOpen(true)}
-                      variant={showGoogle ? "secondary" : undefined}
-                      className={
-                        showGoogle
-                          ? "min-h-12 w-full py-3.5 text-base"
-                          : "cta-glow brand-gradient-bg min-h-12 w-full border-0 py-3.5 text-base font-semibold hover:bg-transparent hover:brightness-105"
-                      }
-                    >
-                      {t.home.devSignIn}
-                    </Button>
-                    <p className="text-center text-xs leading-5 text-[var(--muted)]">
-                      {t.devLogin.hint}
-                    </p>
-                  </>
-                ) : null}
-
                 {showOpenEnter ? (
                   <>
                     <p className="text-center text-xs leading-5 text-[var(--muted)]">
@@ -293,7 +265,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
                   </>
                 ) : null}
 
-                {!showTestLogin && !showGoogle && !showOpenEnter ? (
+                {!showGoogle && !showOpenEnter ? (
                   <p className="text-center text-xs leading-5 text-[var(--muted)]">
                     {t.home.googleNotConfigured}
                   </p>
@@ -316,15 +288,6 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
           </section>
         </div>
       </main>
-
-      <DevLoginDialog
-        open={loginOpen}
-        users={flags.devUsers}
-        defaultRole={role}
-        onClose={() => setLoginOpen(false)}
-        onDone={onDevLoginDone}
-        onError={setError}
-      />
     </div>
   );
 }

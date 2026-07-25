@@ -11,6 +11,31 @@
 - [x] Chat calls Gemini **only server-side** via `/api/chat` + `GOOGLE_GENERATIVE_AI_API_KEY`
 - [x] Production site: https://jobs-ai-snowy.vercel.app
 - [x] AI health: `GET /api/health/ai` → `{ geminiConfigured, mode }`
+- [x] Test/demo login isolated to **`/demo`** (not on `/` or `/for-employers`)
+- [x] Three candidate card views: full (admin), candidate presentation, employer presentation
+- [x] Approved jobs resolve the **matched** job card + show contact when filled
+
+## Before first marketing users
+
+### Ops (human)
+
+1. **Gemini on Vercel** — see below; verify `/api/health/ai` → `geminiConfigured: true`
+2. **Google OAuth** origins + redirects for `citov.tech` + Vercel app (see below)
+3. **OAuth consent** — publish app, or add every tester email while in Testing
+4. **Prod flags on Vercel**
+   - `ALLOW_DEMO=false` (or unset)
+   - Prefer `ALLOW_TEST_LOGIN=false` on public Production if `/demo` must be fully closed
+   - Keep `ALLOW_TEST_LOGIN=true` only if the team still needs `/demo` internally
+5. **Smoke the loop** with two Google accounts: candidate uploads CV → chats → employer chats → sees queue → approve → candidate sees job **with contact**
+6. **Employer job cards** must collect `contactName` / `contactPhone` in chat (otherwise candidates see “contact pending”)
+
+### Product / trust checklist
+
+- [ ] Landing copy + legal pages (`/legal/*`) match the public brand
+- [ ] Privacy / terms reviewed for real-user data (CV storage, chat)
+- [ ] Admin prompts reset to latest file defaults after deploy if needed
+- [ ] Cold-start: seed 1–2 real jobs + 1–2 candidates so first users are not staring at empty queues
+- [ ] Support channel: `settings.report` mailto / inbox monitored
 
 ## Required: Gemini API key on Vercel (for human chat)
 
@@ -62,11 +87,14 @@ Without these, “Sign in with Google” fails in production:
 - Never commit API keys to git (`.env*` is gitignored except `.env.example`)
 - Rotate any key that was pasted in chat
 - Gemini key is read only in server code (`src/infrastructure/ai/intake.ts`) — never sent to the browser
+- Public landings must not expose test login; use `/demo` only
 
 ## Local demo (dev only)
 
 ```bash
-ALLOW_DEMO=true
+ALLOW_TEST_LOGIN=true
+# optional seed-demo API bypass:
+ALLOW_DEMO=false
 ```
 
-in `.env.local` — never set this on Vercel production for real users.
+in `.env.local` — open **`/demo`** for test sign-in. Never set `ALLOW_DEMO=true` on Vercel production for real users.

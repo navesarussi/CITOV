@@ -15,6 +15,8 @@ type Job = {
     personalityFit: string;
     interviewSlots: string[];
     summary: string;
+    contactName?: string;
+    contactPhone?: string;
   };
 };
 
@@ -62,6 +64,29 @@ export function OpportunityList(props: { jobs: Job[] }) {
               {fmt(t.jobs.interviewSlots, { value: job.card.interviewSlots.join(" · ") })}
             </p>
           ) : null}
+
+          {job.card?.contactName || job.card?.contactPhone ? (
+            <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--chip)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                {t.jobs.nextStep}
+              </p>
+              {job.card.contactName ? (
+                <p className="mt-1 text-sm font-medium text-[var(--ink)]">
+                  {fmt(t.jobs.contactName, { value: job.card.contactName })}
+                </p>
+              ) : null}
+              {job.card.contactPhone ? (
+                <a
+                  href={`tel:${job.card.contactPhone}`}
+                  className="mt-1 inline-block text-sm font-semibold text-[var(--accent)]"
+                >
+                  {fmt(t.jobs.contactPhone, { value: job.card.contactPhone })}
+                </a>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-4 text-xs leading-5 text-[var(--muted)]">{t.jobs.contactPending}</p>
+          )}
         </article>
       ))}
     </div>
