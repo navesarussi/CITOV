@@ -23,6 +23,8 @@ export type SessionFlagsPayload = {
   testLoginOnLanding: boolean;
   memoryStore: boolean;
   devUsers: { id: string; name: string; role: Role; email?: string }[];
+  /** True when Google or local test/dev session is active. */
+  signedIn: boolean;
   isAdmin: boolean;
   email: string | null;
 };
@@ -31,7 +33,10 @@ export async function getSessionFlags(): Promise<SessionFlagsPayload> {
   const devSession = await getDevSession();
   const session = await auth();
   const email = devSession?.email ?? session?.user?.email ?? null;
-  const isAdmin = devSessionIsAdmin(devSession) || isAdminEmail(session?.user?.email);
+  const signedIn = Boolean(devSession || session?.user);
+  const isAdmin =
+    signedIn &&
+    (devSessionIsAdmin(devSession) || isAdminEmail(session?.user?.email));
   const devAuth = isDevAuthEnabled();
   return {
     googleAuth: hasGoogleAuth(),
@@ -41,6 +46,7 @@ export async function getSessionFlags(): Promise<SessionFlagsPayload> {
     testLoginOnLanding: devAuth && process.env.NODE_ENV === "development",
     memoryStore: shouldUseMemoryStore(),
     devUsers: devAuth ? listDevUsers() : [],
+    signedIn,
     isAdmin,
     email,
   };
