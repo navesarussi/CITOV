@@ -1,11 +1,12 @@
 /**
  * Live Gemini CV extraction against the rich-subtext fixture.
- * Skips when GOOGLE_GENERATIVE_AI_API_KEY is unset.
+ * Loads `.env.local` when present (same key as production: GOOGLE_GENERATIVE_AI_API_KEY).
  *
- * Run: npx tsx --test src/infrastructure/ai/cv-extraction.live.test.ts
+ * Run: npm run test:cv-live
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { loadEnvLocal } from "../test/load-env-local";
 import { hasGeminiKey } from "./gemini-client";
 import { runCvExtraction } from "./cv-extraction";
 import { mergeCvIntoEmployee } from "@/domain/cv-merge";
@@ -16,6 +17,7 @@ import {
   type EmployeeRecord,
 } from "@/domain/types";
 
+loadEnvLocal();
 const live = hasGeminiKey();
 
 describe("live CV extraction (Gemini)", { skip: !live }, () => {
