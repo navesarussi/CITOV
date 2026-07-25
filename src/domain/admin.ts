@@ -1,3 +1,4 @@
+import { storeEngagementStats } from "@/domain/admin-engagement";
 import type { AiUsageRecord, StoreData } from "./types";
 
 const DEMO_USER_IDS = new Set(["demo-employee", "demo-employer"]);
@@ -19,6 +20,12 @@ export type AdminStats = {
     totalCalls: number;
     totalTokens: number;
     estimatedCostUsd: number;
+  };
+  engagement: {
+    avgCandidateKnowledgePercent: number;
+    avgJobKnowledgePercent: number;
+    avgCandidateUserMessages: number;
+    avgEmployerUserMessages: number;
   };
   users: number;
 };
@@ -58,6 +65,7 @@ export function computeAdminStats(store: StoreData): AdminStats {
       totalTokens: usage.reduce((sum, r) => sum + r.totalTokens, 0),
       estimatedCostUsd: usage.reduce((sum, r) => sum + r.estimatedCostUsd, 0),
     },
+    engagement: storeEngagementStats(store),
     users: realUsers.length,
   };
 }
