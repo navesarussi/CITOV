@@ -31,6 +31,18 @@ export function AdminShell(props: {
           <div className="flex flex-wrap items-center gap-2">
             {props.actions}
             <Link
+              href="/admin/candidates"
+              className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
+            >
+              מועמדים
+            </Link>
+            <Link
+              href="/admin/employers"
+              className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
+            >
+              מעסיקים
+            </Link>
+            <Link
               href="/employee"
               className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
             >

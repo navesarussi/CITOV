@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-import { AdminCandidateCards } from "@/components/AdminCandidateCards";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
@@ -337,8 +336,6 @@ export default function AdminPage() {
           ) : null}
         </div>
       </section>
-
-      <AdminCandidateCards />
     </AdminShell>
   );
 }
