@@ -16,15 +16,23 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 ### FR-AUTH
 - Google OAuth available when `GOOGLE_AUTH_ENABLED=true` and Google credentials are set
 - While Google is soft-disabled (`GOOGLE_AUTH_ENABLED` unset/false), open local sessions are allowed for chat development (Google code remains in the repo)
-- Test login dialog (no Google) available when `ALLOW_TEST_LOGIN=true` (production internal testing) or in local dev with open auth
+- Test login dialog (no Google) available when `ALLOW_TEST_LOGIN=true` — **entry only at `/demo`** (never on public `/` or `/for-employers`)
 - Candidate entry at `/`; employer entry at `/for-employers` (separate landing URLs)
-- Demo mode when `ALLOW_DEMO=true`
+- Demo mode when `ALLOW_DEMO=true` (API bypass for seed demo users; no public UI)
 - API actions must be authorized for the acting user (or open-dev actor when Google is soft-disabled)
 
 ### FR-CARDS
 - Candidate and job cards have many predefined fields (empty until filled)
 - Cards include a **free-text / narrative** field (`narrative`)
 - Matching and UI may use both structured fields and free text
+
+### FR-CARDS-VIEW (candidate presentations — differences are product-critical)
+
+| ID | Requirement |
+|---|---|
+| FR-CARD-VIEW-01 | **Full card (admin):** every predefined field + extras, including salary, weaknesses, deal-breakers |
+| FR-CARD-VIEW-02 | **Candidate presentation:** safe self-preview (summary, role, skills, personality, …); **no** salary / weaknesses / deal-breakers / narrative dump; knowledge % + flexibility slider |
+| FR-CARD-VIEW-03 | **Employer presentation:** hiring-relevant subset (summary/narrative, skills, logistics, salary expectation, flexibility); **no** weaknesses / deal-breakers; API must project this view (not full card) |
 
 ### FR-CHAT-BOTH (applies to candidate agent AND employer agent)
 
@@ -60,8 +68,9 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 | FR-UI-04 | Remember default role (employee/employer); home auto-opens that role’s screen (chat + jobs / chat + candidates) |
 | FR-UI-05 | Screens paint shell UI immediately; hydrate chat/lists in the background — no full-page “טוען…” gate |
 | FR-UI-06 | Every chat has a reset-conversation control |
-| FR-UI-07 | Chat sidebar: **admins only** see the full card field fill-in list; regular users see a **knowledge % bar** only (0% = no relevant knowledge, 100% = all relevant knowledge shared) |
+| FR-UI-07 | Chat sidebar: **admins only** see the full card field fill-in list; regular candidates see knowledge % + expandable **candidate presentation** (FR-CARD-VIEW-02); employers see **employer presentation** on match cards (FR-CARD-VIEW-03) |
 | FR-UI-08 | Chat sidebar: employee and employer can **drag a flexibility slider** 1–10 (1 = very flexible, 10 = exact only); persists via API and affects matching |
+| FR-UI-09 | After employer **approve**, candidate job list shows the **matched job card** (not a different active job) and contact details when present (`contactName` / `contactPhone`) |
 
 ### FR-EMPLOYER-JOBS
 | ID | Requirement |

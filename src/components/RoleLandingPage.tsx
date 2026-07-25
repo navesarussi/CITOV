@@ -1,10 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
-import { DevLoginDialog } from "@/components/DevLoginDialog";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
@@ -20,24 +20,24 @@ import {
   startRoleSession,
 } from "@/lib/client-session";
 
-type DevUser = { id: string; name: string; role: Role; email?: string };
-
 type SessionFlags = SessionFlagsPayload;
+
+const PILLAR_ICONS = ["💬", "✦", "✓"] as const;
 
 export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags }) {
   const { role } = props;
   const landingPath = roleLandingPath(role);
+  const otherRolePath = role === "employee" ? "/for-employers" : "/";
   const router = useRouter();
   const { data: session, status } = useSession();
   const { t, fmt } = useTranslation();
   const [error, setError] = useState<string | null>(null);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [entering, setEntering] = useState(false);
   const [flags, setFlags] = useState<SessionFlags>(
     props.initialFlags ?? {
       googleAuth: false,
       openAuth: false,
-      devAuth: true,
+      devAuth: false,
       allowDemo: false,
       memoryStore: false,
       isAdmin: false,
@@ -51,23 +51,33 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   const copy =
     role === "employee"
       ? {
+          heroTitle: t.home.heroTitleCandidate,
           description: t.home.description,
           enterLabel: t.home.iAmEmployee,
           openHint: t.home.openAuthHint,
           googleHint: t.home.candidateGoogleHint,
           googleButton: t.home.candidateGoogleButton,
+          switchLabel: t.home.switchToEmployer,
         }
       : {
+          heroTitle: t.home.heroTitleEmployer,
           description: t.home.employerDescription,
           enterLabel: t.home.iAmEmployer,
           openHint: t.home.employerOpenAuthHint,
           googleHint: t.home.employerGoogleHint,
           googleButton: t.home.employerGoogleButton,
+          switchLabel: t.home.switchToCandidate,
         };
+
+  const pillars = [
+    { title: t.home.pillarChatTitle, body: t.home.pillarChatBody },
+    { title: t.home.pillarMatchTitle, body: t.home.pillarMatchBody },
+    { title: t.home.pillarApprovedTitle, body: t.home.pillarApprovedBody },
+  ];
 
   async function loadFlags() {
     const r = await fetch("/api/session");
-    const d = (await r.json()) as Partial<SessionFlags & { devUsers?: DevUser[] }>;
+    const d = (await r.json()) as Partial<SessionFlags>;
     setFlags({
       googleAuth: Boolean(d.googleAuth),
       allowDemo: Boolean(d.allowDemo),
@@ -76,7 +86,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
       memoryStore: Boolean(d.memoryStore),
       isAdmin: Boolean(d.isAdmin),
       email: typeof d.email === "string" ? d.email : null,
-      devUsers: Array.isArray(d.devUsers) ? d.devUsers : [],
+      devUsers: [],
     });
   }
 
@@ -88,7 +98,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
           googleAuth: false,
           allowDemo: false,
           openAuth: false,
-          devAuth: true,
+          devAuth: false,
           memoryStore: false,
           isAdmin: false,
           email: null,
@@ -170,16 +180,10 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
     }
   }
 
-  function onDevLoginDone(redirect: string) {
-    setLoginOpen(false);
-    setError(null);
-    router.replace(redirect);
-  }
-
   const isAuthed = status === "authenticated" && Boolean(session?.user);
   const showGoogle = flags.googleAuth && !isAuthed;
-  const showTestLogin = flags.devAuth;
-  const showOpenEnter = flags.openAuth && !flags.googleAuth && !flags.devAuth;
+  /** Test/demo login lives only on `/demo` — never on public landings. */
+  const showOpenEnter = flags.openAuth && !flags.googleAuth;
   const bootstrapping = entering || (isAuthed && flags.googleAuth && !flags.isAdmin);
 
   return (
@@ -187,109 +191,103 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
       <main className="landing-scene">
         <div className="landing-orb landing-orb--1" aria-hidden />
         <div className="landing-orb landing-orb--2" aria-hidden />
-        <div className="landing-orb landing-orb--3" aria-hidden />
         <SettingsMenu />
 
-        <div className="enter relative z-10">
-          <BrandMark size={128} showWordmark />
-        </div>
+        <div className="landing-hero enter">
+          <div className="landing-hero__copy">
+            <BrandMark size={72} showWordmark align="start" />
+            <h1 className="landing-hero__title enter-delay">{copy.heroTitle}</h1>
+            <p className="landing-hero__lead enter-delay">{copy.description}</p>
 
-        <p className="enter-delay relative z-10 mt-8 max-w-lg text-center text-lg leading-8 text-[var(--muted)]">
-          {copy.description}
-        </p>
-
-        <section className="enter-delay-2 relative z-10 mt-12 w-full max-w-md space-y-4">
-          {error ? (
-            <p className="rounded-2xl bg-[var(--warn-bg)] px-4 py-3 text-sm text-[var(--warn)]">
-              {error}
-            </p>
-          ) : null}
-
-          {bootstrapping ? (
-            <p className="text-center text-sm text-[var(--muted)]">{t.home.openingRole}</p>
-          ) : (
-            <div className="space-y-3">
-              {showGoogle ? (
-                <>
-                  <Button
-                    disabled={status === "loading"}
-                    onClick={() =>
-                      void signIn("google", {
-                        callbackUrl: landingPath,
-                        prompt: "select_account",
-                      })
-                    }
-                    className="cta-glow brand-gradient-bg w-full border-0 py-4 text-base hover:bg-transparent hover:brightness-105"
-                  >
-                    {copy.googleButton}
-                  </Button>
-                  <p className="text-center text-xs leading-5 text-[var(--muted)]">
-                    {copy.googleHint}
-                  </p>
-                </>
-              ) : null}
-
-              {showTestLogin ? (
-                <>
-                  <Button
-                    onClick={() => setLoginOpen(true)}
-                    variant={showGoogle ? "secondary" : undefined}
-                    className={
-                      showGoogle
-                        ? "w-full py-4 text-base"
-                        : "cta-glow brand-gradient-bg w-full border-0 py-4 text-base hover:bg-transparent hover:brightness-105"
-                    }
-                  >
-                    {t.home.devSignIn}
-                  </Button>
-                  <p className="text-center text-xs leading-5 text-[var(--muted)]">
-                    {t.devLogin.hint}
-                  </p>
-                </>
-              ) : null}
-
-              {showOpenEnter ? (
-                <>
-                  <p className="text-center text-xs leading-5 text-[var(--muted)]">
-                    {copy.openHint}
-                  </p>
-                  <Button
-                    disabled={entering}
-                    onClick={() => void enterAsRole()}
-                    className="cta-glow brand-gradient-bg w-full border-0 py-4 text-base hover:bg-transparent hover:brightness-105"
-                  >
-                    {entering ? t.home.openingRole : copy.enterLabel}
-                  </Button>
-                </>
-              ) : null}
-
-              {!showTestLogin && !showGoogle && !showOpenEnter ? (
-                <p className="text-center text-xs leading-5 text-[var(--muted)]">
-                  {t.home.googleNotConfigured}
-                </p>
-              ) : null}
-
-              {isAuthed && flags.googleAuth ? (
-                <Button variant="ghost" onClick={() => void handleSignOut()} className="w-full text-xs">
-                  {fmt(t.home.connectedAs, {
-                    name: session?.user?.name ?? session?.user?.email ?? "",
-                  })}{" "}
-                  · {t.home.signOut}
-                </Button>
-              ) : null}
+            <div className="landing-pillars enter-delay-2">
+              {pillars.map((pillar, i) => (
+                <article key={pillar.title} className="landing-pillar">
+                  <span className="landing-pillar__icon" aria-hidden>
+                    {PILLAR_ICONS[i]}
+                  </span>
+                  <h2 className="landing-pillar__title">{pillar.title}</h2>
+                  <p className="landing-pillar__body">{pillar.body}</p>
+                </article>
+              ))}
             </div>
-          )}
-        </section>
-      </main>
 
-      <DevLoginDialog
-        open={loginOpen}
-        users={flags.devUsers}
-        defaultRole={role}
-        onClose={() => setLoginOpen(false)}
-        onDone={onDevLoginDone}
-        onError={setError}
-      />
+            <Link href={otherRolePath} className="landing-role-switch enter-delay-2">
+              {copy.switchLabel} →
+            </Link>
+          </div>
+
+          <section className="landing-cta-card enter-delay-2" aria-label={t.home.ctaCardTitle}>
+            <h2 className="landing-cta-card__title">{t.home.ctaCardTitle}</h2>
+            <p className="landing-cta-card__hint">{t.home.ctaCardHint}</p>
+
+            {error ? (
+              <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-4 py-3 text-sm text-[var(--warn)]">
+                {error}
+              </p>
+            ) : null}
+
+            {bootstrapping ? (
+              <p className="py-6 text-center text-sm text-[var(--muted)]">{t.home.openingRole}</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {showGoogle ? (
+                  <>
+                    <Button
+                      disabled={status === "loading"}
+                      onClick={() =>
+                        void signIn("google", {
+                          callbackUrl: landingPath,
+                          prompt: "select_account",
+                        })
+                      }
+                      className="cta-glow brand-gradient-bg min-h-12 w-full border-0 py-3.5 text-base font-semibold hover:bg-transparent hover:brightness-105"
+                    >
+                      {copy.googleButton}
+                    </Button>
+                    <p className="text-center text-xs leading-5 text-[var(--muted)]">
+                      {copy.googleHint}
+                    </p>
+                  </>
+                ) : null}
+
+                {showOpenEnter ? (
+                  <>
+                    <p className="text-center text-xs leading-5 text-[var(--muted)]">
+                      {copy.openHint}
+                    </p>
+                    <Button
+                      disabled={entering}
+                      onClick={() => void enterAsRole()}
+                      className="cta-glow brand-gradient-bg min-h-12 w-full border-0 py-3.5 text-base font-semibold hover:bg-transparent hover:brightness-105"
+                    >
+                      {entering ? t.home.openingRole : copy.enterLabel}
+                    </Button>
+                  </>
+                ) : null}
+
+                {!showGoogle && !showOpenEnter ? (
+                  <p className="text-center text-xs leading-5 text-[var(--muted)]">
+                    {t.home.googleNotConfigured}
+                  </p>
+                ) : null}
+
+                {isAuthed && flags.googleAuth ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => void handleSignOut()}
+                    className="w-full text-xs"
+                  >
+                    {fmt(t.home.connectedAs, {
+                      name: session?.user?.name ?? session?.user?.email ?? "",
+                    })}{" "}
+                    · {t.home.signOut}
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

@@ -41,9 +41,15 @@ describe("auth-flags", () => {
     assert.equal(hasGoogleAuth(), false);
   });
 
-  it("enables test login by default and allows opt-out", () => {
+  it("defaults test login on outside production; off in production", () => {
+    process.env.NODE_ENV = "development";
+    assert.equal(isTestLoginEnabled(), true);
+    process.env.NODE_ENV = "production";
+    assert.equal(isTestLoginEnabled(), false);
+    process.env.ALLOW_TEST_LOGIN = "true";
     assert.equal(isTestLoginEnabled(), true);
     process.env.ALLOW_TEST_LOGIN = "false";
+    process.env.NODE_ENV = "development";
     assert.equal(isTestLoginEnabled(), false);
   });
 
