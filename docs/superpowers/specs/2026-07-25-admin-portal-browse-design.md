@@ -1,7 +1,7 @@
 # Admin portal — AI billing link, engagement stats, entity browser
 
 **Date:** 2026-07-25  
-**Status:** Approved in brainstorm; pending user review of this file  
+**Status:** Implemented (pending merge)  
 **Mapped SRS:** FR-UI-01, FR-UI-03, FR-UI-07, FR-CV-05; **new** FR-ADM-* (to add in SRS on implementation)  
 **Approach:** Admin browse APIs + list/detail pages (Option 1)  
 **Build order:** B → C → A (easy → hard)

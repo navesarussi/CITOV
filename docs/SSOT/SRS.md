@@ -87,6 +87,14 @@ Design: `docs/superpowers/specs/2026-07-23-cv-deep-analysis-design.md`
 | FR-CV-04 | After upload, the candidate sees only a minimal summary that data was captured — not the full rich card (aligns with FR-UI-07) |
 | FR-CV-05 | Admins may always view/download a candidate CV; employers may view/download only for candidates matched to their job (`queued` or `approved`) |
 
+### FR-ADM (admin portal operations)
+
+| ID | Requirement |
+|----|-------------|
+| FR-ADM-01 | Admin portal links to Google AI Studio usage/billing for actual Gemini charges and balance |
+| FR-ADM-02 | Admin portal shows average candidate/job knowledge percent and average user message counts (candidates and employers) |
+| FR-ADM-03 | Admins can browse full candidate, employer, and job records (card, metrics, matches, chat; CV for candidates) via dedicated admin routes |
+
 ## Non-goals (current POC)
 
 - Zoom intake, WhatsApp, payments, native apps, trained custom ML models
