@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { EmployeeChatLayout } from "@/components/EmployeeChatLayout";
 import { type ChatTurnPayload } from "@/components/ChatPanel";
@@ -16,6 +16,7 @@ type Tab = "chat" | "jobs";
 
 export default function EmployeePage() {
   const { t, fmt, locale } = useTranslation();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("chat");
   const { user: sessionUser, ready: sessionReady } = useStoredUser("employee");
   const userId = sessionUser?.id ?? null;
@@ -57,6 +58,12 @@ export default function EmployeePage() {
     void refresh(userId);
   }, [refresh, userId]);
 
+  useEffect(() => {
+    if (sessionReady && !userId) {
+      router.replace("/");
+    }
+  }, [sessionReady, userId, router]);
+
   function onTurn(payload: ChatTurnPayload) {
     setMe((prev) =>
       prev
@@ -79,24 +86,10 @@ export default function EmployeePage() {
     if (userId) void refreshLists(userId);
   }
 
-  if (!sessionReady) {
+  if (!sessionReady || !userId) {
     return (
       <main className="workspace-loading atmosphere">
         <p>{t.session.loading}</p>
-      </main>
-    );
-  }
-
-  if (!userId) {
-    return (
-      <main className="workspace-loading atmosphere">
-        <SettingsMenu />
-        <div>
-          <p>{t.session.noActiveSession}</p>
-          <Link href="/" className="mt-4 inline-block text-[var(--accent)]">
-            {t.session.backToStart}
-          </Link>
-        </div>
       </main>
     );
   }

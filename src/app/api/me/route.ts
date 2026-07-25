@@ -49,6 +49,7 @@ export async function GET(req: Request) {
       chat: er.chat,
       jobs: er.jobs.map((j) => ({
         id: j.id,
+        name: j.name ?? "",
         title: j.card.title,
         field: j.card.field,
       })),

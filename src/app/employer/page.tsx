@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { CandidateQueue } from "@/components/CandidateQueue";
 import { type ChatTurnPayload } from "@/components/ChatPanel";
@@ -13,10 +13,11 @@ import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
 import { useStoredUser } from "@/lib/use-stored-user";
 
 type Tab = "chat" | "candidates";
-type JobMeta = { id: string; title?: string; field?: string };
+type JobMeta = { id: string; name?: string; title?: string; field?: string };
 
 export default function EmployerPage() {
   const { t, fmt, locale } = useTranslation();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("chat");
   const { user: sessionUser, ready: sessionReady } = useStoredUser("employer");
   const userId = sessionUser?.id ?? null;
@@ -62,6 +63,12 @@ export default function EmployerPage() {
     void refresh(userId).finally(() => setHydrating(false));
   }, [refresh, userId]);
 
+  useEffect(() => {
+    if (sessionReady && !userId) {
+      router.replace("/for-employers");
+    }
+  }, [sessionReady, userId, router]);
+
   function onTurn(payload: ChatTurnPayload) {
     setMe((prev) =>
       prev
@@ -75,7 +82,11 @@ export default function EmployerPage() {
     if (userId) void refreshLists(userId, payload.jobId ?? activeJobId);
   }
 
-  async function jobAction(action: "select" | "create", jobId?: string) {
+  async function jobAction(
+    action: "select" | "create" | "rename",
+    jobId?: string,
+    jobName?: string,
+  ) {
     if (!userId || jobBusy) return;
     if (action === "select" && (!jobId || jobId === activeJobId)) return;
     setJobBusy(true);
@@ -83,7 +94,7 @@ export default function EmployerPage() {
       const res = await fetch("/api/employer/jobs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, action, jobId }),
+        body: JSON.stringify({ userId, action, jobId, name: jobName }),
       });
       const data = await res.json();
       if (data.error) return;
@@ -93,7 +104,7 @@ export default function EmployerPage() {
       if (action === "create") {
         setCandidates([]);
         setTab("chat");
-      } else {
+      } else if (action === "select") {
         await refreshLists(userId, data.activeJobId);
       }
     } finally {
@@ -102,27 +113,24 @@ export default function EmployerPage() {
   }
 
   function jobLabel(job: JobMeta, index: number) {
-    return job.title?.trim() || job.field?.trim() || fmt(t.employer.jobFallback, { n: String(index + 1) });
-  }
-
-  if (!sessionReady) {
     return (
-      <main className="workspace-loading atmosphere">
-        <p>{t.session.loading}</p>
-      </main>
+      job.name?.trim() ||
+      job.title?.trim() ||
+      job.field?.trim() ||
+      fmt(t.employer.jobFallback, { n: String(index + 1) })
     );
   }
 
-  if (!userId) {
+  function askJobName(current?: string): string | null {
+    const raw = window.prompt(t.employer.jobNamePrompt, current?.trim() || "");
+    if (raw == null) return null;
+    return raw.trim();
+  }
+
+  if (!sessionReady || !userId) {
     return (
       <main className="workspace-loading atmosphere">
-        <SettingsMenu />
-        <div>
-          <p>{t.session.noActiveSession}</p>
-          <Link href="/for-employers" className="mt-4 inline-block text-[var(--accent)]">
-            {t.session.backToStart}
-          </Link>
-        </div>
+        <p>{t.session.loading}</p>
       </main>
     );
   }
@@ -155,9 +163,20 @@ export default function EmployerPage() {
         activeJobId={activeJobId}
         busy={jobBusy}
         newJobLabel={t.employer.newJob}
+        renameLabel={t.employer.renameJob}
         jobLabel={jobLabel}
         onSelect={(id) => void jobAction("select", id)}
-        onCreate={() => void jobAction("create")}
+        onCreate={() => {
+          const name = askJobName();
+          if (name === null) return;
+          void jobAction("create", undefined, name || undefined);
+        }}
+        onRename={(id) => {
+          const current = jobs.find((j) => j.id === id);
+          const name = askJobName(jobLabel(current ?? { id }, jobs.findIndex((j) => j.id === id)));
+          if (name === null || !name) return;
+          void jobAction("rename", id, name);
+        }}
       />
       {me?.error ? (
         <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">

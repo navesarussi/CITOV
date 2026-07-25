@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
-import { AdminCandidateCards } from "@/components/AdminCandidateCards";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +21,12 @@ type AdminStats = {
     totalCalls: number;
     totalTokens: number;
     estimatedCostUsd: number;
+  };
+  engagement: {
+    avgCandidateKnowledgePercent: number;
+    avgJobKnowledgePercent: number;
+    avgCandidateUserMessages: number;
+    avgEmployerUserMessages: number;
   };
   users: number;
   reliability?: {
@@ -197,18 +203,58 @@ export default function AdminPage() {
         </Button>
       }
     >
+      <nav className="mb-4 flex flex-wrap gap-3 text-sm">
+        <Link href="/admin/candidates" className="text-[var(--accent)] hover:underline">
+          דפדפן מועמדים
+        </Link>
+        <Link href="/admin/employers" className="text-[var(--accent)] hover:underline">
+          דפדפן מעסיקים
+        </Link>
+      </nav>
+
       <section className="enter-delay grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="מעסיקים" value={stats.employers} />
-        <StatCard label="מועמדים" value={stats.candidates} />
-        <StatCard
+        <AdminStatCard label="מעסיקים" value={stats.employers} />
+        <AdminStatCard label="מועמדים" value={stats.candidates} />
+        <AdminStatCard
           label="מאצ׳ים"
           value={stats.matches.total}
           sub={`${stats.matches.approved} אושרו · ${stats.matches.queued} בתור`}
         />
-        <StatCard
+        <AdminStatCard
           label="עלות AI (הערכה)"
           value={formatUsd(stats.aiUsage.estimatedCostUsd)}
           sub={`${formatTokens(stats.aiUsage.totalTokens)} טוקנים · ${stats.aiUsage.totalCalls} קריאות`}
+        >
+          <p className="mt-2 text-xs text-[var(--muted)]">
+            הערכה פנימית מטוקנים — יתרה ותשלומים בפועל ב־Google.
+          </p>
+          <a
+            href="https://aistudio.google.com/usage"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+          >
+            פתיחת חיוב / שימוש Google Gemini
+          </a>
+        </AdminStatCard>
+      </section>
+
+      <section className="enter-delay mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <AdminStatCard
+          label="ממוצע ידע רלוונטי — מועמדים"
+          value={`${Math.round(stats.engagement.avgCandidateKnowledgePercent)}%`}
+        />
+        <AdminStatCard
+          label="ממוצע ידע רלוונטי — משרות"
+          value={`${Math.round(stats.engagement.avgJobKnowledgePercent)}%`}
+        />
+        <AdminStatCard
+          label="ממוצע הודעות משתמש — מועמדים"
+          value={stats.engagement.avgCandidateUserMessages.toFixed(1)}
+        />
+        <AdminStatCard
+          label="ממוצע הודעות משתמש — מעסיקים"
+          value={stats.engagement.avgEmployerUserMessages.toFixed(1)}
         />
       </section>
 
@@ -318,26 +364,6 @@ export default function AdminPage() {
           ) : null}
         </div>
       </section>
-
-      <AdminCandidateCards />
     </AdminShell>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <div className="panel rounded-[var(--panel-radius)] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]">
-      <p className="text-sm text-[var(--muted)]">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-[var(--hero)]">{value}</p>
-      {sub ? <p className="mt-1 text-xs text-[var(--muted)]">{sub}</p> : null}
-    </div>
   );
 }

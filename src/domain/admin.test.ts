@@ -58,6 +58,9 @@ describe("admin", () => {
     assert.equal(stats.users, 1);
     assert.equal(stats.matches.total, 1);
     assert.equal(stats.matches.queued, 1);
+    assert.ok("engagement" in stats);
+    assert.equal(typeof stats.engagement.avgCandidateKnowledgePercent, "number");
+    assert.equal(typeof stats.engagement.avgCandidateUserMessages, "number");
   });
 
   it("estimates AI cost from token counts", () => {

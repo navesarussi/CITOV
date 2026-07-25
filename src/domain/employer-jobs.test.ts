@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 import {
   addEmployerJob,
   getActiveJob,
+  jobLabel,
   normalizeEmployerRecord,
+  renameEmployerJob,
   updateJobSlot,
   withActiveJob,
 } from "./employer-jobs";
@@ -47,5 +49,23 @@ describe("employer-jobs", () => {
     const switched = withActiveJob(updated, firstId);
     assert.equal(switched.activeJobId, firstId);
     assert.equal(switched.card.title, "");
+  });
+
+  it("sets and prefers employer-chosen job name in labels", () => {
+    const base = normalizeEmployerRecord({
+      userId: "e1",
+      card: emptyJobCard(),
+      chat: [],
+      jobs: [],
+      activeJobId: "",
+    });
+    const named = addEmployerJob(base, { name: "סניף דיזנגוף" });
+    const job = getActiveJob(named);
+    assert.equal(job.name, "סניף דיזנגוף");
+    assert.equal(jobLabel(job, 0), "סניף דיזנגוף");
+
+    const renamed = renameEmployerJob(named, job.id, "משמרת ערב");
+    assert.equal(getActiveJob(renamed).name, "משמרת ערב");
+    assert.equal(jobLabel(getActiveJob(renamed), 0), "משמרת ערב");
   });
 });

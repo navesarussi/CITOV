@@ -14,9 +14,11 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 ## Functional requirements
 
 ### FR-AUTH
-- Google OAuth available when `GOOGLE_AUTH_ENABLED=true` and Google credentials are set
-- While Google is soft-disabled (`GOOGLE_AUTH_ENABLED` unset/false), open local sessions are allowed for chat development (Google code remains in the repo)
-- Test login dialog (no Google) available when `ALLOW_TEST_LOGIN=true` — **entry only at `/demo`** (never on public `/` or `/for-employers`)
+- Google OAuth available when credentials + `AUTH_SECRET` are set (`GOOGLE_AUTH_ENABLED=false` soft-disables)
+- While Google is soft-disabled, open local sessions are allowed for chat development when test login is also off (Google code remains in the repo)
+- Test login dialog (no Google) available when `ALLOW_TEST_LOGIN=true` (defaults on in local/dev, off in production):
+  - **Local development:** also available on public landings (`/` and `/for-employers`) alongside Google when configured
+  - **Production:** entry only at `/demo` (never on public landings)
 - Candidate entry at `/`; employer entry at `/for-employers` (separate landing URLs)
 - Demo mode when `ALLOW_DEMO=true` (API bypass for seed demo users; no public UI)
 - API actions must be authorized for the acting user (or open-dev actor when Google is soft-disabled)
@@ -77,6 +79,7 @@ Match employers and candidates **without search**. Agents extract rich profiles 
 |---|---|
 | FR-JOB-01 | Approved employers may publish multiple jobs |
 | FR-JOB-02 | Employer screen filters by active job; each job has its own chat and candidate list |
+| FR-JOB-03 | Employers may set a specific display name per job (create + rename); used in the jobs filter |
 
 ### FR-CV (candidate résumé upload & deep analysis)
 Design: `docs/superpowers/specs/2026-07-23-cv-deep-analysis-design.md`  
@@ -97,6 +100,14 @@ Plan: `docs/superpowers/plans/2026-07-24-cv-subtext-reliability.md`
 | FR-CV-10 | Knowledge % reflects fields filled from CV/chat on the full card, including non-empty work/education histories |
 
 Design (subtext + reliability): `docs/superpowers/specs/2026-07-24-cv-subtext-reliability-design.md`
+
+### FR-ADM (admin portal operations)
+
+| ID | Requirement |
+|----|-------------|
+| FR-ADM-01 | Admin portal links to Google AI Studio usage/billing for actual Gemini charges and balance |
+| FR-ADM-02 | Admin portal shows average candidate/job knowledge percent and average user message counts (candidates and employers) |
+| FR-ADM-03 | Admins can browse full candidate, employer, and job records (card, metrics, matches, chat; CV for candidates) via dedicated admin routes |
 
 ## Non-goals (current POC)
 

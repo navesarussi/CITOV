@@ -22,15 +22,23 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
   const [rateOpen, setRateOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
   useEffect(() => {
     void fetch("/api/session")
       .then((r) => r.json())
-      .then((d: { isAdmin?: boolean }) => setIsAdmin(Boolean(d.isAdmin)))
-      .catch(() => setIsAdmin(false));
-  }, []);
+      .then((d: { isAdmin?: boolean; signedIn?: boolean; email?: string | null }) => {
+        const inSession = Boolean(d.signedIn ?? d.email);
+        setSignedIn(inSession);
+        setIsAdmin(Boolean(d.isAdmin) && inSession);
+      })
+      .catch(() => {
+        setIsAdmin(false);
+        setSignedIn(false);
+      });
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
@@ -156,7 +164,7 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
               <MenuLink href="/legal/about" icon="info" onClick={() => setOpen(false)}>
                 {t.settings.about}
               </MenuLink>
-              {isAdmin ? (
+              {isAdmin && signedIn ? (
                 <MenuLink href="/admin" icon="admin" onClick={() => setOpen(false)}>
                   {t.settings.adminPortal}
                 </MenuLink>
@@ -178,15 +186,17 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
               </MenuButton>
             </section>
 
-            <button
-              type="button"
-              role="menuitem"
-              className="settings-menu-signout"
-              onClick={() => void handleSignOut()}
-            >
-              <MenuGlyph name="logout" />
-              <span>{t.settings.signOut}</span>
-            </button>
+            {signedIn ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="settings-menu-signout"
+                onClick={() => void handleSignOut()}
+              >
+                <MenuGlyph name="logout" />
+                <span>{t.settings.signOut}</span>
+              </button>
+            ) : null}
           </div>
 
           <footer className="settings-menu-dropdown__footer">

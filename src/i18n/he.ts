@@ -155,6 +155,8 @@ export const he: Messages = {
     chatPlaceholder: "למשל: מחפש מלצר/ית למסעדה בתל אביב…",
     jobsFilter: "משרות",
     newJob: "משרה חדשה",
+    renameJob: "שינוי שם משרה",
+    jobNamePrompt: "שם למשרה (למשל: סניף דיזנגוף / משמרת ערב)",
     jobFallback: "משרה {n}",
   },
   chat: {

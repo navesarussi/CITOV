@@ -256,6 +256,8 @@ export function emptyCvProfile(): CandidateCvProfile {
 
 export type JobSlot = {
   id: string;
+  /** Employer-chosen display name for the jobs filter (optional). */
+  name?: string;
   card: JobCard;
   chat: ChatMessage[];
 };
