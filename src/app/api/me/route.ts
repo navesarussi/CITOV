@@ -43,6 +43,8 @@ export async function GET(req: Request) {
         er = { ...er, activeJobId: hit.id, card: hit.card, chat: hit.chat };
       }
     }
+    // Include card+chat per job so the client can switch instantly (FR-UI-05).
+    // Actor slice already loaded these chats — omitting them forced a blocking POST on every chip click.
     return ok({
       user,
       card: er.card,
@@ -52,6 +54,8 @@ export async function GET(req: Request) {
         name: j.name ?? "",
         title: j.card.title,
         field: j.card.field,
+        card: j.card,
+        chat: j.chat,
       })),
       activeJobId: er.activeJobId,
       aiMode: hasGeminiKey() ? "gemini" : "heuristic",

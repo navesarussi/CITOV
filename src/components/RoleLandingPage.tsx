@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "@/components/BrandMark";
@@ -20,6 +20,7 @@ import {
   roleLandingPath,
   startRoleSession,
 } from "@/lib/client-session";
+import { prefetchGoogleSignInCsrf, signInWithGoogleFast } from "@/lib/google-signin";
 
 type SessionFlags = SessionFlagsPayload;
 
@@ -47,6 +48,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   const { t, fmt } = useTranslation();
   const [error, setError] = useState<string | null>(null);
   const [entering, setEntering] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [flags, setFlags] = useState<SessionFlags>(props.initialFlags ?? EMPTY_FLAGS);
   const [flagsReady, setFlagsReady] = useState(Boolean(props.initialFlags));
@@ -111,6 +113,11 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   }, [status]);
 
   useEffect(() => {
+    if (!flagsReady || !flags.googleAuth) return;
+    void prefetchGoogleSignInCsrf();
+  }, [flagsReady, flags.googleAuth]);
+
+  useEffect(() => {
     if (!flagsReady || autoStarted.current) return;
     if (consumeSkipAutoLogin()) return;
 
@@ -153,15 +160,28 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
 
   async function handleSignOut() {
     clearSessionOnLogout();
+    const tasks: Promise<unknown>[] = [
+      signOut({ redirect: false }).catch(() => undefined),
+    ];
     if (flags.devAuth) {
-      await fetch("/api/dev/login", { method: "DELETE" }).catch(() => undefined);
+      tasks.push(fetch("/api/dev/login", { method: "DELETE" }).catch(() => undefined));
     }
-    try {
-      await signOut({ redirect: false });
-    } catch {
-      // Open-auth — local clear is enough.
-    }
+    await Promise.all(tasks);
     router.refresh();
+  }
+
+  async function startGoogleSignIn() {
+    setError(null);
+    setSigningIn(true);
+    try {
+      await signInWithGoogleFast({
+        callbackUrl: landingPath,
+        prompt: "select_account",
+      });
+    } catch (e) {
+      setSigningIn(false);
+      setError(e instanceof Error ? e.message : t.api.internalError);
+    }
   }
 
   async function enterAsRole() {
@@ -182,7 +202,8 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   const showDevLogin = flags.testLoginOnLanding && !isAuthed;
   /** Open-enter only when neither Google nor test-login dialog is available. */
   const showOpenEnter = flags.openAuth && !flags.googleAuth && !showDevLogin;
-  const bootstrapping = entering || (isAuthed && flags.googleAuth && !flags.isAdmin);
+  const bootstrapping =
+    entering || signingIn || (isAuthed && flags.googleAuth && !flags.isAdmin);
 
   return (
     <div className="atmosphere">
@@ -231,16 +252,11 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
                 {showGoogle ? (
                   <>
                     <Button
-                      disabled={status === "loading"}
-                      onClick={() =>
-                        void signIn("google", {
-                          callbackUrl: landingPath,
-                          prompt: "select_account",
-                        })
-                      }
+                      disabled={status === "loading" || signingIn}
+                      onClick={() => void startGoogleSignIn()}
                       className="cta-glow brand-gradient-bg min-h-12 w-full border-0 py-3.5 text-base font-semibold hover:bg-transparent hover:brightness-105"
                     >
-                      {copy.googleButton}
+                      {signingIn ? t.home.openingRole : copy.googleButton}
                     </Button>
                     <p className="text-center text-xs leading-5 text-[var(--muted)]">
                       {copy.googleHint}

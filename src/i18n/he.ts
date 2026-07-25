@@ -113,6 +113,7 @@ export const he: Messages = {
     roleClear: "לשאול בכל כניסה למסך הראשי",
     adminPortal: "פורטל מנהלים",
     signOut: "התנתקות",
+    signingOut: "מתנתקים…",
   },
   legal: {
     privacyTitle: "מדיניות פרטיות",

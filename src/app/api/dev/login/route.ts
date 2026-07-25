@@ -79,10 +79,8 @@ export async function POST(req: Request) {
   }
 }
 
+/** Idempotent cookie clear — safe when dev auth is off (logout cleanup). */
 export async function DELETE() {
-  if (!isDevAuthEnabled()) {
-    return ok({ error: "Dev login is disabled" }, { status: 403 });
-  }
   const res = NextResponse.json({ ok: true });
   res.headers.append("Set-Cookie", clearDevSessionCookieHeader());
   return res;

@@ -23,20 +23,31 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
   const [rating, setRating] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [devAuth, setDevAuth] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
   useEffect(() => {
     void fetch("/api/session")
       .then((r) => r.json())
-      .then((d: { isAdmin?: boolean; signedIn?: boolean; email?: string | null }) => {
-        const inSession = Boolean(d.signedIn ?? d.email);
-        setSignedIn(inSession);
-        setIsAdmin(Boolean(d.isAdmin) && inSession);
-      })
+      .then(
+        (d: {
+          isAdmin?: boolean;
+          signedIn?: boolean;
+          email?: string | null;
+          devAuth?: boolean;
+        }) => {
+          const inSession = Boolean(d.signedIn ?? d.email);
+          setSignedIn(inSession);
+          setIsAdmin(Boolean(d.isAdmin) && inSession);
+          setDevAuth(Boolean(d.devAuth));
+        },
+      )
       .catch(() => {
         setIsAdmin(false);
         setSignedIn(false);
+        setDevAuth(false);
       });
   }, [pathname]);
 
@@ -80,14 +91,19 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
   }
 
   async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
     setOpen(false);
+    // Local clear + skip-auto-login first so landing does not bounce back in.
     clearSessionOnLogout();
-    await fetch("/api/dev/login", { method: "DELETE" }).catch(() => undefined);
-    try {
-      await signOut({ redirect: false });
-    } catch {
-      // Open-auth / no Google session — local clear is enough.
+    // Await signOut (must clear NextAuth cookie). Dev cookie clear only when needed; parallel.
+    const tasks: Promise<unknown>[] = [
+      signOut({ redirect: false }).catch(() => undefined),
+    ];
+    if (devAuth) {
+      tasks.push(fetch("/api/dev/login", { method: "DELETE" }).catch(() => undefined));
     }
+    await Promise.all(tasks);
     router.push(
       pathname.startsWith("/employer") || pathname.startsWith("/for-employers")
         ? roleLandingPath("employer")
@@ -191,10 +207,11 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
                 type="button"
                 role="menuitem"
                 className="settings-menu-signout"
+                disabled={signingOut}
                 onClick={() => void handleSignOut()}
               >
                 <MenuGlyph name="logout" />
-                <span>{t.settings.signOut}</span>
+                <span>{signingOut ? t.settings.signingOut : t.settings.signOut}</span>
               </button>
             ) : null}
           </div>

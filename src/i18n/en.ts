@@ -111,6 +111,7 @@ export const en = {
     roleClear: "Ask each time on home",
     adminPortal: "Admin portal",
     signOut: "Sign out",
+    signingOut: "Signing out…",
   },
   legal: {
     privacyTitle: "Privacy policy",

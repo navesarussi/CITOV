@@ -34,10 +34,13 @@ Architecture: Domain ← Application ← Infrastructure / App.
 - Candidate card audiences: `domain/candidate-card-views.ts` (`full` | `candidate` | `employer`); employer API projects via `projectCandidateCard`
 - Approved opportunities use `jobCardForMatch` (matched job, not active-job mirror) and surface contact fields
 - [PENDING REFACTOR]: split `SettingsMenu.tsx` under 200-line cap
+- [PENDING REFACTOR]: split `employer/page.tsx` under 200-line cap after optimistic job workspaces
 - [PENDING REFACTOR]: split `domain/cv-merge.ts` under 200-line cap
 - [PENDING REFACTOR]: split `application/chat.ts` under 200-line cap after CV reliability work
 - [PENDING REFACTOR]: during CV subtext work, prefer new files (`cv-sanitize.ts`, `reliability.ts`, `cv-extraction.ts`) over growing `intake.ts` / `cv-merge.ts` further
 - Settings sign-out clears `shidukh_user` + NextAuth session (when present) and returns to `/`
+- Employer job switch: `/api/me` returns per-job card+chat; UI switches from local workspaces then persists `activeJobId` in background (FR-UI-05)
+- Google sign-in: CSRF prefetch + skip `getProviders` RTT; logout skips prod `DELETE /api/dev/login` when `devAuth` is off; DELETE is idempotent cookie clear
 - [PENDING REFACTOR]: split `FileImport.tsx` under 200-line cap
 - [PENDING REFACTOR]: restore default-role switch in Settings (FR-UI-01 / FR-UI-04) — landings are split; memory key still written on session start
 - [PENDING REFACTOR]: project `/api/me` candidate payload to candidate presentation (UI already hides sensitive fields)

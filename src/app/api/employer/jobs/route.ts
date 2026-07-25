@@ -8,12 +8,14 @@ import {
   withActiveJob,
 } from "@/domain/employer-jobs";
 
-function jobSummaries(employer: ReturnType<typeof normalizeEmployerRecord>) {
+function jobWorkspaces(employer: ReturnType<typeof normalizeEmployerRecord>) {
   return employer.jobs.map((j) => ({
     id: j.id,
     name: j.name ?? "",
     title: j.card.title,
     field: j.card.field,
+    card: j.card,
+    chat: j.chat,
   }));
 }
 
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
     });
 
     return ok({
-      jobs: jobSummaries(employer),
+      jobs: jobWorkspaces(employer),
       activeJobId: employer.activeJobId,
       card: employer.card,
       chat: employer.chat,
