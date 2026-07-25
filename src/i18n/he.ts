@@ -64,6 +64,14 @@ export const he: Messages = {
     switchToEmployer: "מגייסים? לכניסת מעסיקים",
     switchToCandidate: "מחפשים עבודה? לכניסת מועמדים",
   },
+  demoPage: {
+    title: "כניסת בדיקות / דמו",
+    body: "נתיב פנימי בלבד — לא מופיע בדפי הכניסה הציבוריים. לשימוש צוות ופיתוח.",
+    disabledTitle: "כניסת בדיקות כבויה",
+    disabledBody: "הגדירו ALLOW_TEST_LOGIN=true בסביבה כדי להפעיל את /demo.",
+    publicCandidate: "כניסת מועמדים",
+    publicEmployer: "כניסת מעסיקים",
+  },
   devLogin: {
     title: "כניסה לסביבת פיתוח",
     hint: "בחרו איך להיכנס — בלי Google, לבדיקות פנימיות.",
@@ -221,6 +229,9 @@ export const he: Messages = {
     ask: "שאל",
     defaultName: "מועמד/ת",
     viewCv: "צפייה בקורות חיים",
+    employerCardBadge: "תצוגת מעסיק",
+    fullCardBadge: "כרטיס מלא · אדמין",
+    fullCardTitle: "כרטיס מלא — {name}",
   },
   jobs: {
     empty:
@@ -230,6 +241,10 @@ export const he: Messages = {
     salary: "שכר: {value}",
     interviewSlots: "זמינות לראיון: {value}",
     defaultEmployerName: "מעסיק/ה",
+    nextStep: "הצעד הבא — יצירת קשר",
+    contactName: "איש קשר: {value}",
+    contactPhone: "טלפון: {value}",
+    contactPending: "פרטי יצירת קשר יופיעו כאן כשהמעסיק ימלא אותם בכרטיס המשרה.",
   },
   api: {
     missingDetails: "חסרים פרטים",

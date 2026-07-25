@@ -1,5 +1,6 @@
 import { ok, fail } from "@/infrastructure/http";
 import { authorizeActor } from "@/infrastructure/auth-guard";
+import { jobCardForMatch } from "@/domain/job-for-match";
 import { readOpportunityStore } from "@/infrastructure/store";
 
 export async function GET(req: Request) {
@@ -15,12 +16,13 @@ export async function GET(req: Request) {
     const jobs = approved.map((m) => {
       const er = store.employers.find((e) => e.userId === m.jobOwnerId);
       const user = store.users.find((u) => u.id === m.jobOwnerId);
+      const card = jobCardForMatch(er, m.jobId);
       return {
         matchId: m.id,
         score: m.score,
         reason: m.reason,
         employerName: user?.name ?? "מעסיק/ה",
-        card: er?.card,
+        card,
       };
     });
     return ok({ jobs });
