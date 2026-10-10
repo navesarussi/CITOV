@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.18 — 2025-10-10
+
+- Security (H2): chat message length cap + JSON `Content-Length` guard; per-user AI rate limit persisted in Postgres (`user_rate_limit_windows`) with dev memory-store fallback.
+
 ## 0.4.17 — 2025-10-10
 
 - Admin **התאמות** page: filters (בתור / אושרו / נדחו / מתחת לסף), scope toggle, search, pagination, explain drawer; links from candidate/job detail.
