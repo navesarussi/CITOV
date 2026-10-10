@@ -58,7 +58,6 @@ const SKILL_ALIASES: Record<string, string> = {
   agile: "agile",
   scrum: "scrum",
   jira: "jira",
-  "שירות לקוחות": "customer service",
   "ניהול מטבח": "kitchen management",
   "kitchen management": "kitchen management",
   cocktails: "cocktails",
