@@ -25,7 +25,14 @@ export function FileImport(props: {
   existingFileName?: string | null;
   pendingAnalysis?: boolean;
   compact?: boolean;
-  variant?: "default" | "toolbar" | "footer" | "sidebar" | "attach" | "message-button";
+  variant?:
+    | "default"
+    | "toolbar"
+    | "footer"
+    | "sidebar"
+    | "attach"
+    | "message-button"
+    | "dropzone";
   inputRef?: Ref<HTMLInputElement>;
 }) {
   const { t, fmt, locale } = useTranslation();
@@ -35,8 +42,19 @@ export function FileImport(props: {
   const [error, setError] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const analyzingRef = useRef(false);
+
+  function pickFileFromDrop(file: File | undefined) {
+    if (!file || status === "saving" || status === "analyzing") return;
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    if (localRef.current) {
+      localRef.current.files = dt.files;
+      void onFile({ target: localRef.current } as React.ChangeEvent<HTMLInputElement>);
+    }
+  }
 
   useEffect(() => {
     if (status !== "analyzing") {
@@ -426,6 +444,65 @@ export function FileImport(props: {
           )}
         </button>
       </>
+    );
+  }
+
+  if (variant === "dropzone") {
+    return (
+      <div
+        className={`cv-dropzone ${dragActive ? "cv-dropzone--active" : ""} ${busy ? "cv-dropzone--busy" : ""}`}
+        data-testid="cv-upload-dropzone"
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+          setDragActive(false);
+        }}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+          pickFileFromDrop(e.dataTransfer.files?.[0]);
+        }}
+      >
+        <input
+          ref={bindInputRef}
+          type="file"
+          accept=".pdf,.docx,.txt,.md"
+          onChange={(e) => void onFile(e)}
+          className="hidden"
+          data-testid="cv-upload-input"
+        />
+        <div className="cv-dropzone__icon" aria-hidden>
+          📄
+        </div>
+        <p className="cv-dropzone__title">{props.title}</p>
+        <p className="cv-dropzone__hint">
+          {dragActive ? t.fileImport.cvDropActive : t.fileImport.cvDropHint}
+        </p>
+        <p className="cv-dropzone__formats">{props.hint}</p>
+        <button
+          type="button"
+          disabled={busy}
+          data-testid="cv-upload-button"
+          onClick={() => localRef.current?.click()}
+          className="cv-dropzone__btn cta-glow brand-gradient-bg"
+        >
+          {busy ? busyLabel("h-4 w-4") : buttonLabel()}
+        </button>
+        <div className="cv-dropzone__status">{statusLine}</div>
+        {status === "error" ? (
+          <p className="cv-dropzone__error" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
     );
   }
 

@@ -220,9 +220,17 @@ export function EmployeeWorkspaceView(props: { layout: "page" | "embedded" }) {
 
   if (props.layout === "embedded") {
     return (
-      <div className="space-y-4">
+      <div className="workspace-embedded-employee flex min-h-0 flex-1 flex-col gap-4">
         {tabs}
-        <div className={tab === "chat" ? "workspace-main--fit min-h-[420px]" : ""}>{body}</div>
+        <div
+          className={
+            tab === "chat"
+              ? "workspace-main--fit flex min-h-0 flex-1 flex-col"
+              : "min-h-0 flex-1"
+          }
+        >
+          {body}
+        </div>
       </div>
     );
   }

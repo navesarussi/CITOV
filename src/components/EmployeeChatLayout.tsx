@@ -25,14 +25,27 @@ export function EmployeeChatLayout(props: {
   const { t } = useTranslation();
   const blockedReason = props.readOnly ? "blocked" : props.hasCv ? undefined : "blocked";
 
-  const cvUpload = (
+  const cvUploadDropzone = (
     <FileImport
       userId={props.userId}
       endpoint="/api/cv"
       title={t.fileImport.cvTitle}
       hint={t.fileImport.cvHint}
-      variant="footer"
-      compact
+      variant="dropzone"
+      cvMode
+      hasExisting={props.hasCv}
+      pendingAnalysis={props.cvPending}
+      onDone={props.onCvDone}
+    />
+  );
+
+  const cvSidebar = (
+    <FileImport
+      userId={props.userId}
+      endpoint="/api/cv"
+      title={t.fileImport.cvTitle}
+      hint={t.fileImport.cvHint}
+      variant="sidebar"
       minimalSummary
       cvMode
       hasExisting={props.hasCv}
@@ -57,45 +70,51 @@ export function EmployeeChatLayout(props: {
 
   return (
     <div className="employee-workspace enter-delay">
-      <CandidateProfileStrip
-        userId={props.userId}
-        card={props.card}
-        onFlexibilityChange={props.onFlexibilityChange}
-      />
-
-      <section className="employee-chat-main" aria-label={t.chat.title}>
-        {props.cvPending && props.hasCv ? (
-          <div className="hidden" aria-hidden>
-            {cvUpload}
-          </div>
-        ) : null}
-        <div className="employee-chat-main__panel">
-          <ChatPanel
-            key={`${props.userId}-employee`}
+      <div className="employee-workspace__grid">
+        <aside className="employee-sidebar" aria-label={t.profile.yourCard}>
+          <CandidateProfileStrip
             userId={props.userId}
-            role="employee"
-            locale={props.locale}
-            initialMessages={props.chat}
-            placeholder={props.placeholder}
-            blockedReason={blockedReason}
-            onTurn={props.onTurn}
-            onCvUpdated={props.onCvDone}
-            composerAddon={props.readOnly ? undefined : props.hasCv && !props.cvPending ? cvAttach : undefined}
-            lockedOverlay={
-              props.hasCv ? undefined : (
-                <div className="employee-chat-locked">
-                  <div className="employee-chat-locked__icon" aria-hidden>
-                    💬
-                  </div>
-                  <h3 className="employee-chat-locked__title">{t.employee.chatLockedTitle}</h3>
-                  <p className="employee-chat-locked__body">{t.employee.chatLockedBody}</p>
-                  {cvUpload}
-                </div>
-              )
-            }
+            card={props.card}
+            onFlexibilityChange={props.onFlexibilityChange}
           />
-        </div>
-      </section>
+          {!props.readOnly && !props.hasCv ? (
+            <div className="employee-sidebar__cv hidden min-[960px]:block">{cvSidebar}</div>
+          ) : null}
+        </aside>
+
+        <section className="employee-chat-main" aria-label={t.chat.title}>
+          {props.cvPending && props.hasCv ? (
+            <div className="hidden" aria-hidden>
+              {cvUploadDropzone}
+            </div>
+          ) : null}
+          <div className="employee-chat-main__panel">
+            <ChatPanel
+              key={`${props.userId}-employee`}
+              userId={props.userId}
+              role="employee"
+              locale={props.locale}
+              initialMessages={props.chat}
+              placeholder={props.placeholder}
+              blockedReason={blockedReason}
+              onTurn={props.onTurn}
+              onCvUpdated={props.onCvDone}
+              composerAddon={props.readOnly ? undefined : props.hasCv && !props.cvPending ? cvAttach : undefined}
+              blockedFooter={props.readOnly || props.hasCv ? undefined : cvUploadDropzone}
+              lockedOverlay={
+                props.hasCv ? undefined : (
+                  <div className="employee-chat-locked">
+                    <h3 className="employee-chat-locked__title">{t.employee.chatLockedTitle}</h3>
+                    <p className="employee-chat-locked__body">{t.employee.chatLockedBody}</p>
+                    {cvUploadDropzone}
+                    <p className="employee-chat-locked__desktop-hint">{t.chat.cvRequiredEmpty}</p>
+                  </div>
+                )
+              }
+            />
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

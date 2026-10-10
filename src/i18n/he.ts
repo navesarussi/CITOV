@@ -196,6 +196,8 @@ export const he: Messages = {
     error: "לא הצלחתי לקרוא את הקובץ",
     cvTitle: "העלאת קורות חיים",
     cvHint: "PDF, DOCX או TXT — ניתוח מעמיק ומלא של הכרטיס.",
+    cvDropHint: "גררו קובץ לכאן או לחצו לבחירה",
+    cvDropActive: "שחררו להעלאת קורות החיים",
     cvSummary: "קלטו את קורות החיים · עודכנו כ־{fields} פרטים · {roles} תפקידים בהיסטוריה",
     cvConflictsHint: "יש כמה נקודות שנברר יחד בצ׳אט.",
     jobTitle: "העלאת תיאור משרה",
