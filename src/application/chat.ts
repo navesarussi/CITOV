@@ -41,7 +41,7 @@ export async function handleEmployeeChat(
   userId: string,
   message: string,
 ): Promise<ChatTurnResult> {
-  const prep = prepareEmployeeTurn(store, userId);
+  const prep = await prepareEmployeeTurn(store, userId);
   const intake = await runEmployeeIntake({
     message,
     card: prep.card,
@@ -71,7 +71,7 @@ export async function handleEmployerChat(
   message: string,
   jobId?: string,
 ): Promise<ChatTurnResult> {
-  const prep = prepareEmployerTurn(store, userId, jobId);
+  const prep = await prepareEmployerTurn(store, userId, jobId);
   const intake = await runEmployerIntake({
     message,
     card: prep.card,

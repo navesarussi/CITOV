@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3 — 2025-10-10
+
+- Admin **פרומפטים** tab: full prompt studio (cards, RTL editor, variable chips, preview, versioning, diff, rollback, eval).
+- Runtime prompts for CV extraction, job extraction, match enrich, and card translation read from version store.
+- Removed developer placeholder copy from admin dashboard and guidelines page.
+
 ## 0.3.2 — 2025-10-10
 
 - Fix AI usage logging: persist CV analyze usage, chat reply stream + patch (2 rows/turn), embeddings.

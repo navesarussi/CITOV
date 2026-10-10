@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "010_ai_usage_meta";
+const MIGRATION_VERSION = "011_prompt_versions";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -75,6 +75,24 @@ alter table ai_usage add column if not exists model text;
 alter table ai_usage add column if not exists latency_ms integer;
 create index if not exists ai_usage_created_at_idx on ai_usage (created_at desc);
 create index if not exists ai_usage_user_id_idx on ai_usage (user_id, created_at desc);
+
+create table if not exists prompt_versions (
+  id text primary key,
+  prompt_key text not null,
+  version integer not null,
+  body text not null,
+  created_by text,
+  created_at timestamptz not null default now(),
+  unique (prompt_key, version)
+);
+create index if not exists prompt_versions_key_idx on prompt_versions (prompt_key, version desc);
+
+create table if not exists prompt_active (
+  prompt_key text primary key,
+  active_version integer not null,
+  updated_at timestamptz not null default now(),
+  updated_by text
+);
 
 create table if not exists match_labels (
   id text primary key,

@@ -56,7 +56,7 @@ export async function runCvWelcomeAfterUpload(params: {
     });
   }
 
-  const prep = prepareEmployeeTurn(params.store, params.userId);
+  const prep = await prepareEmployeeTurn(params.store, params.userId);
   const welcome = await runCvWelcomeReply({
     userCvMessage: params.userCvMessage,
     card: prep.card,

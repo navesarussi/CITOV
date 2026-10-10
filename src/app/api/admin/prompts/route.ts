@@ -1,3 +1,4 @@
+import { saveCatalogPrompt } from "@/application/admin-prompt-catalog";
 import {
   defaultPromptSnapshot,
   getAdminDashboard,
@@ -46,6 +47,18 @@ export async function PUT(req: Request) {
     }).adminSettings!;
 
     await upsertAdminSettings(adminSettings);
+    await saveCatalogPrompt({
+      promptKey: "candidate_chat",
+      body: body.candidatePrompt!,
+      createdBy: gate.email,
+      adminSettings,
+    });
+    await saveCatalogPrompt({
+      promptKey: "employer_chat",
+      body: body.employerPrompt!,
+      createdBy: gate.email,
+      adminSettings,
+    });
 
     const prompts = getAdminDashboard({ ...store, adminSettings }).prompts;
     return ok({ ok: true, prompts, isCustom: true });

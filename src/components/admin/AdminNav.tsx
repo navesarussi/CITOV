@@ -12,7 +12,7 @@ const LINKS: { href: string; label: string; match?: (path: string) => boolean }[
   { href: "/admin/monitoring", label: "ניטור" },
   { href: "/admin/preview/employee", label: "תצוגת מועמד" },
   { href: "/admin/preview/employer", label: "תצוגת מעסיק" },
-  { href: "/admin/guidelines", label: "הנחיות" },
+  { href: "/admin/guidelines", label: "פרומפטים" },
 ];
 
 function isActive(pathname: string, link: (typeof LINKS)[number]): boolean {
@@ -26,6 +26,7 @@ const PREFETCH: Record<string, () => Promise<unknown>> = {
   "/admin/candidates": () => fetch("/api/admin/candidates").then((r) => r.json()),
   "/admin/employers": () => fetch("/api/admin/employers").then((r) => r.json()),
   "/admin/monitoring": () => fetch("/api/admin/monitoring").then((r) => r.json()),
+  "/admin/guidelines": () => fetch("/api/admin/prompt-catalog").then((r) => r.json()),
 };
 
 export function AdminNav() {

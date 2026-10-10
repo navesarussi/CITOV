@@ -45,7 +45,7 @@ import type {
   StoreData,
 } from "@/domain/types";
 import { emptyCvProfile } from "@/domain/types";
-import { resolveAdminSettings } from "@/infrastructure/ai/prompts";
+import { resolveLiveChatPrompts } from "@/application/admin-prompt-catalog";
 import type { AiTokenUsage, CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
 
 function isEmptyCardValue(v: unknown): boolean {
@@ -227,10 +227,10 @@ export type ChatTurnResult = {
   cv?: CandidateCvProfile;
 };
 
-export function prepareEmployeeTurn(
+export async function prepareEmployeeTurn(
   store: StoreData,
   userId: string,
-): {
+): Promise<{
   card: CandidateCard;
   chat: ChatMessage[];
   pendingQuestions: FieldQuestion[];
@@ -239,13 +239,13 @@ export function prepareEmployeeTurn(
   pendingInferences: string;
   openReliabilityNotes: string;
   cv?: CandidateCvProfile;
-} {
+}> {
   const raw = store.employees.find((e) => e.userId === userId);
   if (!raw) throw new NotFoundError("Employee");
   const accountLabel =
     firstNameFromFullName(store.users.find((u) => u.id === userId)?.name ?? "") ?? "אני";
   const emp = ensureProfilePack(raw, accountLabel);
-  const prompts = resolveAdminSettings(store.adminSettings);
+  const prompts = await resolveLiveChatPrompts(store.adminSettings);
   return {
     card: emp.card,
     chat: emp.chat,
@@ -263,17 +263,17 @@ export function prepareEmployeeTurn(
   };
 }
 
-export function prepareEmployerTurn(
+export async function prepareEmployerTurn(
   store: StoreData,
   userId: string,
   jobId?: string,
-): { card: JobCard; chat: ChatMessage[]; systemPrompt: string; jobId: string } {
+): Promise<{ card: JobCard; chat: ChatMessage[]; systemPrompt: string; jobId: string }> {
   const raw = store.employers.find((e) => e.userId === userId);
   if (!raw) throw new NotFoundError("Employer");
   let employer = normalizeEmployerRecord(raw);
   if (jobId) employer = withActiveJob(employer, jobId);
   const active = getActiveJob(employer);
-  const prompts = resolveAdminSettings(store.adminSettings);
+  const prompts = await resolveLiveChatPrompts(store.adminSettings);
   return {
     card: active.card,
     chat: active.chat,
