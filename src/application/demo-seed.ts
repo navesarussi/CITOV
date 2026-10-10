@@ -4,6 +4,7 @@ import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { EmployerRecord, StoreData, User } from "@/domain/types";
 import { readNormalizedStore, writeNormalizedStore } from "@/infrastructure/db/normalized-store";
 import { refreshCandidateEmbeddings, refreshJobEmbeddings } from "@/infrastructure/db/card-embeddings";
+import { backfillMatchCanonicalOnStore } from "@/application/match-canonical-backfill";
 import { rebuildAndWriteMatches } from "@/infrastructure/store";
 
 export const SEED_MARKER = "eval-cards-v1";
@@ -61,7 +62,7 @@ export function buildDemoStoreFromEval(): StoreData {
     );
   }
 
-  return {
+  return backfillMatchCanonicalOnStore({
     users,
     employees,
     employers,
@@ -75,7 +76,7 @@ export function buildDemoStoreFromEval(): StoreData {
       updatedBy: SEED_MARKER,
     },
     aiUsage: [],
-  };
+  });
 }
 
 export async function runDemoSeed(options?: { force?: boolean }): Promise<{

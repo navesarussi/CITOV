@@ -16,6 +16,10 @@ type Detail = {
   jobs: {
     jobId: string;
     title: string;
+    location: string;
+    statusLabel: string;
+    createdAt: string | null;
+    matchCounts: { queued: number; approved: number; rejected: number };
     knowledgePercent: number;
     userMessageCount: number;
     flexibility: number;
@@ -27,6 +31,7 @@ export default function AdminEmployerDetailPage() {
   const id = params.id;
   const [data, setData] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showTech, setShowTech] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -53,7 +58,7 @@ export default function AdminEmployerDetailPage() {
   return (
     <AdminShell
       title={data?.name ?? "מעסיק"}
-      subtitle="מעסיק ומשרות — קריאה בלבד"
+      subtitle="מעסיק ומשרות"
       actions={
         <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
           רענון
@@ -77,6 +82,16 @@ export default function AdminEmployerDetailPage() {
             <span>ממוצע הודעות {data.avgUserMessages.toFixed(1)}</span>
             <span>ממוצע ידע {Math.round(data.avgKnowledgePercent)}%</span>
           </section>
+          <button
+            type="button"
+            className="text-xs text-[var(--accent)] hover:underline"
+            onClick={() => setShowTech((v) => !v)}
+          >
+            פרטים טכניים {showTech ? "▾" : "▸"}
+          </button>
+          {showTech ? (
+            <p className="font-mono text-xs text-[var(--muted)]">userId: {data.userId}</p>
+          ) : null}
           <section>
             <h2 className="mb-3 text-lg font-semibold">משרות</h2>
             <ul className="space-y-2">
@@ -84,14 +99,28 @@ export default function AdminEmployerDetailPage() {
                 <li key={j.jobId}>
                   <Link
                     href={`/admin/employers/${id}/jobs/${j.jobId}`}
-                    className="panel flex flex-wrap items-center justify-between gap-3 rounded-[var(--panel-radius)] p-4 transition hover:border-[var(--accent)]"
+                    className="panel block rounded-[var(--panel-radius)] p-4 transition hover:border-[var(--accent)]"
                   >
-                    <span className="font-semibold text-[var(--hero)]">{j.title}</span>
-                    <span className="flex flex-wrap gap-3 text-xs text-[var(--muted)]">
-                      <span>ידע {j.knowledgePercent}%</span>
-                      <span>{j.userMessageCount} הודעות</span>
-                      <span>גמישות {j.flexibility}/10</span>
-                    </span>
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <span className="text-lg font-semibold text-[var(--hero)]">{j.title}</span>
+                        <p className="mt-1 text-xs text-[var(--muted)]">
+                          {j.location} · {j.statusLabel}
+                          {j.createdAt ? ` · ${new Date(j.createdAt).toLocaleDateString("he-IL")}` : null}
+                        </p>
+                      </div>
+                      <span className="flex flex-wrap gap-3 text-xs text-[var(--muted)]">
+                        <span>ידע {j.knowledgePercent}%</span>
+                        <span>{j.userMessageCount} הודעות</span>
+                        <span>גמישות {j.flexibility}/10</span>
+                        <span>
+                          מאצ'ים {j.matchCounts.queued}/{j.matchCounts.approved}/{j.matchCounts.rejected}
+                        </span>
+                      </span>
+                    </div>
+                    {showTech ? (
+                      <p className="mt-2 font-mono text-[10px] text-[var(--muted)]">jobId: {j.jobId}</p>
+                    ) : null}
                   </Link>
                 </li>
               ))}

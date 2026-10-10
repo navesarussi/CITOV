@@ -89,6 +89,7 @@ create table if not exists ai_usage (
   completion_tokens integer not null default 0,
   total_tokens integer not null default 0,
   cached_prompt_tokens integer not null default 0,
+  thinking_tokens integer not null default 0,
   estimated_cost_usd double precision not null default 0,
   created_at timestamptz not null default now()
 );

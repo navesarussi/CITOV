@@ -4,6 +4,7 @@ import {
   jobEngagement,
 } from "@/domain/admin-engagement";
 import { isDemoUserId } from "@/domain/admin";
+import { displayJobTitle, jobMatchCounts } from "@/domain/admin-job-display";
 import type {
   CandidateCard,
   ChatMessage,
@@ -43,6 +44,10 @@ export type AdminCandidateDetail = AdminCandidateSummary & {
 export type AdminJobSummary = {
   jobId: string;
   title: string;
+  location: string;
+  statusLabel: string;
+  createdAt: string | null;
+  matchCounts: { queued: number; approved: number; rejected: number };
   knowledgePercent: number;
   userMessageCount: number;
   flexibility: number;
@@ -170,9 +175,20 @@ export function getAdminEmployerDetail(
     avgKnowledgePercent: eng.avgKnowledgePercent,
     jobs: (er.jobs ?? []).map((j) => {
       const je = jobEngagement(j);
+      const counts = jobMatchCounts(store, userId, j.id);
+      const statusLabel =
+        counts.approved > 0
+          ? "יש מאצ'ים"
+          : counts.queued > 0
+            ? "בתור"
+            : "פעילה";
       return {
         jobId: j.id,
-        title: j.name?.trim() || j.card.title || j.id,
+        title: displayJobTitle(j),
+        location: j.card.location?.trim() || "—",
+        statusLabel,
+        createdAt: null,
+        matchCounts: counts,
         knowledgePercent: je.knowledgePercent,
         userMessageCount: je.userMessageCount,
         flexibility: je.flexibility,
@@ -194,7 +210,11 @@ export function getAdminJobDetail(
   const je = jobEngagement(job);
   return {
     jobId: job.id,
-    title: job.name?.trim() || job.card.title || job.id,
+    title: displayJobTitle(job),
+    location: job.card.location?.trim() || "—",
+    statusLabel: "פעילה",
+    createdAt: null,
+    matchCounts: jobMatchCounts(store, employerId, job.id),
     knowledgePercent: je.knowledgePercent,
     userMessageCount: je.userMessageCount,
     flexibility: je.flexibility,

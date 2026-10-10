@@ -200,6 +200,7 @@ function buildUsageRecord(
     promptTokens: usage.promptTokens,
     completionTokens: usage.completionTokens,
     cachedPromptTokens: usage.cachedPromptTokens,
+    thinkingTokens: usage.thinkingTokens,
     createdAt: new Date().toISOString(),
   });
 }
