@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "013_test_sandbox";
+const MIGRATION_VERSION = "014_degraded_turns";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -110,6 +110,19 @@ create table if not exists prompt_active (
   updated_at timestamptz not null default now(),
   updated_by text
 );
+
+create table if not exists degraded_turns (
+  id text primary key,
+  user_id text not null,
+  role text not null check (role in ('employee', 'employer')),
+  job_id text,
+  user_message text not null,
+  heuristic_reply text not null,
+  status text not null check (status in ('pending', 'recovered', 'failed')) default 'pending',
+  created_at timestamptz not null default now(),
+  recovered_at timestamptz
+);
+create index if not exists degraded_turns_pending_idx on degraded_turns (status, created_at);
 
 create table if not exists match_labels (
   id text primary key,

@@ -292,6 +292,8 @@ export async function prepareEmployerTurn(
   };
 }
 
+const DEGRADED_NOTICE_HE = "העוזר עובד כרגע במצב מוגבל";
+
 export function applyEmployeeTurn(params: {
   store: StoreData;
   userId: string;
@@ -323,6 +325,10 @@ export function applyEmployeeTurn(params: {
 
   const emp = store.employees.find((e) => e.userId === userId);
   if (!emp) throw new NotFoundError("Employee");
+
+  if (params.aiDegraded && !reply.includes(DEGRADED_NOTICE_HE)) {
+    reply = `${DEGRADED_NOTICE_HE}\n\n${reply}`;
+  }
 
   // Resolve pre-existing conflicts / inferences before opening new ones
   let cv =
@@ -469,6 +475,59 @@ export function appendAssistantReply(params: {
   };
 }
 
+function stripLastDegradedPair(
+  store: StoreData,
+  userId: string,
+  role: "employee" | "employer",
+  jobId?: string,
+): StoreData {
+  if (role === "employee") {
+    const emp = store.employees.find((e) => e.userId === userId);
+    if (!emp) return store;
+    const chat = [...emp.chat];
+    if (chat.at(-1)?.role === "assistant") chat.pop();
+    if (chat.at(-1)?.role === "user") chat.pop();
+    return {
+      ...store,
+      employees: store.employees.map((e) => (e.userId === userId ? { ...e, chat } : e)),
+    };
+  }
+  const raw = store.employers.find((e) => e.userId === userId);
+  if (!raw) return store;
+  let employer = normalizeEmployerRecord(raw);
+  if (jobId) employer = withActiveJob(employer, jobId);
+  const active = getActiveJob(employer);
+  const chat = [...active.chat];
+  if (chat.at(-1)?.role === "assistant") chat.pop();
+  if (chat.at(-1)?.role === "user") chat.pop();
+  const updated = updateJobSlot(employer, active.id, { chat });
+  return {
+    ...store,
+    employers: store.employers.map((e) =>
+      e.userId === userId ? withActiveJob(updated, active.id) : e,
+    ),
+  };
+}
+
+export function applyEmployeeRecoveryTurn(
+  params: Parameters<typeof applyEmployeeTurn>[0],
+): ChatTurnResult {
+  const store = stripLastDegradedPair(params.store, params.userId, "employee");
+  return applyEmployeeTurn({ ...params, store, aiDegraded: false });
+}
+
+export function applyEmployerRecoveryTurn(
+  params: Parameters<typeof applyEmployerTurn>[0],
+): ChatTurnResult {
+  const store = stripLastDegradedPair(
+    params.store,
+    params.userId,
+    "employer",
+    params.jobId,
+  );
+  return applyEmployerTurn({ ...params, store, aiDegraded: false });
+}
+
 export function applyEmployerTurn(params: {
   store: StoreData;
   userId: string;
@@ -481,13 +540,18 @@ export function applyEmployerTurn(params: {
   aiDegraded?: boolean;
   jobId?: string;
 }): ChatTurnResult {
-  const { store, userId, message, reply } = params;
+  const { store, userId, message } = params;
+  let reply = params.reply;
   const raw = store.employers.find((e) => e.userId === userId);
   if (!raw) throw new NotFoundError("Employer");
 
   let employer = normalizeEmployerRecord(raw);
   if (params.jobId) employer = withActiveJob(employer, params.jobId);
   const active = getActiveJob(employer);
+
+  if (params.aiDegraded && !reply.includes(DEGRADED_NOTICE_HE)) {
+    reply = `${DEGRADED_NOTICE_HE}\n\n${reply}`;
+  }
 
   const card = applyJobPatch(active.card, params.jobPatch);
   const slotAfterConfirm = resolveJobImportConfirmationsFromPatch(

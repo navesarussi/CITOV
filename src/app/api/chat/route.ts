@@ -34,6 +34,9 @@ import {
 import { normalizeAssistantReplyText } from "@/domain/chat-reply";
 import { firstNameFromFullName } from "@/domain/person-name";
 import { parseLocale } from "@/infrastructure/locale";
+import { enqueueDegradedTurn } from "@/infrastructure/db/degraded-turns";
+import { recordAppEventSafe } from "@/infrastructure/db/app-events";
+import { geminiCallTimeoutMs } from "@/infrastructure/ai/gemini-client";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -163,6 +166,22 @@ export async function POST(req: Request) {
 
           await persistTurn(role, userId, result);
           after(() => {
+            if (result.aiDegraded) {
+              void enqueueDegradedTurn({
+                userId,
+                role: role === "employee" ? "employee" : "employer",
+                jobId: result.jobId,
+                userMessage: message,
+                heuristicReply: result.reply,
+              });
+              recordAppEventSafe({
+                kind: "degraded_chat_turn",
+                severity: "warn",
+                message: `Degraded chat turn (${role})`,
+                route: "/api/chat",
+                meta: { userId, provider: result.provider },
+              });
+            }
             if (role === "employee") {
               scheduleCandidateEmbeddingRefresh(userId, result.card as CandidateCard);
             } else if (result.jobId) {
@@ -229,7 +248,9 @@ async function runEmployeeStream(
     });
   }
 
-  const patchPromise = extractEmployeePatch({
+  const timeoutMs = geminiCallTimeoutMs();
+  const patchPromise = Promise.race([
+    extractEmployeePatch({
     message,
     card: prep.card,
     chat: prep.chat,
@@ -240,7 +261,14 @@ async function runEmployeeStream(
     openReliabilityNotes: prep.openReliabilityNotes,
     locale,
     accountHolderFirstName,
-  });
+    }),
+    new Promise<Awaited<ReturnType<typeof extractEmployeePatch>>>((_, reject) =>
+      setTimeout(() => reject(new Error("gemini_timeout")), timeoutMs),
+    ),
+  ]).catch((): Awaited<ReturnType<typeof extractEmployeePatch>> => ({
+    candidatePatch: {},
+    fieldAnswers: [],
+  }));
 
   let replyText = "";
   let provider: "gemini" | "heuristic" = "gemini";
@@ -259,7 +287,9 @@ async function runEmployeeStream(
       locale,
       accountHolderFirstName,
     });
+    const streamDeadline = Date.now() + timeoutMs;
     for await (const delta of streamed.textStream) {
+      if (Date.now() > streamDeadline) throw new Error("gemini_timeout");
       if (!delta) continue;
       replyText += delta;
     }
@@ -318,13 +348,19 @@ async function runEmployerStream(
     });
   }
 
-  const patchPromise = extractEmployerPatch({
-    message,
-    card: prep.card,
-    chat: prep.chat,
-    systemPrompt: prep.systemPrompt,
-    pendingJobConfirmations: prep.pendingJobConfirmations,
-  });
+  const timeoutMs = geminiCallTimeoutMs();
+  const patchPromise = Promise.race([
+    extractEmployerPatch({
+      message,
+      card: prep.card,
+      chat: prep.chat,
+      systemPrompt: prep.systemPrompt,
+      pendingJobConfirmations: prep.pendingJobConfirmations,
+    }),
+    new Promise<Awaited<ReturnType<typeof extractEmployerPatch>>>((_, reject) =>
+      setTimeout(() => reject(new Error("gemini_timeout")), timeoutMs),
+    ),
+  ]).catch((): Awaited<ReturnType<typeof extractEmployerPatch>> => ({ jobPatch: {} }));
 
   let replyText = "";
   let provider: "gemini" | "heuristic" = "gemini";
@@ -338,7 +374,9 @@ async function runEmployerStream(
       systemPrompt: prep.systemPrompt,
       pendingJobConfirmations: prep.pendingJobConfirmations,
     });
+    const streamDeadline = Date.now() + timeoutMs;
     for await (const delta of streamed.textStream) {
+      if (Date.now() > streamDeadline) throw new Error("gemini_timeout");
       if (!delta) continue;
       replyText += delta;
     }

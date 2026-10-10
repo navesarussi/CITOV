@@ -53,15 +53,43 @@ export function getGeminiModel(modelId = DEFAULT_MODEL) {
   return cached;
 }
 
+export function isForceGeminiFailure(): boolean {
+  return process.env.FORCE_GEMINI_FAILURE === "true";
+}
+
+export function geminiCallTimeoutMs(): number {
+  const n = Number(process.env.GEMINI_CALL_TIMEOUT_MS ?? 12_000);
+  return Number.isFinite(n) && n > 1000 ? n : 12_000;
+}
+
+function withCallTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("gemini_timeout")), ms);
+    promise
+      .then((v) => {
+        clearTimeout(timer);
+        resolve(v);
+      })
+      .catch((e) => {
+        clearTimeout(timer);
+        reject(e);
+      });
+  });
+}
+
 export async function callGeminiWithRetry<T>(
   fn: () => Promise<T>,
-  opts?: { maxAttempts?: number },
+  opts?: { maxAttempts?: number; timeoutMs?: number },
 ): Promise<T> {
+  if (isForceGeminiFailure()) {
+    throw new Error("forced_gemini_failure");
+  }
   const maxAttempts = opts?.maxAttempts ?? 4;
+  const timeoutMs = opts?.timeoutMs ?? geminiCallTimeoutMs();
   let lastErr: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      return await fn();
+      return await withCallTimeout(fn(), timeoutMs);
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
