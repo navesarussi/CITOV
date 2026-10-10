@@ -1,3 +1,4 @@
+/** Single entry for production match scores (hybrid + rule fallback + queue threshold). */
 import { explainMatch, shouldQueueForEmployer } from "@/domain/matching";
 import type { MatchScoreMode } from "@/domain/matching-scorers";
 import { scoreWithMode } from "@/domain/matching-scorers";

@@ -1,72 +1,47 @@
-# Matching evaluation (offline baseline)
+# Matching evaluation (offline)
 
-This document describes how we measure job–candidate matching **before and after** algorithm changes. Production default is **hybrid** (semantic + rules) when embeddings exist; rule-only fallback otherwise.
-
-## Dataset
-
-| Item | Count |
-|------|------:|
-| Jobs | 25 |
-| Candidates | 50 |
-| Labeled (job, candidate) pairs | 90 |
-
-**Location:** `eval/matching/` — `seed-jobs.ts`, `seed-candidates.ts`, `seed-labels.ts`. Cards validate against Zod patch schemas on every eval run.
-
-**Labels:** `good` / `acceptable` / `bad` — see previous section in git history for grading table. Queue confusion uses threshold **0.28** unless noted.
-
-## How to run
+Labeled Hebrew-first set (25 jobs, 50 candidates, 90 pairs) under `eval/matching/`. **Fixture:** committed real Gemini vectors in `eval/matching/fixtures/embeddings.fixture.json` (`gemini-embedding-001`, 768d, 75 entities). Override locally with gitignored `embeddings.json`. Fallback: `embeddings.pseudo.fixture.json` (generate via `npm run eval:embed-fixtures` without API key — not semantic).
 
 ```bash
-npm run eval:embed-fixtures   # Gemini if GOOGLE_GENERATIVE_AI_API_KEY set, else pseudo fixture
-npm run eval:matching         # rule vs semantic vs hybrid table + results/latest.json
+npm run eval:matching      # metrics table + eval/matching/results/latest.json
+npm run eval:embed-fixtures  # refresh vectors (needs GOOGLE_GENERATIVE_AI_API_KEY)
+npm run seed:demo          # load eval cards into Postgres (needs DATABASE_URL; idempotent)
 ```
 
-Embedding design: `docs/EMBEDDINGS.md`.
+## Overfitting note
 
-## Metrics snapshot @ threshold 0.28
+Threshold (0.6), cosine floor (0.75), and hybrid weights (80/20) were grid-searched on **this same 90-pair label set** (see sweep in `scripts/eval-matching.ts`). Treat metrics as **optimistic** until we add a held-out job or label split.
 
-Dataset version `2026-10-10-v1`. **Important:** numbers below used the committed **`pseudo-local-v1`** fixture (deterministic token hashing — **not** real Gemini semantics). Re-run both scripts with a Google API key and commit/use `fixtures/embeddings.json` before citing semantic lift in an interview.
+## Real Gemini results (2026-10-10 fixture)
 
-| Matcher | P@5 | R@5 | MRR | nDCG@5 | Good missed | Bad queued |
-|---------|----:|----:|----:|-------:|------------:|-----------:|
-| **rule-based-v1** | 30.4% | 68.7% | 1.000 | 0.780 | 8 | 1 |
-| **semantic-v1** (pseudo) | 33.6% | 76.1% | 1.000 | 0.825 | 0 | 32 |
-| **hybrid-v1** 55/45 (pseudo) | 34.4% | 76.9% | 1.000 | 0.831 | 7 | 5 |
+| Matcher | Thr | P@5 | R@5 | MRR | nDCG@5 | Good miss | Acc miss | Bad queued |
+|---------|----:|----:|----:|----:|-------:|----------:|---------:|-----------:|
+| **rule-based-v1** | 0.28 | 30.4% | 68.7% | 1.000 | 0.780 | 8 | 25 | 1 |
+| **semantic-legacy-v1** (no calibration, \((c+1)/2\)) | 0.28 | 40.8% | 90.9% | 0.927 | 0.887 | 0 | 0 | **32** |
+| **hybrid-legacy-v1** (55/45, no calibration) | 0.28 | 39.2% | 87.9% | 1.000 | 0.890 | 0 | 0 | **32** |
+| **semantic-v1** (calibrated + empty-segment skip) | 0.28 | **41.6%** | **93.2%** | 1.000 | **0.943** | 0 | 6 | 9 |
+| **hybrid-calibrated-v1** (production 80/20) | **0.60** | **41.6%** | 91.0% | 1.000 | 0.915 | **6** | 21 | **2** |
 
-### Hybrid threshold sweep (pseudo fixture)
+### What changed vs “before calibration”
 
-On the same fixture, a simple sweep favored **~0.30** over 0.28 for hybrid-v1: **good missed 7 → same order as tuned**, **bad queued 5 → 1**, with nDCG@5 ≈ 0.831 unchanged. Consider `MATCHING_QUEUE_THRESHOLD=0.30` when running hybrid after regenerating **Gemini** fixtures (verify again — do not trust pseudo for this decision).
+Gemini cosines cluster between ~0.77 and 1.0, so mapping \((c+1)/2\) pushes almost everyone above the old **0.28** queue bar → **32 false queues**. **Calibration** `clamp((c − 0.75) / (1 − 0.75), 0, 1)` spreads scores. **Skipping empty profile segments** avoids treating blank `" "` embeddings as perfect matches. Production uses **threshold 0.60** with **80% semantic / 20% rule**.
 
-### How to read the pseudo vs rule comparison
+### Remaining good misses (hybrid @ 0.60, typical)
 
-- **Rule baseline** misses cross-language “good” labels (zero token overlap).
-- **Pseudo semantic** inflates recall but queues many **bad** labels (vectors are not truly semantic — noisy similarity).
-- **Hybrid** trades off between them; with **real** Gemini embeddings you should see good-miss count drop **without** pseudo’s bad-queue explosion.
+Cross-language pairs where **rule role overlap is 0** and the **flexibility curve** still pulls sub-threshold scores despite strong role embeddings (e.g. `waiter` ↔ `מלצר`, `customer support` ↔ `נציג שירות`, `Chef` ↔ `טבח`). Mitigation in code: **role-calibrated floor** when token role score &lt; 0.2; must-have checks use bilingual token aliases + language-gap down-weight (blocks most `c47`-style leaks).
 
-After you run:
+### Embedding cost (eval fixture run)
 
-```bash
-export GOOGLE_GENERATIVE_AI_API_KEY=...
-npm run eval:embed-fixtures   # writes fixtures/embeddings.json
-npm run eval:matching
-```
+75 cards × 3 segments ≈ **75 `embedMany` batches** (3 texts each), ~**1.5–3k tokens** total — **~$0** on Gemini embedding pricing.
 
-update this table with the three matcher rows from the CLI output.
+## Production defaults (env)
 
-## Pluggable matchers
+| Variable | Default |
+|----------|---------|
+| `MATCHING_COSINE_FLOOR` | `0.75` |
+| `MATCHING_SEMANTIC_WEIGHT` | `0.8` |
+| `MATCHING_RULE_WEIGHT` | `0.2` |
+| `MATCHING_QUEUE_THRESHOLD` | `0.6` |
+| `MATCHING_MODE` | `hybrid` |
 
-Built-in: `rule-based-v1`, `semantic-v1`, `hybrid-v1` (fixture-backed). Register more in `eval/matching/eval-matchers.ts`.
-
-## Code map
-
-| Path | Role |
-|------|------|
-| `src/domain/matching-eval/*` | Metrics + eval aggregation |
-| `src/domain/semantic-matching.ts` | Cosine blend + hybrid base |
-| `src/domain/card-embedding-text.ts` | Segment text builder |
-| `src/application/match-scoring.ts` | Production scoring + fallback flag |
-| `scripts/eval-matching.ts` | CLI |
-
-## Interview sound bite
-
-“We measure first: labeled Hebrew set + offline harness. Rule overlap misses EN/HE pairs. Hybrid adds Gemini segment embeddings (role/skills/profile) with rules for location and must-haves. We only ship embedding changes when `eval:matching` improves nDCG and queue confusion on a **Gemini** fixture — not on the pseudo CI stub.”
+See `docs/EMBEDDINGS.md` for segment design and storage.

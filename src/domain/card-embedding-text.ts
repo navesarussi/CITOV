@@ -16,6 +16,10 @@ function joinList(items: string[] | undefined): string {
   return (items ?? []).map((s) => s.trim()).filter(Boolean).join(", ");
 }
 
+export function isSegmentNonempty(text: string | undefined): boolean {
+  return Boolean(text?.trim());
+}
+
 /**
  * Build embeddable text per segment. Salary, location, and must-haves stay out of
  * vectors — they remain in rule-based filters/penalties.
@@ -71,4 +75,13 @@ export function segmentTextsFingerprint(texts: EmbeddingSegmentTexts): string {
   return (["role", "skills", "profile"] as const)
     .map((k) => `${k}=${texts[k]}`)
     .join("\n");
+}
+
+/** Segments with no meaningful text are not embedded or compared. */
+export function activeEmbeddingSegments(
+  texts: EmbeddingSegmentTexts,
+): EmbeddingSegment[] {
+  return (["role", "skills", "profile"] as const).filter((s) =>
+    isSegmentNonempty(texts[s]),
+  );
 }

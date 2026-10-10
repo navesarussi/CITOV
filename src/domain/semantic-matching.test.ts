@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { computeSemanticSimilarity, computeHybridBaseFit } from "./semantic-matching";
+import {
+  computeCalibratedSemanticFit,
+  computeHybridBaseFit,
+  computeSemanticSimilarity,
+} from "./semantic-matching";
+import { buildSemanticOptions } from "./semantic-matching";
 import { emptyCandidateCard, emptyJobCard } from "./types";
 
 describe("semantic-matching", () => {
@@ -22,8 +27,12 @@ describe("semantic-matching", () => {
     const strong = { role: [1, 0, 0], skills: [1, 0, 0], profile: [1, 0, 0] };
     const weak = { role: [0, 1, 0], skills: [0, 0, 1], profile: [0, 1, 0] };
     const weakCandidate = { ...candidate, desiredRole: "מפתח", field: "הייטק", skills: ["Java"] };
-    const hybridStrong = computeHybridBaseFit(candidate, job, strong, strong);
-    const hybridWeak = computeHybridBaseFit(weakCandidate, job, weak, weak);
+    const opts = buildSemanticOptions(candidate, job);
+    const hybridStrong = computeHybridBaseFit(candidate, job, strong, strong, undefined, opts);
+    const hybridWeak = computeHybridBaseFit(weakCandidate, job, weak, weak, undefined, {
+      ...opts,
+      candidateTexts: buildSemanticOptions(weakCandidate, job).candidateTexts,
+    });
     assert.ok(hybridStrong > hybridWeak);
   });
 

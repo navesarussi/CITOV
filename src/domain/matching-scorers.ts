@@ -1,12 +1,7 @@
-import {
-  applyFlexibility,
-  combineFlexibility,
-  computeBaseFit,
-  scoreFromBase,
-  scoreMatch,
-} from "./matching";
+import { combineFlexibility, computeBaseFit, scoreFromBase, scoreMatch } from "./matching";
 import type { SegmentVectors } from "./semantic-matching";
 import {
+  buildSemanticOptions,
   computeHybridBaseFit,
   computeSemanticMatchBase,
   DEFAULT_HYBRID_WEIGHTS,
@@ -16,14 +11,23 @@ import type { CandidateCard, JobCard } from "./types";
 
 export type MatchScoreMode = "rule" | "semantic" | "hybrid";
 
+function scoreFromSemanticBase(
+  base: number,
+  candidate: CandidateCard,
+  job: JobCard,
+): number {
+  return scoreFromBase(base, candidate, job);
+}
+
 export function scoreSemanticMatch(
   candidate: CandidateCard,
   job: JobCard,
   candidateVec: SegmentVectors,
   jobVec: SegmentVectors,
 ): number {
-  const base = computeSemanticMatchBase(candidate, job, candidateVec, jobVec);
-  return scoreFromBase(base, candidate, job);
+  const opts = buildSemanticOptions(candidate, job);
+  const base = computeSemanticMatchBase(candidate, job, candidateVec, jobVec, opts);
+  return scoreFromSemanticBase(base, candidate, job);
 }
 
 export function scoreHybridMatch(
@@ -33,8 +37,16 @@ export function scoreHybridMatch(
   jobVec: SegmentVectors,
   weights = DEFAULT_HYBRID_WEIGHTS,
 ): number {
-  const base = computeHybridBaseFit(candidate, job, candidateVec, jobVec, weights);
-  return scoreFromBase(base, candidate, job);
+  const opts = buildSemanticOptions(candidate, job);
+  const base = computeHybridBaseFit(
+    candidate,
+    job,
+    candidateVec,
+    jobVec,
+    weights,
+    opts,
+  );
+  return scoreFromSemanticBase(base, candidate, job);
 }
 
 export function scoreWithMode(
@@ -65,7 +77,6 @@ export function scoreWithMode(
   };
 }
 
-/** Exposed for eval threshold sweeps without flexibility curve. */
 export function rawRuleBase(candidate: CandidateCard, job: JobCard): number {
   return computeBaseFit(candidate, job);
 }
@@ -77,7 +88,8 @@ export function rawHybridBase(
   jobVec: SegmentVectors,
   weights = DEFAULT_HYBRID_WEIGHTS,
 ): number {
-  return computeHybridBaseFit(candidate, job, candidateVec, jobVec, weights);
+  const opts = buildSemanticOptions(candidate, job);
+  return computeHybridBaseFit(candidate, job, candidateVec, jobVec, weights, opts);
 }
 
-export { applyFlexibility, combineFlexibility };
+export { combineFlexibility };

@@ -1,6 +1,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { embedMany } from "ai";
 import type { EmbeddingSegment } from "@/domain/card-embedding-text";
+import { isSegmentNonempty } from "@/domain/card-embedding-text";
 import { callGeminiWithRetry, getGeminiApiKeys, hasGeminiKey } from "./gemini-client";
 
 export const DEFAULT_EMBEDDING_MODEL =
@@ -72,13 +73,15 @@ export async function embedTexts(
 export async function embedSegmentTexts(
   segments: Record<EmbeddingSegment, string>,
   opts?: { modelId?: string; generator?: EmbeddingGeneratorKind },
-): Promise<Record<EmbeddingSegment, number[]>> {
+): Promise<Partial<Record<EmbeddingSegment, number[]>>> {
   const order: EmbeddingSegment[] = ["role", "skills", "profile"];
-  const texts = order.map((k) => segments[k] || " ");
+  const active = order.filter((k) => isSegmentNonempty(segments[k]));
+  if (active.length === 0) return {};
+  const texts = active.map((k) => segments[k].trim());
   const { vectors } = await embedTexts(texts, opts);
-  return {
-    role: vectors[0],
-    skills: vectors[1],
-    profile: vectors[2],
-  };
+  const out: Partial<Record<EmbeddingSegment, number[]>> = {};
+  active.forEach((k, i) => {
+    out[k] = vectors[i];
+  });
+  return out;
 }

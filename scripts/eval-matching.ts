@@ -10,20 +10,33 @@ import { matchingEvalDataset } from "../eval/matching/dataset";
 import { createEvalMatcherDefinitions } from "../eval/matching/eval-matchers";
 import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
+import { PRODUCTION_MATCH_DEFAULTS } from "../eval/matching/eval-sweep";
 
 function formatPct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
 }
 
 function printTable(results: MatcherEvalResult[]): void {
-  const header = ["Matcher", "P@5", "R@5", "MRR", "nDCG@5", "Good missed", "Bad queued"];
+  const header = [
+    "Matcher",
+    "Thr",
+    "P@5",
+    "R@5",
+    "MRR",
+    "nDCG@5",
+    "Good miss",
+    "Acc miss",
+    "Bad Q",
+  ];
   const rows = results.map((r) => [
     r.matcherId,
+    r.threshold.toFixed(2),
     formatPct(r.macroPrecisionAtK),
     formatPct(r.macroRecallAtK),
     r.mrr.toFixed(3),
     r.macroNdcgAtK.toFixed(3),
     String(r.confusion.goodMissed.length),
+    String(r.confusion.acceptableMissed.length),
     String(r.confusion.badQueued.length),
   ]);
   const widths = header.map((h, i) =>
@@ -35,83 +48,95 @@ function printTable(results: MatcherEvalResult[]): void {
   for (const row of rows) console.log(line(row));
 }
 
-function printFailures(r: MatcherEvalResult): void {
-  console.log(`\n=== ${r.matcherLabel} — failure categories ===`);
-  for (const cat of r.failureCategories) {
-    console.log(`\n${cat.category} (${cat.count})`);
-    for (const ex of cat.examples) console.log(`  • ${ex}`);
-  }
-}
-
-function sweepHybridThreshold(matcher: MatcherDefinition): void {
-  let best = { t: 0.28, score: -Infinity, result: null as MatcherEvalResult | null };
-  for (let t = 0.18; t <= 0.36; t += 0.01) {
-    const rounded = Math.round(t * 100) / 100;
-    const result = evaluateMatcherOnDataset(matchingEvalDataset, matcher, 5, rounded);
-    const objective =
-      result.macroNdcgAtK * 0.5 +
-      result.macroRecallAtK * 0.3 -
-      result.confusion.badQueued.length * 0.05 -
-      result.confusion.goodMissed.length * 0.08;
-    if (objective > best.score) {
-      best = { t: rounded, score: objective, result };
+function thresholdSweep(matcher: MatcherDefinition): void {
+  console.log(`\n=== Threshold sweep: ${matcher.id} (ranking fixed; queue confusion varies) ===`);
+  let best = { t: 0.6, score: -Infinity, good: 999, bad: 999 };
+  for (let ti = 10; ti <= 95; ti++) {
+    const t = ti / 100;
+    const r = evaluateMatcherOnDataset(matchingEvalDataset, matcher, 5, t);
+    if (ti % 5 === 0) {
+      console.log(
+        `  t=${t.toFixed(2)} good_missed=${r.confusion.goodMissed.length} acc_missed=${r.confusion.acceptableMissed.length} bad_queued=${r.confusion.badQueued.length}`,
+      );
+    }
+    const obj =
+      r.macroNdcgAtK * 0.4 +
+      r.macroRecallAtK * 0.35 -
+      r.confusion.goodMissed.length * 0.08 -
+      r.confusion.badQueued.length * 0.15;
+    if (r.confusion.badQueued <= 1 && obj > best.score) {
+      best = {
+        t,
+        score: obj,
+        good: r.confusion.goodMissed.length,
+        bad: r.confusion.badQueued.length,
+      };
     }
   }
-  if (!best.result) return;
   console.log(
-    `\n=== Hybrid threshold sweep (hybrid-v1) — best ≈ ${best.t} (objective ${best.score.toFixed(3)}) ===`,
-  );
-  console.log(
-    `  P@5=${formatPct(best.result.macroPrecisionAtK)} R@5=${formatPct(best.result.macroRecallAtK)} nDCG@5=${best.result.macroNdcgAtK.toFixed(3)} goodMissed=${best.result.confusion.goodMissed.length} badQueued=${best.result.confusion.badQueued.length}`,
+    `  suggested (bad_queued<=1): t≈${best.t.toFixed(2)} good_missed=${best.good} bad_queued=${best.bad}`,
   );
 }
 
-function buildMatchers(): MatcherDefinition[] {
+function buildMatchers(): { matchers: MatcherDefinition[]; thresholds: number[] } {
   const list: MatcherDefinition[] = [defaultRuleBasedMatcher];
+  const thresholds = [0.28];
   const fixture = loadEvalEmbeddingFixture();
   if (fixture) {
     console.log(
       `Loaded embedding fixture: generator=${fixture.generator} model=${fixture.model} entities=${Object.keys(fixture.entities).length}`,
     );
+    if (fixture.generator !== "gemini") {
+      console.warn("WARNING: fixture is not from Gemini — metrics are not production-representative.");
+    }
     list.push(...createEvalMatcherDefinitions(fixture));
+    // rule @0.28; legacy semantic/hybrid @0.28; calibrated semantic @0.28; production hybrid @0.6
+    while (thresholds.length < list.length) {
+      const id = list[thresholds.length]?.id ?? "";
+      thresholds.push(
+        id === "hybrid-calibrated-v1" ? PRODUCTION_MATCH_DEFAULTS.queueThreshold : 0.28,
+      );
+    }
   } else {
-    console.warn(
-      "No embedding fixture found — run npm run eval:embed-fixtures (semantic/hybrid skipped).",
-    );
+    console.warn("No embedding fixture — semantic/hybrid matchers skipped.");
   }
-  return list;
+  return { matchers: list, thresholds };
 }
 
 function main(): void {
   validateMatchingDataset(matchingEvalDataset);
-  const MATCHERS = buildMatchers();
+  const { matchers, thresholds } = buildMatchers();
 
   const outDir = join(process.cwd(), "eval/matching/results");
   mkdirSync(outDir, { recursive: true });
 
-  const allResults: MatcherEvalResult[] = MATCHERS.map((m) =>
-    evaluateMatcherOnDataset(matchingEvalDataset, m, 5, 0.28),
+  const allResults: MatcherEvalResult[] = matchers.map((m, i) =>
+    evaluateMatcherOnDataset(matchingEvalDataset, m, 5, thresholds[i] ?? 0.28),
   );
 
   console.log(
-    `\nMatching eval — ${matchingEvalDataset.jobs.length} jobs, ${matchingEvalDataset.candidates.length} candidates, ${matchingEvalDataset.labels.length} labeled pairs\n`,
+    `\nMatching eval — ${matchingEvalDataset.jobs.length} jobs, ${matchingEvalDataset.candidates.length} candidates, ${matchingEvalDataset.labels.length} labeled pairs`,
+  );
+  console.log(
+    `Production defaults: floor=${PRODUCTION_MATCH_DEFAULTS.cosineFloor} semantic/rule=${PRODUCTION_MATCH_DEFAULTS.semanticWeight}/${PRODUCTION_MATCH_DEFAULTS.ruleWeight} threshold=${PRODUCTION_MATCH_DEFAULTS.queueThreshold}`,
+  );
+  console.log(
+    "\nNote: grid-tuned threshold/weights were chosen on this same labeled set (~90 pairs) — treat as optimistic; holdout is future work.\n",
   );
   printTable(allResults);
-  for (const r of allResults) printFailures(r);
 
-  const hybrid = MATCHERS.find((m) => m.id === "hybrid-v1");
-  if (hybrid) sweepHybridThreshold(hybrid);
+  const hybrid = matchers.find((m) => m.id === "hybrid-calibrated-v1");
+  if (hybrid) thresholdSweep(hybrid);
 
   const payload = {
     generatedAt: new Date().toISOString(),
     datasetVersion: matchingEvalDataset.version,
-    queueThreshold: 0.28,
+    productionDefaults: PRODUCTION_MATCH_DEFAULTS,
     matchers: allResults,
   };
 
-  const jsonPath = join(outDir, "latest.json");
-  writeFileSync(jsonPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
-  console.log(`\nWrote ${jsonPath}`);
+  writeFileSync(join(outDir, "latest.json"), `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+  console.log(`\nWrote ${join(outDir, "latest.json")}`);
 }
 
 main();

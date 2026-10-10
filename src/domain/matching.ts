@@ -1,3 +1,7 @@
+/**
+ * Rule-based fit (token overlap + must-have penalty). Kept for structured
+ * gates and hybrid blending; cross-language titles need semantic-matching.ts.
+ */
 import type { CandidateCard, JobCard } from "./types";
 
 function normalize(value: string): string {
@@ -11,7 +15,7 @@ function overlap(a: string[], b: string[]): number {
   return hits / Math.max(a.length, b.length);
 }
 
-function textScore(a: string, b: string): number {
+export function textScore(a: string, b: string): number {
   if (!a || !b) return 0;
   const na = normalize(a);
   const nb = normalize(b);

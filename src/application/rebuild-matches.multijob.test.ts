@@ -6,6 +6,8 @@ import { emptyCandidateCard, emptyJobCard, type StoreData } from "@/domain/types
 
 describe("rebuildMatches multi-job", () => {
   it("creates separate queued matches per job slot", () => {
+    process.env.MATCHING_QUEUE_THRESHOLD = "0.28";
+    process.env.MATCHING_MODE = "rule";
     const employer = normalizeEmployerRecord({
       userId: "boss",
       card: emptyJobCard(),

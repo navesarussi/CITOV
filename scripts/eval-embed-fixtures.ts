@@ -53,7 +53,7 @@ async function main(): Promise<void> {
   const file =
     generator === "gemini"
       ? join(dir, "embeddings.json")
-      : join(dir, "embeddings.fixture.json");
+      : join(dir, "embeddings.pseudo.fixture.json");
   writeFileSync(file, `${JSON.stringify(fixture)}\n`, "utf8");
   console.log(`Wrote ${file} (${Object.keys(entities).length} entities, ${generator})`);
 }

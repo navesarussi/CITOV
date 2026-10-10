@@ -1,62 +1,48 @@
 # Card embeddings for matching
 
-## What we embed (and what we do not)
+## Segments (what we embed)
 
-Each card is split into **three short texts** (see `src/domain/card-embedding-text.ts`):
+| Segment | Content | Not embedded |
+|---------|---------|--------------|
+| **role** | Title / desired role, field, seniority | Location, salary |
+| **skills** | Skills, languages on skills lists, licenses, must/nice (jobs) | — |
+| **profile** | Summary, narrative, culture/personality blurbs | — |
 
-| Segment | Candidate | Job |
-|---------|-----------|-----|
-| **role** | `desiredRole`, `field`, `subField`, `experienceLevel` | `title`, `field`, `subField`, `seniorityLevel` |
-| **skills** | `skills`, `softSkills`, `licenses`, `certifications`, `computerSkills` | `mustHaves`, `niceToHaves`, `toolsRequired`, `requiredLicenses` |
-| **profile** | `summary`, `narrative`, personality / work style / goals | `summary`, `narrative`, culture / company blurb |
+Empty segment text is **not embedded** and **not compared** (avoids the “blank profile = cosine 1.0” bug on legacy fixtures).
 
-**Intentionally excluded from vectors:** `location`, salary fields, languages list, and raw must-haves as hard gates — those stay in the **rule-based** scorer (overlap, must-have penalty, flexibility curve).
+## Gemini + calibration
 
-### Tradeoffs
+- Model: `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-001`), `EMBEDDING_DIMENSIONS=768`.
+- Raw cosines for this model sit ~**0.77–1.0** on our eval set.
+- **Calibration (production):** `fit = clamp((cosine − floor) / (1 − floor), 0, 1)` with `MATCHING_COSINE_FLOOR=0.75`.
+- Legacy uncalibrated path: `(cosine + 1) / 2` — kept only for eval comparison (`semantic-legacy-v1`).
 
-- **Pros:** Cross-language titles (`waiter` ↔ `מלצר`) live in the role segment; skills stay comparable without diluting the role vector with salary noise.
-- **Cons:** Location/salary mismatches are only as strong as rules make them; a bad location match can still rank high if semantics align. Hybrid weighting balances this.
-- **Re-embed cost:** Three API calls per card change (batched via `embedMany` per segment group in one `embedSegmentTexts` call = one batch of 3 texts per card).
+## Hybrid score
 
-## Model and env
+1. Calibrated semantic fit (segment-weighted cosines, must-have **penalty** in semantic leg only).
+2. Blend: `0.8 × semantic + 0.2 × rule` (`computeBaseFit`).
+3. **Cross-language role floor:** if calibrated role ≥ 0.35 and token role overlap &lt; 0.2 → `base ≥ 0.42 + 0.55 × roleCalibrated`.
+4. **Must-have gate:** bilingual token matching on must-haves; **language gap** (e.g. job requires Hebrew, card does not show it) ×0.55; otherwise flex-aware `applyMustHaveGate` when overlap &lt; 1.
+5. **Flexibility curve** (`applyFlexibility`) on the combined base.
+6. Queue if score ≥ `MATCHING_QUEUE_THRESHOLD` (default **0.60**).
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001` | Google embedding model id |
-| `EMBEDDING_DIMENSIONS` | `768` | `outputDimensionality` (smaller DB rows; full model default is larger) |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | — | Required for live Gemini embeddings |
-| `MATCHING_MODE` | `hybrid` | `rule` \| `semantic` \| `hybrid` |
-| `MATCHING_SEMANTIC_WEIGHT` | `0.55` | Hybrid blend |
-| `MATCHING_RULE_WEIGHT` | `0.45` | Hybrid blend |
-| `MATCHING_QUEUE_THRESHOLD` | `0.28` | Employer queue cutoff |
+Graceful degradation: no vectors → rule-only fallback (reason suffix in UI).
 
-Implementation: `src/infrastructure/ai/embeddings.ts` (`embed` / `embedMany` via Vercel AI SDK).
+## Storage
 
-## Storage (Postgres + pgvector)
+Postgres `card_embedding_segments` (pgvector 768). Re-embed on **card patch** only. Dev without `DATABASE_URL`: in-memory map.
 
-Table `card_embedding_segments` (see `supabase/migrations/003_card_embeddings.sql` and `ensureSchema` ALTERS):
+## Eval fixture
 
-- One row per `(owner_kind, owner_id, job_slot_id, segment, model)`
-- `content_hash` — SHA-256 of segment text; skip Gemini when unchanged
-- `embedding vector(768)`
-
-**When we embed:** After a **card patch** (chat intake or CV extraction), via `scheduleCandidateEmbeddingRefresh` / `scheduleJobEmbeddingRefresh` — not on every chat token.
-
-**Dev without DB:** In-memory map in `card-embeddings-memory.ts` when `DATABASE_URL` is unset.
-
-## Matching modes
-
-- **rule:** Legacy word overlap (`computeBaseFit` + flexibility).
-- **semantic:** Segment cosine similarity → unit fit, light must-have penalty, then flexibility.
-- **hybrid:** `0.55 * semantic + 0.45 * rule` (configurable), then flexibility.
-
-If vectors are missing, production **falls back to rule** and appends `embeddings unavailable (rule fallback)` to the match reason.
-
-## Offline eval fixtures
+Committed **`eval/matching/fixtures/embeddings.fixture.json`** (real Gemini, vectors only). Regenerate:
 
 ```bash
-npm run eval:embed-fixtures   # needs API key for real Gemini vectors → embeddings.json
-npm run eval:matching         # compares rule / semantic / hybrid
+export GOOGLE_GENERATIVE_AI_API_KEY=...
+npm run eval:embed-fixtures   # writes embeddings.json (optional local override)
 ```
 
-Committed `eval/matching/fixtures/embeddings.fixture.json` is **pseudo-local-v1** (deterministic bag-of-tokens) for CI wiring only. Replace with Gemini-generated `embeddings.json` locally before claiming semantic lift in an interview demo.
+**Cost:** ~75 embed calls, ~1.5–3k tokens, ~$0.
+
+## Demo seed
+
+`npm run seed:demo` loads eval job/candidate cards into Postgres via `writeNormalizedStore` (marker `eval-cards-v1`). **Point `DATABASE_URL` at your local DB only.**

@@ -4,10 +4,12 @@ import type { EvalEmbeddingFixture } from "./embed-fixture-types";
 
 export function resolveFixturePath(): string | null {
   const root = join(process.cwd(), "eval/matching/fixtures");
-  const primary = join(root, "embeddings.json");
-  if (existsSync(primary)) return primary;
-  const fallback = join(root, "embeddings.fixture.json");
-  if (existsSync(fallback)) return fallback;
+  const local = join(root, "embeddings.json");
+  if (existsSync(local)) return local;
+  const gemini = join(root, "embeddings.fixture.json");
+  if (existsSync(gemini)) return gemini;
+  const pseudo = join(root, "embeddings.pseudo.fixture.json");
+  if (existsSync(pseudo)) return pseudo;
   return null;
 }
 

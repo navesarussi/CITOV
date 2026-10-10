@@ -73,19 +73,22 @@ async function upsertSegments(
   ownerId: string,
   jobSlotId: string | undefined,
   model: string,
-  segments: Record<EmbeddingSegment, { hash: string; text: string; vector: number[] }>,
+  segments: Partial<
+    Record<EmbeddingSegment, { hash: string; text: string; vector: number[] }>
+  >,
 ): Promise<void> {
   if (shouldUseMemoryStore()) {
-    const vectors: SegmentVectors = {
-      role: segments.role.vector,
-      skills: segments.skills.vector,
-      profile: segments.profile.vector,
-    };
-    const hash = hashEmbeddingContent(segmentTextsFingerprint({
-      role: segments.role.text,
-      skills: segments.skills.text,
-      profile: segments.profile.text,
-    }));
+    const vectors: SegmentVectors = {};
+    for (const seg of ["role", "skills", "profile"] as const) {
+      if (segments[seg]) vectors[seg] = segments[seg]!.vector;
+    }
+    const hash = hashEmbeddingContent(
+      segmentTextsFingerprint({
+        role: segments.role?.text ?? "",
+        skills: segments.skills?.text ?? "",
+        profile: segments.profile?.text ?? "",
+      }),
+    );
     writeMemorySegmentVectors(ownerKind, ownerId, jobSlotId, model, hash, vectors);
     return;
   }
@@ -93,6 +96,7 @@ async function upsertSegments(
   const pool = await getPool();
   for (const seg of ["role", "skills", "profile"] as const) {
     const row = segments[seg];
+    if (!row) continue;
     const slotKey = jobSlotId ?? "";
     const id = `${ownerKind}:${ownerId}:${slotKey}:${seg}:${model}`;
     await pool.query(
@@ -138,15 +142,18 @@ export async function refreshCandidateEmbeddings(
     modelId: model,
     generator: opts?.generator,
   });
-  await upsertSegments("candidate", userId, undefined, model, {
-    role: { hash: hashEmbeddingContent(texts.role), text: texts.role, vector: vectors.role },
-    skills: { hash: hashEmbeddingContent(texts.skills), text: texts.skills, vector: vectors.skills },
-    profile: {
-      hash: hashEmbeddingContent(texts.profile),
-      text: texts.profile,
-      vector: vectors.profile,
-    },
-  });
+  const payload: Partial<
+    Record<EmbeddingSegment, { hash: string; text: string; vector: number[] }>
+  > = {};
+  for (const seg of ["role", "skills", "profile"] as const) {
+    if (!vectors[seg]) continue;
+    payload[seg] = {
+      hash: hashEmbeddingContent(texts[seg]),
+      text: texts[seg],
+      vector: vectors[seg]!,
+    };
+  }
+  await upsertSegments("candidate", userId, undefined, model, payload);
   return {
     updated: true,
     generator: opts?.generator ?? (process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "gemini" : "pseudo-local-v1"),
@@ -173,15 +180,18 @@ export async function refreshJobEmbeddings(
     modelId: model,
     generator: opts?.generator,
   });
-  await upsertSegments("job", employerId, jobSlotId, model, {
-    role: { hash: hashEmbeddingContent(texts.role), text: texts.role, vector: vectors.role },
-    skills: { hash: hashEmbeddingContent(texts.skills), text: texts.skills, vector: vectors.skills },
-    profile: {
-      hash: hashEmbeddingContent(texts.profile),
-      text: texts.profile,
-      vector: vectors.profile,
-    },
-  });
+  const payload: Partial<
+    Record<EmbeddingSegment, { hash: string; text: string; vector: number[] }>
+  > = {};
+  for (const seg of ["role", "skills", "profile"] as const) {
+    if (!vectors[seg]) continue;
+    payload[seg] = {
+      hash: hashEmbeddingContent(texts[seg]),
+      text: texts[seg],
+      vector: vectors[seg]!,
+    };
+  }
+  await upsertSegments("job", employerId, jobSlotId, model, payload);
   return {
     updated: true,
     generator: opts?.generator ?? (process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "gemini" : "pseudo-local-v1"),

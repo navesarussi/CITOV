@@ -18,6 +18,6 @@ export function readHybridWeights(): HybridWeights {
 }
 
 export function readQueueThreshold(): number {
-  const raw = Number(process.env.MATCHING_QUEUE_THRESHOLD ?? 0.28);
-  return Number.isFinite(raw) ? raw : 0.28;
+  const raw = Number(process.env.MATCHING_QUEUE_THRESHOLD ?? 0.6);
+  return Number.isFinite(raw) ? raw : 0.6;
 }
