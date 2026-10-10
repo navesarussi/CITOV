@@ -48,8 +48,6 @@ describe("deleteUserAccountData (memory store)", () => {
     } finally {
       if (prevDb === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = prevDb;
-      if (prevNode === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = prevNode;
     }
   });
 });
