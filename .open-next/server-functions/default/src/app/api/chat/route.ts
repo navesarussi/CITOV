@@ -1,0 +1,429 @@
+import { after } from "next/server";
+import {
+  applyEmployeeTurn,
+  applyEmployerTurn,
+  prepareEmployeeTurn,
+  prepareEmployerTurn,
+  type ChatTurnResult,
+} from "@/application/chat";
+import { employeeHasCv } from "@/domain/candidate-mini-card";
+import { normalizeEmployerRecord } from "@/domain/employer-jobs";
+import type { CandidateCard, JobCard, StoreData } from "@/domain/types";
+import { ok, fail } from "@/infrastructure/http";
+import { assertActor } from "@/infrastructure/auth-guard";
+import {
+  persistEmployeeTurn,
+  persistEmployerTurn,
+} from "@/infrastructure/db/scoped-store";
+import {
+  scheduleCandidateEmbeddingRefresh,
+  scheduleJobEmbeddingRefresh,
+} from "@/application/card-embedding-sync";
+import { flushScheduledMatchRebuild } from "@/infrastructure/db/match-scheduler";
+import { hasGeminiKey } from "@/infrastructure/ai/schemas";
+import {
+  extractEmployeePatch,
+  extractEmployerPatch,
+  streamEmployeeReply,
+  streamEmployerReply,
+} from "@/infrastructure/ai/intake";
+import {
+  heuristicEmployeeIntake,
+  heuristicEmployerIntake,
+} from "@/infrastructure/ai/heuristic";
+import { normalizeAssistantReplyText } from "@/domain/chat-reply";
+import { firstNameFromFullName } from "@/domain/person-name";
+import { parseLocale } from "@/infrastructure/locale";
+import { enqueueDegradedTurn } from "@/infrastructure/db/degraded-turns";
+import { recordAppEventSafe } from "@/infrastructure/db/app-events";
+import { geminiCallTimeoutMs } from "@/infrastructure/ai/gemini-client";
+import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+const encoder = new TextEncoder();
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type Controller = ReadableStreamDefaultController<Uint8Array>;
+
+function frame(controller: Controller, obj: unknown): void {
+  controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+}
+
+async function emitTyping(controller: Controller, text: string): Promise<void> {
+  const parts = text.match(/\S+\s*/g) ?? [text];
+  for (const part of parts) {
+    frame(controller, { type: "delta", text: part });
+    await sleep(12);
+  }
+}
+
+async function persistTurn(
+  role: "employee" | "employer",
+  userId: string,
+  result: ChatTurnResult,
+): Promise<void> {
+  if (role === "employee") {
+    const emp = result.store.employees.find((e) => e.userId === userId);
+    await persistEmployeeTurn({
+      store: result.store,
+      userId,
+      card: result.card as CandidateCard,
+      pendingFieldQuestionIds: emp?.pendingFieldQuestionIds ?? [],
+      cv: result.cv,
+      newMessages: result.newMessages,
+      newFieldAnswers: result.newFieldAnswers,
+      usageRecord: result.usageRecord,
+      usageRecords: result.usageRecords,
+    });
+  } else {
+    const raw = result.store.employers.find((e) => e.userId === userId);
+    if (!raw) return;
+    const employer = normalizeEmployerRecord(raw);
+    await persistEmployerTurn({
+      store: result.store,
+      userId,
+      card: employer.card,
+      jobs: employer.jobs,
+      activeJobId: employer.activeJobId,
+      jobId: result.jobId ?? employer.activeJobId,
+      newMessages: result.newMessages,
+      usageRecord: result.usageRecord,
+      usageRecords: result.usageRecords,
+    });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const {
+      jsonBodyTooLargeResponse,
+      readMaxChatMessageChars,
+      readMaxJsonBodyBytes,
+      trimMessageTooLong,
+    } = await import("@/infrastructure/request-limits");
+    const tooLarge = jsonBodyTooLargeResponse(req, readMaxJsonBodyBytes("chat"));
+    if (tooLarge) return tooLarge;
+
+    const body = (await req.json()) as {
+      userId?: string;
+      role?: "employee" | "employer";
+      message?: string;
+      jobId?: string;
+    };
+    if (!body.userId || !body.message?.trim()) {
+      return ok({ error: "חסרים פרטים" }, { status: 400 });
+    }
+    const gate = await assertActor(body.userId);
+    if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
+
+    const { checkUserRateLimitAsync } = await import("@/infrastructure/user-rate-limit");
+    const rl = await checkUserRateLimitAsync(body.userId);
+    if (!rl.allowed) {
+      return ok(
+        { error: `יותר מדי בקשות AI — נסו שוב בעוד ${rl.retryAfterSec ?? 60} שניות` },
+        { status: 429 },
+      );
+    }
+
+    const store = gate.store;
+    const userId = body.userId;
+    const user = store.users.find((u) => u.id === userId);
+    if (!user) return ok({ error: "משתמש לא נמצא" }, { status: 404 });
+
+    const role = user.role;
+    if (body.role && body.role !== role) {
+      return ok(
+        { error: "התפקיד לא תואם לסשן הפעיל. חזרו למסך הכניסה והתחילו מחדש." },
+        { status: 409 },
+      );
+    }
+
+    if (role === "employee") {
+      const emp = store.employees.find((e) => e.userId === userId);
+      if (!employeeHasCv(emp?.cv)) {
+        return ok(
+          { error: "יש להעלות קורות חיים לפני תחילת השיחה." },
+          { status: 422 },
+        );
+      }
+    }
+
+    const msgCheck = trimMessageTooLong(body.message, readMaxChatMessageChars());
+    if (!msgCheck.ok) {
+      return ok({ error: msgCheck.error }, { status: 413 });
+    }
+    const message = msgCheck.message;
+    const aiMode = hasGeminiKey() ? "gemini" : "heuristic";
+    const locale = parseLocale(
+      new URL(req.url).searchParams.get("locale") ??
+        (body as { locale?: string }).locale ??
+        null,
+    );
+    const accountHolderFirstName = firstNameFromFullName(user.name ?? "");
+
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          const result =
+            role === "employee"
+              ? await runEmployeeStream(
+                  controller,
+                  store,
+                  userId,
+                  message,
+                  locale,
+                  accountHolderFirstName,
+                )
+              : await runEmployerStream(controller, store, userId, message, body.jobId);
+
+          await persistTurn(role, userId, result);
+          after(async () => {
+            if (result.aiDegraded) {
+              await enqueueDegradedTurn({
+                userId,
+                role: role === "employee" ? "employee" : "employer",
+                jobId: result.jobId,
+                userMessage: message,
+                heuristicReply: result.reply,
+              });
+              recordAppEventSafe({
+                kind: "degraded_chat_turn",
+                severity: "warn",
+                message: `Degraded chat turn (${role})`,
+                route: "/api/chat",
+                meta: { userId, provider: result.provider },
+              });
+            }
+            if (role === "employee") {
+              scheduleCandidateEmbeddingRefresh(userId, result.card as CandidateCard);
+            } else if (result.jobId) {
+              scheduleJobEmbeddingRefresh(userId, result.jobId, result.card as JobCard);
+            }
+            await flushScheduledMatchRebuild();
+          });
+
+          frame(controller, {
+            type: "final",
+            reply: result.reply,
+            provider: result.provider,
+            aiMode,
+            aiDegraded: result.aiDegraded ?? false,
+            role,
+            card: result.card,
+            chat: result.chat,
+            pendingQuestions: result.pendingQuestions,
+            jobId: result.jobId,
+          });
+        } catch (err) {
+          console.error("chat stream failed", err);
+          frame(controller, { type: "error", error: "אירעה שגיאה בשיחה. נסו שוב." });
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store, no-transform",
+        "X-Content-Type-Options": "nosniff",
+        "X-Accel-Buffering": "no",
+      },
+    });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+async function runEmployeeStream(
+  controller: Controller,
+  store: StoreData,
+  userId: string,
+  message: string,
+  locale: "he" | "en",
+  accountHolderFirstName?: string,
+): Promise<ChatTurnResult> {
+  const prep = await prepareEmployeeTurn(store, userId);
+
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
+    const h = heuristicEmployeeIntake(message, prep.card, prep.pendingQuestions, prep.chat);
+    await emitTyping(controller, h.reply);
+    return applyEmployeeTurn({
+      store,
+      userId,
+      message,
+      reply: h.reply,
+      candidatePatch: h.candidatePatch,
+      fieldAnswers: h.fieldAnswers,
+      provider: "heuristic",
+    });
+  }
+
+  const timeoutMs = geminiCallTimeoutMs();
+  const patchPromise = Promise.race([
+    extractEmployeePatch({
+    message,
+    card: prep.card,
+    chat: prep.chat,
+    pendingQuestions: prep.pendingQuestions,
+    systemPrompt: prep.systemPrompt,
+    pendingConflicts: prep.pendingConflicts,
+    pendingInferences: prep.pendingInferences,
+    openReliabilityNotes: prep.openReliabilityNotes,
+    locale,
+    accountHolderFirstName,
+    }),
+    new Promise<Awaited<ReturnType<typeof extractEmployeePatch>>>((_, reject) =>
+      setTimeout(() => reject(new Error("gemini_timeout")), timeoutMs),
+    ),
+  ]).catch((): Awaited<ReturnType<typeof extractEmployeePatch>> => ({
+    candidatePatch: {},
+    fieldAnswers: [],
+  }));
+
+  let replyText = "";
+  let provider: "gemini" | "heuristic" = "gemini";
+  let degraded = false;
+  let replyUsage;
+  try {
+    const streamed = await streamEmployeeReply({
+      message,
+      card: prep.card,
+      chat: prep.chat,
+      pendingQuestions: prep.pendingQuestions,
+      systemPrompt: prep.systemPrompt,
+      pendingConflicts: prep.pendingConflicts,
+      pendingInferences: prep.pendingInferences,
+      openReliabilityNotes: prep.openReliabilityNotes,
+      locale,
+      accountHolderFirstName,
+    });
+    if (!streamed) throw new Error("gemini_budget_blocked");
+    const streamDeadline = Date.now() + timeoutMs;
+    for await (const delta of streamed.textStream) {
+      if (Date.now() > streamDeadline) throw new Error("gemini_timeout");
+      if (!delta) continue;
+      replyText += delta;
+    }
+    replyUsage = await streamed.usage;
+  } catch (err) {
+    console.error("gemini employee reply stream failed", err);
+  }
+
+  const patch = await patchPromise;
+
+  if (!replyText.trim()) {
+    provider = "heuristic";
+    degraded = true;
+    const h = heuristicEmployeeIntake(message, prep.card, prep.pendingQuestions, prep.chat);
+    replyText = h.reply;
+    await emitTyping(controller, h.reply);
+  } else {
+    replyText = normalizeAssistantReplyText(replyText);
+    await emitTyping(controller, replyText);
+  }
+
+  return applyEmployeeTurn({
+    store,
+    userId,
+    message,
+    reply: replyText,
+    candidatePatch: patch.candidatePatch,
+    fieldAnswers: patch.fieldAnswers,
+    usage: patch.usage,
+    replyUsage,
+    provider,
+    aiDegraded: degraded,
+  });
+}
+
+async function runEmployerStream(
+  controller: Controller,
+  store: StoreData,
+  userId: string,
+  message: string,
+  jobId?: string,
+): Promise<ChatTurnResult> {
+  const prep = await prepareEmployerTurn(store, userId, jobId);
+
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
+    const h = heuristicEmployerIntake(message, prep.card, prep.chat);
+    await emitTyping(controller, h.reply);
+    return applyEmployerTurn({
+      store,
+      userId,
+      message,
+      reply: h.reply,
+      jobPatch: h.jobPatch,
+      provider: "heuristic",
+      jobId: prep.jobId,
+    });
+  }
+
+  const timeoutMs = geminiCallTimeoutMs();
+  const patchPromise = Promise.race([
+    extractEmployerPatch({
+      message,
+      card: prep.card,
+      chat: prep.chat,
+      systemPrompt: prep.systemPrompt,
+      pendingJobConfirmations: prep.pendingJobConfirmations,
+    }),
+    new Promise<Awaited<ReturnType<typeof extractEmployerPatch>>>((_, reject) =>
+      setTimeout(() => reject(new Error("gemini_timeout")), timeoutMs),
+    ),
+  ]).catch((): Awaited<ReturnType<typeof extractEmployerPatch>> => ({ jobPatch: {} }));
+
+  let replyText = "";
+  let provider: "gemini" | "heuristic" = "gemini";
+  let degraded = false;
+  let replyUsage;
+  try {
+    const streamed = await streamEmployerReply({
+      message,
+      card: prep.card,
+      chat: prep.chat,
+      systemPrompt: prep.systemPrompt,
+      pendingJobConfirmations: prep.pendingJobConfirmations,
+    });
+    if (!streamed) throw new Error("gemini_budget_blocked");
+    const streamDeadline = Date.now() + timeoutMs;
+    for await (const delta of streamed.textStream) {
+      if (Date.now() > streamDeadline) throw new Error("gemini_timeout");
+      if (!delta) continue;
+      replyText += delta;
+    }
+    replyUsage = await streamed.usage;
+  } catch (err) {
+    console.error("gemini employer reply stream failed", err);
+  }
+
+  const patch = await patchPromise;
+
+  if (!replyText.trim()) {
+    provider = "heuristic";
+    degraded = true;
+    const h = heuristicEmployerIntake(message, prep.card, prep.chat);
+    replyText = h.reply;
+    await emitTyping(controller, h.reply);
+  } else {
+    replyText = normalizeAssistantReplyText(replyText);
+    await emitTyping(controller, replyText);
+  }
+
+  return applyEmployerTurn({
+    store,
+    userId,
+    message,
+    reply: replyText,
+    jobPatch: patch.jobPatch,
+    usage: patch.usage,
+    replyUsage,
+    provider,
+    aiDegraded: degraded,
+    jobId: prep.jobId,
+  });
+}

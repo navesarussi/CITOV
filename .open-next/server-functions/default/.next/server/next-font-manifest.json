@@ -1,0 +1,99 @@
+{
+  "app": {
+    "[project]/src/app/_not-found/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/architecture/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/candidates/[id]/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/candidates/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/employers/[id]/jobs/[jobId]/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/employers/[id]/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/employers/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/guidelines/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/labeling/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/matches/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/monitoring/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/preview/employee/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/preview/employer/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/admin/sandbox-report/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/demo/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/employee/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/employer/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/for-employers/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/legal/about/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/legal/privacy/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/legal/terms/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ],
+    "[project]/src/app/page": [
+      "static/media/86c8c58929c52757-s.p.3dq6enaul-s3b.woff2",
+      "static/media/1c9ef42b327f16c7-s.p.0jgv4ivu1938h.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}

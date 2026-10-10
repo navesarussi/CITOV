@@ -38,6 +38,8 @@ import { enqueueDegradedTurn } from "@/infrastructure/db/degraded-turns";
 import { recordAppEventSafe } from "@/infrastructure/db/app-events";
 import { geminiCallTimeoutMs } from "@/infrastructure/ai/gemini-client";
 import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
+import { scheduleObservabilityFlush } from "@/infrastructure/observability/flush";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -96,6 +98,7 @@ async function persistTurn(
 }
 
 export async function POST(req: Request) {
+  scheduleObservabilityFlush();
   try {
     const {
       jsonBodyTooLargeResponse,
@@ -218,6 +221,7 @@ export async function POST(req: Request) {
           });
         } catch (err) {
           console.error("chat stream failed", err);
+          void captureServerException(err, { tags: { route: "/api/chat" }, userId });
           frame(controller, { type: "error", error: "אירעה שגיאה בשיחה. נסו שוב." });
         } finally {
           controller.close();
@@ -311,6 +315,7 @@ async function runEmployeeStream(
     replyUsage = await streamed.usage;
   } catch (err) {
     console.error("gemini employee reply stream failed", err);
+    void captureServerException(err, { tags: { callType: "chat_reply_employee_stream" }, userId });
   }
 
   const patch = await patchPromise;
@@ -399,6 +404,7 @@ async function runEmployerStream(
     replyUsage = await streamed.usage;
   } catch (err) {
     console.error("gemini employer reply stream failed", err);
+    void captureServerException(err, { tags: { callType: "chat_reply_employer_stream" }, userId });
   }
 
   const patch = await patchPromise;

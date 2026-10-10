@@ -3,6 +3,7 @@ import { DomainError } from "@/domain/errors";
 import { getMessages } from "@/i18n";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 import { recordAppEventSafe } from "@/infrastructure/db/app-events";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 export function ok<T>(data: T, init?: ResponseInit) {
   return NextResponse.json(data, init);
@@ -27,6 +28,10 @@ export function fail(
   }
   console.error(error);
   const msg = error instanceof Error ? error.message : String(error);
+  void captureServerException(error, {
+    userId: ctx?.userId,
+    extra: { route: ctx?.route },
+  });
   recordAppEventSafe({
     kind: "api_error",
     severity: "critical",

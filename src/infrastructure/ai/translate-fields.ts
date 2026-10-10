@@ -2,7 +2,9 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { renderPromptTemplate } from "@/domain/admin";
 import { resolvePromptText } from "@/infrastructure/db/prompt-versions";
-import { callGeminiWithRetry, getGeminiModel, hasGeminiKey } from "./gemini-client";
+import { callGeminiWithRetry, defaultGeminiModelId, getGeminiModel, hasGeminiKey } from "./gemini-client";
+import { withGeminiTelemetry } from "@/infrastructure/observability/gemini-telemetry";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 const mapSchema = z.object({
   fields: z.record(z.string(), z.string()),
@@ -23,14 +25,24 @@ export async function translateFieldMap(params: {
       fields: JSON.stringify(Object.fromEntries(entries), null, 2),
     });
     const { object } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        schema: mapSchema,
-        prompt,
-      }),
+      generateObject(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            schema: mapSchema,
+            prompt,
+          },
+          {
+            callType: "translate_fields",
+            model: defaultGeminiModelId(),
+            inputSummary: `keys=${entries.length} locale=${params.targetLocale}`,
+          },
+        ),
+      ),
     );
     return { ...params.fields, ...object.fields };
-  } catch {
+  } catch (err) {
+    void captureServerException(err, { tags: { callType: "translate_fields" } });
     return params.fields;
   }
 }

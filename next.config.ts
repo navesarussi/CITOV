@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -38,9 +39,19 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
-  // Keep the file-parsing libs out of the server bundle (they use Node built-ins
-  // and ship their own workers/assets).
   serverExternalPackages: ["unpdf", "mammoth"],
 };
 
-export default nextConfig;
+const hasSentryUploadToken = Boolean(process.env.SENTRY_AUTH_TOKEN?.trim());
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !hasSentryUploadToken,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    disable: !hasSentryUploadToken,
+  },
+  telemetry: false,
+});

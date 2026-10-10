@@ -1,0 +1,85 @@
+import { cardValue, formatCardValue, mergeCardRows } from "@/domain/card-extras";
+import { CANDIDATE_FIELD_META, JOB_FIELD_META } from "@/domain/card-fields";
+import { detectWorkDomain, DOMAIN_CANDIDATE_FIELD_KEYS } from "@/domain/work-domain";
+import type { CandidateCard, JobCard } from "@/domain/types";
+
+function isEmpty(value: unknown): boolean {
+  if (value == null) return true;
+  if (typeof value === "number") return false;
+  if (Array.isArray(value)) return value.length === 0;
+  if (typeof value === "string") return value.trim() === "";
+  return false;
+}
+
+export { formatCardValue };
+
+export function candidateRows(card: CandidateCard, labels: Record<string, string> = {}) {
+  const core = CANDIDATE_FIELD_META.map((m) => ({
+    key: m.key,
+    label: labels[m.key] ?? m.key,
+    value: formatCardValue(cardValue(card, m.key)),
+    filled: !isEmpty(cardValue(card, m.key)),
+  }));
+  return mergeCardRows(core, card.extras);
+}
+
+export function jobRows(card: JobCard, labels: Record<string, string> = {}) {
+  const core = JOB_FIELD_META.map((m) => ({
+    key: m.key,
+    label: labels[m.key] ?? m.key,
+    value: formatCardValue(cardValue(card, m.key)),
+    filled: !isEmpty(cardValue(card, m.key)),
+  }));
+  return mergeCardRows(core, card.extras);
+}
+
+function candidateMetaForCard(card: CandidateCard) {
+  const domain = detectWorkDomain(card);
+  const keys = DOMAIN_CANDIDATE_FIELD_KEYS[domain];
+  if (!keys?.length) return CANDIDATE_FIELD_META;
+  const order = new Map(keys.map((k, i) => [k, i]));
+  return [...CANDIDATE_FIELD_META].sort((a, b) => {
+    const ia = order.get(a.key) ?? 999;
+    const ib = order.get(b.key) ?? 999;
+    return ia - ib || a.priority - b.priority;
+  });
+}
+
+export function nextMissingCandidateField(card: CandidateCard) {
+  const sorted = candidateMetaForCard(card);
+  for (const m of sorted) {
+    if (m.key === "summary" || m.key === "flexibility" || m.key === "narrative") {
+      continue;
+    }
+    if (isEmpty(cardValue(card, m.key))) return m;
+  }
+  if (card.flexibility === 5) {
+    return CANDIDATE_FIELD_META.find((m) => m.key === "flexibility")!;
+  }
+  return null;
+}
+
+export function nextMissingJobField(card: JobCard) {
+  const sorted = [...JOB_FIELD_META].sort((a, b) => a.priority - b.priority);
+  for (const m of sorted) {
+    if (m.key === "summary" || m.key === "flexibility" || m.key === "narrative") {
+      continue;
+    }
+    if (isEmpty(cardValue(card, m.key))) return m;
+  }
+  if (card.flexibility === 5) {
+    return JOB_FIELD_META.find((m) => m.key === "flexibility")!;
+  }
+  return null;
+}
+
+export function filledCount(rows: { filled: boolean }[]): number {
+  return rows.filter((r) => r.filled).length;
+}
+
+/** Knowledge completeness 0–100. Excludes flexibility (user slider). */
+export function knowledgePercent(rows: { key: string; filled: boolean }[]): number {
+  const relevant = rows.filter((r) => r.key !== "flexibility");
+  if (relevant.length === 0) return 0;
+  return Math.round((filledCount(relevant) / relevant.length) * 100);
+}

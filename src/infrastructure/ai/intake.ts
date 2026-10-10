@@ -1,6 +1,7 @@
 import { generateObject, generateText, streamText } from "ai";
 import {
   callGeminiWithRetry,
+  defaultGeminiModelId,
   getGeminiModel,
   hasGeminiKey,
 } from "./gemini-client";
@@ -22,6 +23,11 @@ import { extractGeminiUsage } from "./usage-extract";
 import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
 import { resolvePromptText } from "@/infrastructure/db/prompt-versions";
 import { renderPromptTemplate } from "@/domain/admin";
+import {
+  redactTelemetryText,
+  withGeminiTelemetry,
+} from "@/infrastructure/observability/gemini-telemetry";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 export { runCvExtraction } from "./cv-extraction";
 
@@ -65,19 +71,28 @@ export async function runEmployeeIntake(params: {
     });
 
     const { object, usage } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        temperature: 0.65,
-        schema: z.object({
-          reply: z.string(),
-          patch: candidatePatchSchema,
-          fieldAnswers: z
-            .array(z.object({ questionId: z.string(), answer: z.string() }))
-            .default([]),
-        }),
-        system,
-        messages,
-      }),
+      generateObject(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            temperature: 0.65,
+            schema: z.object({
+              reply: z.string(),
+              patch: candidatePatchSchema,
+              fieldAnswers: z
+                .array(z.object({ questionId: z.string(), answer: z.string() }))
+                .default([]),
+            }),
+            system,
+            messages,
+          },
+          {
+            callType: "chat_intake_employee",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(params.message),
+          },
+        ),
+      ),
     );
 
     return {
@@ -90,6 +105,7 @@ export async function runEmployeeIntake(params: {
     };
   } catch (err) {
     console.error("employee intake Gemini failed, using heuristic", err);
+    void captureServerException(err, { tags: { callType: "chat_intake_employee", fallback: "heuristic" } });
     const fallback = heuristicEmployeeIntake(
       params.message,
       params.card,
@@ -121,16 +137,25 @@ export async function runEmployerIntake(params: {
     });
 
     const { object, usage } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        temperature: 0.65,
-        schema: z.object({
-          reply: z.string(),
-          patch: jobPatchSchema,
-        }),
-        system,
-        messages,
-      }),
+      generateObject(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            temperature: 0.65,
+            schema: z.object({
+              reply: z.string(),
+              patch: jobPatchSchema,
+            }),
+            system,
+            messages,
+          },
+          {
+            callType: "chat_intake_employer",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(params.message),
+          },
+        ),
+      ),
     );
 
     return {
@@ -142,6 +167,7 @@ export async function runEmployerIntake(params: {
     };
   } catch (err) {
     console.error("employer intake Gemini failed, using heuristic", err);
+    void captureServerException(err, { tags: { callType: "chat_intake_employer", fallback: "heuristic" } });
     const fallback = heuristicEmployerIntake(params.message, params.card, params.chat);
     return { ...fallback, provider: "heuristic", degraded: true };
   }
@@ -180,12 +206,21 @@ export async function streamEmployeeReply(params: {
     locale: params.locale,
     accountHolderFirstName: params.accountHolderFirstName,
   });
-  const result = streamText({
-    model: getGeminiModel(),
-    temperature: 0.7,
-    system: system + REPLY_ONLY_NOTE,
-    messages,
-  });
+  const result = streamText(
+    withGeminiTelemetry(
+      {
+        model: getGeminiModel(),
+        temperature: 0.7,
+        system: system + REPLY_ONLY_NOTE,
+        messages,
+      },
+      {
+        callType: "chat_reply_employee_stream",
+        model: defaultGeminiModelId(),
+        inputSummary: redactTelemetryText(params.message),
+      },
+    ),
+  );
   const usage = Promise.resolve(result.usage)
     .then((u) => extractUsage(u))
     .catch(() => undefined);
@@ -207,12 +242,21 @@ export async function streamEmployerReply(params: {
     chat: params.chat,
     pendingConfirmations: params.pendingJobConfirmations,
   });
-  const result = streamText({
-    model: getGeminiModel(),
-    temperature: 0.7,
-    system: system + REPLY_ONLY_NOTE,
-    messages,
-  });
+  const result = streamText(
+    withGeminiTelemetry(
+      {
+        model: getGeminiModel(),
+        temperature: 0.7,
+        system: system + REPLY_ONLY_NOTE,
+        messages,
+      },
+      {
+        callType: "chat_reply_employer_stream",
+        model: defaultGeminiModelId(),
+        inputSummary: redactTelemetryText(params.message),
+      },
+    ),
+  );
   const usage = Promise.resolve(result.usage)
     .then((u) => extractUsage(u))
     .catch(() => undefined);
@@ -270,12 +314,21 @@ export async function runCvWelcomeReply(params: {
       accountHolderFirstName: params.accountHolderFirstName,
     });
     const { text, usage } = await callGeminiWithRetry(() =>
-      generateText({
-        model: getGeminiModel(),
-        temperature: 0.7,
-        system: system + REPLY_ONLY_NOTE,
-        messages,
-      }),
+      generateText(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            temperature: 0.7,
+            system: system + REPLY_ONLY_NOTE,
+            messages,
+          },
+          {
+            callType: "cv_welcome_reply",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(params.userCvMessage),
+          },
+        ),
+      ),
     );
     const reply = normalizeAssistantReplyText(text);
     if (!reply) throw new Error("empty cv welcome reply");
@@ -287,6 +340,7 @@ export async function runCvWelcomeReply(params: {
     };
   } catch (err) {
     console.error("cv welcome Gemini failed, using heuristic", err);
+    void captureServerException(err, { tags: { callType: "cv_welcome_reply", fallback: "heuristic" } });
     return {
       reply: heuristicCvWelcomeReply({
         card: params.card,
@@ -336,18 +390,27 @@ export async function extractEmployeePatch(params: {
       accountHolderFirstName: params.accountHolderFirstName,
     });
     const { object, usage } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        temperature: 0.25,
-        schema: z.object({
-          patch: candidatePatchSchema,
-          fieldAnswers: z
-            .array(z.object({ questionId: z.string(), answer: z.string() }))
-            .default([]),
-        }),
-        system: system + EXTRACTION_ONLY_NOTE,
-        messages,
-      }),
+      generateObject(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            temperature: 0.25,
+            schema: z.object({
+              patch: candidatePatchSchema,
+              fieldAnswers: z
+                .array(z.object({ questionId: z.string(), answer: z.string() }))
+                .default([]),
+            }),
+            system: system + EXTRACTION_ONLY_NOTE,
+            messages,
+          },
+          {
+            callType: "chat_patch_employee",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(params.message),
+          },
+        ),
+      ),
     );
     return {
       candidatePatch: object.patch,
@@ -356,6 +419,7 @@ export async function extractEmployeePatch(params: {
     };
   } catch (err) {
     console.error("employee patch extraction failed, using heuristic", err);
+    void captureServerException(err, { tags: { callType: "chat_patch_employee", fallback: "heuristic" } });
     const h = heuristicEmployeeIntake(
       params.message,
       params.card,
@@ -385,17 +449,27 @@ export async function extractEmployerPatch(params: {
       pendingConfirmations: params.pendingJobConfirmations,
     });
     const { object, usage } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        temperature: 0.25,
-        schema: z.object({ patch: jobPatchSchema }),
-        system: system + EXTRACTION_ONLY_NOTE,
-        messages,
-      }),
+      generateObject(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            temperature: 0.25,
+            schema: z.object({ patch: jobPatchSchema }),
+            system: system + EXTRACTION_ONLY_NOTE,
+            messages,
+          },
+          {
+            callType: "chat_patch_employer",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(params.message),
+          },
+        ),
+      ),
     );
     return { jobPatch: object.patch, usage: extractUsage(usage) };
   } catch (err) {
     console.error("employer patch extraction failed, using heuristic", err);
+    void captureServerException(err, { tags: { callType: "chat_patch_employer", fallback: "heuristic" } });
     const h = heuristicEmployerIntake(params.message, params.card, params.chat);
     return { jobPatch: h.jobPatch ?? {} };
   }
@@ -432,18 +506,27 @@ export async function runJobDescriptionExtraction(params: {
     const system =
       (await resolvePromptText("job_card_extraction")) || JOB_EXTRACTION_SYSTEM_LEGACY;
     const { object, usage } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        temperature: 0.2,
-        schema: jobExtractionSchema,
-        system,
-        messages: [
+      generateObject(
+        withGeminiTelemetry(
           {
-            role: "user",
-            content: `תיאור משרה:\n\n${params.text}\n\nכרטיס נוכחי (למניעת דריסה מיותרת):\n${JSON.stringify(params.card)}`,
+            model: getGeminiModel(),
+            temperature: 0.2,
+            schema: jobExtractionSchema,
+            system,
+            messages: [
+              {
+                role: "user",
+                content: `תיאור משרה:\n\n${params.text}\n\nכרטיס נוכחי (למניעת דריסה מיותרת):\n${JSON.stringify(params.card)}`,
+              },
+            ],
           },
-        ],
-      }),
+          {
+            callType: "job_import_extraction",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(params.text),
+          },
+        ),
+      ),
     );
     return {
       patch: object.patch,
@@ -453,6 +536,7 @@ export async function runJobDescriptionExtraction(params: {
     };
   } catch (err) {
     console.error("job extraction Gemini failed, using heuristic", err);
+    void captureServerException(err, { tags: { callType: "job_import_extraction", fallback: "heuristic" } });
     const h = heuristicEmployerIntake(params.text, params.card, []);
     return { patch: h.jobPatch ?? {}, provider: "heuristic" };
   }
@@ -478,13 +562,23 @@ export async function enrichReasonWithAi(
       reason,
     });
     const { text, usage } = await callGeminiWithRetry(() =>
-      generateText({
-        model: getGeminiModel(),
-        prompt,
-      }),
+      generateText(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(),
+            prompt,
+          },
+          {
+            callType: "match_reason_enrich",
+            model: defaultGeminiModelId(),
+            inputSummary: redactTelemetryText(reason),
+          },
+        ),
+      ),
     );
     return { text: text.trim() || reason, usage: extractUsage(usage) };
-  } catch {
+  } catch (err) {
+    void captureServerException(err, { tags: { callType: "match_reason_enrich", fallback: "passthrough" } });
     return { text: reason };
   }
 }

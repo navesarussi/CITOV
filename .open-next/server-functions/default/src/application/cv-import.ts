@@ -1,0 +1,213 @@
+import { randomUUID } from "crypto";
+import { applyCvExtraction } from "@/application/chat";
+import { translateCandidateCardForDisplay } from "@/application/translate-candidate-display";
+import { createAiUsageRecord } from "@/domain/admin";
+import { NotFoundError } from "@/domain/errors";
+import { emptyCvProfile, type CandidateDocument, type StoreData } from "@/domain/types";
+import type { Locale } from "@/i18n/types";
+import { runCvExtraction } from "@/infrastructure/ai/cv-extraction";
+import {
+  cvPersonNameFromExtraction,
+  shouldStageIdentityMismatch,
+  stageCvForIdentityCheck,
+} from "@/application/cv-identity";
+import { replaceEmployee } from "@/domain/candidate-profiles";
+
+export type SaveCvInput = {
+  userId: string;
+  id: string;
+  fileName: string;
+  mimeType: string;
+  byteSize: number;
+  storageKey: string;
+  extractedText: string;
+};
+
+export function saveCandidateCv(
+  store: StoreData,
+  input: SaveCvInput,
+): { store: StoreData; document: CandidateDocument } {
+  const emp = store.employees.find((e) => e.userId === input.userId);
+  if (!emp) throw new NotFoundError("Employee");
+
+  const document: CandidateDocument = {
+    id: input.id,
+    kind: "cv",
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    byteSize: input.byteSize,
+    storageKey: input.storageKey,
+    uploadedAt: new Date().toISOString(),
+    textCharCount: input.extractedText.length,
+    extractedText: input.extractedText,
+    extractionStatus: "pending",
+  };
+
+  const cv = emp.cv ?? emptyCvProfile();
+  const nextCv = {
+    ...cv,
+    documents: [...cv.documents.filter((d) => d.id !== document.id), document],
+  };
+
+  return {
+    store: {
+      ...store,
+      employees: store.employees.map((e) =>
+        e.userId === input.userId ? { ...e, cv: nextCv } : e,
+      ),
+    },
+    document,
+  };
+}
+
+export async function analyzeCandidateCv(
+  store: StoreData,
+  userId: string,
+  documentId?: string,
+  locale: Locale = "he",
+): Promise<{
+  store: StoreData;
+  provider: string;
+  summary: ReturnType<typeof applyCvExtraction>["summary"];
+  documentId: string;
+  usageRecord?: ReturnType<typeof createAiUsageRecord>;
+}> {
+  const emp = store.employees.find((e) => e.userId === userId);
+  if (!emp) throw new NotFoundError("Employee");
+
+  const docs = emp.cv?.documents ?? [];
+  const document = documentId
+    ? docs.find((d) => d.id === documentId)
+    : docs[docs.length - 1];
+  if (!document) throw new NotFoundError("CV document");
+
+  const extracted = await runCvExtraction({ text: document.extractedText, card: emp.card });
+
+  if (extracted.failed) {
+    const failedDoc: CandidateDocument = { ...document, extractionStatus: "failed" };
+    const cv = emp.cv ?? emptyCvProfile();
+    const nextCv = {
+      ...cv,
+      documents: [...cv.documents.filter((d) => d.id !== failedDoc.id), failedDoc],
+    };
+    return {
+      store: {
+        ...store,
+        employees: store.employees.map((e) =>
+          e.userId === userId ? { ...e, cv: nextCv } : e,
+        ),
+      },
+      provider: extracted.provider,
+      summary: {
+        fieldsUpdated: 0,
+        rolesFound: 0,
+        educationFound: 0,
+        conflictsPending: 0,
+        unmappedCount: 0,
+        fileName: document.fileName,
+      },
+      documentId: document.id,
+    };
+  }
+
+  const status =
+    extracted.provider === "heuristic" || (extracted.strippedCount ?? 0) > 0
+      ? "partial"
+      : "ok";
+  const analyzedDoc: CandidateDocument = {
+    ...document,
+    extractionStatus: status,
+  };
+
+  const extractionPayload = {
+    patch: extracted.patch,
+    workHistory: extracted.workHistory,
+    educationHistory: extracted.educationHistory,
+    unmappedFacts: extracted.unmappedFacts,
+    fieldConfidence: extracted.fieldConfidence,
+    inferences: extracted.inferences,
+    pendingConfirmations: extracted.pendingConfirmations,
+    sourceText: document.extractedText,
+  };
+
+  const accountName = store.users.find((u) => u.id === userId)?.name ?? "";
+  const cvPersonName =
+    extracted.subjectFullName?.trim() ||
+    cvPersonNameFromExtraction(extractionPayload, document);
+
+  let applied: ReturnType<typeof applyCvExtraction>;
+  if (shouldStageIdentityMismatch(accountName, cvPersonName)) {
+    let stagedStore = stageCvForIdentityCheck(store, userId, {
+      cvPersonName: cvPersonName!,
+      documentId: document.id,
+      extraction: extractionPayload,
+      analyzedDocument: analyzedDoc,
+    });
+    const stagedEmp = stagedStore.employees.find((e) => e.userId === userId)!;
+    const cv = stagedEmp.cv ?? emptyCvProfile();
+    stagedStore = {
+      ...stagedStore,
+      employees: replaceEmployee(stagedStore.employees, {
+        ...stagedEmp,
+        cv: {
+          ...cv,
+          documents: [...cv.documents.filter((d) => d.id !== analyzedDoc.id), analyzedDoc],
+        },
+      }),
+    };
+    applied = {
+      store: stagedStore,
+      card: stagedEmp.card,
+      summary: {
+        fieldsUpdated: 0,
+        rolesFound: extractionPayload.workHistory?.length ?? 0,
+        educationFound: extractionPayload.educationHistory?.length ?? 0,
+        conflictsPending: 0,
+        unmappedCount: extractionPayload.unmappedFacts?.length ?? 0,
+        fileName: document.fileName,
+      },
+    };
+  } else {
+    applied = applyCvExtraction(store, userId, extractionPayload, analyzedDoc);
+  }
+
+  let next: StoreData = applied.store;
+  const appliedEmp = next.employees.find((e) => e.userId === userId);
+  if (appliedEmp) {
+    const displayCard = await translateCandidateCardForDisplay(appliedEmp.card, locale);
+    if (displayCard !== appliedEmp.card) {
+      next = {
+        ...next,
+        employees: next.employees.map((e) =>
+          e.userId === userId ? { ...e, card: displayCard } : e,
+        ),
+      };
+    }
+  }
+
+  let usageRecord: ReturnType<typeof createAiUsageRecord> | undefined;
+  if (extracted.usage) {
+    usageRecord = createAiUsageRecord({
+      id: randomUUID(),
+      type: "cv_extraction",
+      promptTokens: extracted.usage.promptTokens,
+      completionTokens: extracted.usage.completionTokens,
+      cachedPromptTokens: extracted.usage.cachedPromptTokens,
+      thinkingTokens: extracted.usage.thinkingTokens,
+      userId,
+      createdAt: new Date().toISOString(),
+    });
+    next = {
+      ...next,
+      aiUsage: [...(next.aiUsage ?? []), usageRecord].slice(-200),
+    };
+  }
+
+  return {
+    store: next,
+    provider: extracted.provider,
+    summary: applied.summary,
+    documentId: document.id,
+    usageRecord,
+  };
+}

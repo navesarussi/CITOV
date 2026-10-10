@@ -1,10 +1,13 @@
 import { recordAppEventSafe } from "@/infrastructure/db/app-events";
+import { scheduleObservabilityFlush } from "@/infrastructure/observability/flush";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 export function withApiLogging(
   route: string,
   handler: (req: Request) => Promise<Response>,
 ): (req: Request) => Promise<Response> {
   return async (req: Request) => {
+    scheduleObservabilityFlush();
     const start = Date.now();
     try {
       const res = await handler(req);
@@ -38,6 +41,7 @@ export function withApiLogging(
         message: msg,
         stack: err instanceof Error ? err.stack : undefined,
       });
+      void captureServerException(err, { extra: { route } });
       throw err;
     }
   };

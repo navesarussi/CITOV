@@ -1,0 +1,12 @@
+var R=require("../../../../chunks/[turbopack]_runtime.js")("server/app/api/health/auth/route.js")
+R.c("server/chunks/[root-of-the-server]__0kas5av._.js")
+R.c("server/chunks/[root-of-the-server]__01n4y9t._.js")
+R.c("server/chunks/[root-of-the-server]__10_vt53._.js")
+R.c("server/chunks/src_14f97ke._.js")
+R.c("server/chunks/_1id5dbi._.js")
+R.c("server/chunks/node_modules_next_10shsn8._.js")
+R.c("server/chunks/node_modules_next_1_14bcs._.js")
+R.c("server/chunks/[root-of-the-server]__1blhtzm._.js")
+R.c("server/chunks/_next-internal_server_app_api_health_auth_route_actions_0rfd1qz.js")
+R.m(11696)
+module.exports=R.m(11696).exports

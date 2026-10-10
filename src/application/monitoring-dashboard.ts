@@ -7,6 +7,7 @@ import {
   listGroupedIssues,
   routeLatencyStats,
 } from "@/infrastructure/db/app-events";
+import { observabilityLinks } from "@/infrastructure/observability/langfuse-env";
 
 export type MonitoringDashboard = {
   issues: GroupedIssue[];
@@ -14,6 +15,7 @@ export type MonitoringDashboard = {
   aiBudget: ReturnType<typeof computeAiBudgetStatus>;
   e2e: Record<string, unknown> | null;
   extractionEval: ExtractionEvalMetrics;
+  observability: { sentry: string | null; langfuse: string | null };
 };
 
 export async function buildMonitoringDashboard(): Promise<MonitoringDashboard> {
@@ -32,5 +34,6 @@ export async function buildMonitoringDashboard(): Promise<MonitoringDashboard> {
     aiBudget: computeAiBudgetStatus(usage),
     e2e,
     extractionEval: runExtractionEval(),
+    observability: observabilityLinks(),
   };
 }
