@@ -150,6 +150,8 @@ export type User = {
   /** Synthetic sandbox rows for match-quality eval — never shown to real users. */
   isTest?: boolean;
   datasetId?: string | null;
+  /** Employers only — admin must verify before CV / identity access. */
+  employerVerified?: boolean;
 };
 
 export type EvidenceSource = "cv" | "chat" | "user";

@@ -99,6 +99,8 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
       createdAt: new Date(u.created_at).toISOString(),
       isTest: Boolean(u.is_test),
       datasetId: u.dataset_id ?? undefined,
+      employerVerified:
+        u.role === "employer" ? Boolean(u.employer_verified) : undefined,
     })),
     employees: employees.rows.map((e) => ({
       userId: e.user_id,
@@ -175,9 +177,11 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
 }
 
 async function upsertUser(client: PoolClient, user: User): Promise<void> {
+  const employerVerified =
+    user.role === "employer" ? Boolean(user.employerVerified) : false;
   await client.query(
-    `insert into app_users (id, name, role, email, image, google_id, created_at, is_test, dataset_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `insert into app_users (id, name, role, email, image, google_id, created_at, is_test, dataset_id, employer_verified)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      on conflict (id) do update set
        name = excluded.name,
        role = excluded.role,
@@ -185,7 +189,11 @@ async function upsertUser(client: PoolClient, user: User): Promise<void> {
        image = excluded.image,
        google_id = excluded.google_id,
        is_test = excluded.is_test,
-       dataset_id = excluded.dataset_id`,
+       dataset_id = excluded.dataset_id,
+       employer_verified = case
+         when app_users.role = 'employer' then app_users.employer_verified
+         else excluded.employer_verified
+       end`,
     [
       user.id,
       user.name,
@@ -196,6 +204,7 @@ async function upsertUser(client: PoolClient, user: User): Promise<void> {
       user.createdAt,
       Boolean(user.isTest),
       user.datasetId ?? null,
+      employerVerified,
     ],
   );
 }
@@ -407,7 +416,19 @@ export async function upsertSessionRole(user: User, role: Role): Promise<User> {
   try {
     await client.query("begin");
     began = true;
-    const nextUser = { ...user, role };
+    const prev = await client.query<{ role: Role; employer_verified: boolean }>(
+      `select role, employer_verified from app_users where id = $1`,
+      [user.id],
+    );
+    const isNew = !prev.rows[0];
+    const effectiveRole = prev.rows[0]?.role ?? role;
+    const employerVerified =
+      effectiveRole === "employer"
+        ? isNew
+          ? false
+          : Boolean(prev.rows[0]!.employer_verified)
+        : undefined;
+    const nextUser: User = { ...user, role: effectiveRole, employerVerified };
     await upsertUser(client, nextUser);
     if (role === "employee") {
       await client.query(
@@ -447,6 +468,30 @@ export async function upsertSessionRole(user: User, role: Role): Promise<User> {
   } finally {
     client.release();
   }
+}
+
+/** Admin: אימות מעסיק לפני גישה ל-CV / זהות (אחרי reveal flag). */
+export async function setEmployerVerified(userId: string, verified: boolean): Promise<void> {
+  if (shouldUseMemoryStore()) {
+    const data = readMemoryStore();
+    writeMemoryStore({
+      ...data,
+      users: data.users.map((u) =>
+        u.id === userId && u.role === "employer"
+          ? { ...u, employerVerified: verified }
+          : u,
+      ),
+    });
+    invalidateStoreCache();
+    return;
+  }
+  await ensureSchema();
+  const pool = await getPool();
+  await pool.query(
+    `update app_users set employer_verified = $2 where id = $1 and role = 'employer'`,
+    [userId, verified],
+  );
+  invalidateStoreCache();
 }
 
 export async function findUserByEmailOrGoogle(

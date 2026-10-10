@@ -9,6 +9,7 @@ create table if not exists app_users (
   google_id text,
   is_test boolean not null default false,
   dataset_id text,
+  employer_verified boolean not null default false,
   created_at timestamptz not null default now(),
   check ((is_test = false and dataset_id is null) or (is_test = true and dataset_id is not null))
 );

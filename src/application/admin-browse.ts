@@ -60,6 +60,7 @@ export type AdminEmployerSummary = {
   jobCount: number;
   avgUserMessages: number;
   avgKnowledgePercent: number;
+  employerVerified: boolean;
 };
 
 export type AdminEmployerDetail = AdminEmployerSummary & {
@@ -146,10 +147,12 @@ export function listAdminEmployers(store: StoreData): AdminEmployerSummary[] {
     .filter((e) => !isDemoUserId(e.userId))
     .map((er) => {
       const eng = employerEngagement(er);
+      const user = store.users.find((u) => u.id === er.userId);
       return {
         userId: er.userId,
         name: userName(store, er.userId),
         email: userEmail(store, er.userId),
+        employerVerified: user?.role === "employer" ? user.employerVerified !== false : true,
         jobCount: eng.jobCount,
         avgUserMessages: eng.avgUserMessages,
         avgKnowledgePercent: eng.avgKnowledgePercent,
@@ -166,10 +169,12 @@ export function getAdminEmployerDetail(
   const er = store.employers.find((e) => e.userId === userId);
   if (!er) return null;
   const eng = employerEngagement(er);
+  const user = store.users.find((u) => u.id === er.userId);
   return {
     userId: er.userId,
     name: userName(store, er.userId),
     email: userEmail(store, er.userId),
+    employerVerified: user?.role === "employer" ? user.employerVerified !== false : true,
     jobCount: eng.jobCount,
     avgUserMessages: eng.avgUserMessages,
     avgKnowledgePercent: eng.avgKnowledgePercent,

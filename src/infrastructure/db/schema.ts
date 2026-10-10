@@ -30,6 +30,10 @@ alter table matches add column if not exists job_id text;
 update matches set job_id = job_owner_id where job_id is null;
 alter table matches add column if not exists score_breakdown jsonb;
 
+alter table app_users add column if not exists employer_verified boolean not null default false;
+update app_users set employer_verified = true where role = 'employer';
+update app_users set employer_verified = true where id in ('demo-employer');
+
 alter table app_users add column if not exists is_test boolean not null default false;
 alter table app_users add column if not exists dataset_id text;
 alter table matches add column if not exists is_test boolean not null default false;
