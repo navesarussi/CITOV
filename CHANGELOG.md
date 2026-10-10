@@ -1,8 +1,12 @@
 # Changelog
 
+## 0.2.1 — 2025-10-10
+
+- Admin candidate/employer views use the signed-in admin’s real workspace profiles (same UX as `/employee` and `/employer`), not separate sandbox users.
+
 ## 0.2.0 — 2025-10-10
 
-- Admin sandbox: interactive candidate/employer preview (`admin-sandbox-*`), resettable, excluded from metrics.
+- Admin preview links for candidate/employer workspace (later replaced by real profiles in 0.2.1).
 - Admin navigation: dashboard link on all admin pages; guidelines page.
 - Employer job list: human titles, location, match counts; technical IDs behind toggle.
 - AI cost dashboard: token-level cost from API usage + documented Gemini list pricing; daily breakdown.

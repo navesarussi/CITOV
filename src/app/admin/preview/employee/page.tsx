@@ -1,15 +1,15 @@
 "use client";
 
-import { AdminSandboxEmployee } from "@/components/admin/AdminSandboxEmployee";
 import { AdminShell } from "@/components/AdminShell";
+import { EmployeeWorkspaceView } from "@/components/workspace/EmployeeWorkspaceView";
 
 export default function AdminPreviewEmployeePage() {
   return (
     <AdminShell
-      title="תצוגת מועמד (מנהל)"
-      subtitle="ארגז חול — התנהגות כמו מועמד אמיתי (קו״ח, צ'אט, כרטיס)"
+      title="תצוגת מועמד"
+      subtitle="החוויה המלאה שלך כמועמד — קו״ח, צ'אט, כרטיס והזדמנויות (נתונים אמיתיים)"
     >
-      <AdminSandboxEmployee />
+      <EmployeeWorkspaceView layout="embedded" />
     </AdminShell>
   );
 }

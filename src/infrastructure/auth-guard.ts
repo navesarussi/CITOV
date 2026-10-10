@@ -1,5 +1,4 @@
 import { auth } from "@/auth";
-import { isAdminSandboxUserId } from "@/domain/admin-sandbox";
 import { getMessages } from "@/i18n";
 import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 import type { StoreData, User } from "@/domain/types";
@@ -8,7 +7,6 @@ import { getDevSession, isDevAuthEnabled } from "@/infrastructure/dev-auth";
 import { sessionOwnsUser } from "@/domain/session-ownership";
 import { findUserByEmailOrGoogle } from "@/infrastructure/db/normalized-store";
 import { findUserById, readActorStore } from "@/infrastructure/db/slice-store";
-import { assertAdmin } from "@/infrastructure/admin-guard";
 import { resolveOAuthSessionEmail } from "@/infrastructure/session-email";
 
 export function allowDemo(): boolean {
@@ -24,22 +22,6 @@ async function authorizeUserId(
   locale: Locale,
 ): Promise<{ ok: true; user: User } | { ok: false; status: number; error: string }> {
   const api = getMessages(locale).api;
-
-  if (isAdminSandboxUserId(userId)) {
-    const admin = await assertAdmin();
-    if (admin.ok) {
-      const user =
-        (await findUserById(userId)) ??
-        ({
-          id: userId,
-          name: userId.includes("employer") ? "מעסיק בדיקה (מנהל)" : "מועמד בדיקה (מנהל)",
-          role: userId.includes("employer") ? "employer" : "employee",
-          email: `${userId}@sandbox.citov.local`,
-          createdAt: new Date().toISOString(),
-        } as User);
-      return { ok: true, user };
-    }
-  }
 
   if (allowDemo() && isDemoUserId(userId)) {
     const user =

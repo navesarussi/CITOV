@@ -334,7 +334,7 @@ export default function AdminPage() {
       <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
         <h2 className="text-sm font-semibold text-[var(--muted)]">מה חדש (0.2.0)</h2>
         <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-[var(--ink)]">
-          <li>ארגז חול מנהל — מועמד/מעסיק אינטראקטיבי</li>
+          <li>תצוגת מועמד/מעסיק — פרופיל אמיתי תחת חשבון המנהל</li>
           <li>ניווט דשבורד אחיד + כותרות משרה בדפדפן מעסיקים</li>
           <li>עלות AI לפי מחירון + תיוג קהל אופציונלי</li>
         </ul>
