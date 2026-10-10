@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { matchingEvalDataset } from "../../eval/matching/dataset";
+import { matchingEvalDataset } from "@/application/eval-matching-dataset";
 import { scoreMatch } from "@/domain/matching";
 import {
   defaultRuleBasedMatcher,
@@ -22,7 +22,7 @@ import { scoreCandidateForJob, type MatchEmbeddingIndex } from "./match-scoring"
 import { labeledPairKeys, listMatchLabels } from "@/infrastructure/db/match-labels";
 import { resolveLabelingPair } from "./labeling-pair-resolve";
 import { explainMatchPair, type MatchPairExplanation } from "./match-pair-explain";
-import { holdoutJudgmentByPair } from "../../eval/matching/load-holdout-judgments";
+import { holdoutJudgmentByPair } from "@/application/eval-holdout-judgments";
 import type { LlmJudgePairRecord } from "@/domain/llm-judge";
 
 export type LabelingPair = {

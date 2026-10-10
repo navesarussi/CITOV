@@ -21,7 +21,7 @@ import {
   defaultRuleBasedMatcher,
   evaluateMatcherOnDataset,
 } from "@/domain/matching-eval/evaluate";
-import { matchingEvalDataset } from "../../eval/matching/dataset";
+import { matchingEvalDataset } from "@/application/eval-matching-dataset";
 
 export type PromptCatalogCard = {
   id: string;
