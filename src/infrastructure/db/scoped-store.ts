@@ -339,10 +339,30 @@ export async function updateMatchStatus(params: {
           : m,
       ),
     });
+    if (hit) {
+      const jobId = hit.jobId ?? hit.jobOwnerId;
+      const { recordEmployerMatchFeedback } = await import(
+        "@/application/match-label-feedback"
+      );
+      void recordEmployerMatchFeedback({
+        jobId,
+        candidateId: hit.candidateId,
+        employerId: params.employerId,
+        status: params.status,
+      }).catch((err) => console.error("employer match label failed", err));
+    }
     return true;
   }
   await ensureSchema();
   const pool = await getPool();
+  const before = await pool.query<{
+    job_id: string;
+    candidate_id: string;
+  }>(
+    `select job_id, candidate_id from matches where id = $1 and job_owner_id = $2`,
+    [params.matchId, params.employerId],
+  );
+  const row = before.rows[0];
   const result = await pool.query(
     `update matches
      set status = $1, updated_at = now()
@@ -350,7 +370,19 @@ export async function updateMatchStatus(params: {
     [params.status, params.matchId, params.employerId],
   );
   invalidateStoreCache();
-  return (result.rowCount ?? 0) > 0;
+  const ok = (result.rowCount ?? 0) > 0;
+  if (ok && row?.job_id && row?.candidate_id) {
+    const { recordEmployerMatchFeedback } = await import(
+      "@/application/match-label-feedback"
+    );
+    void recordEmployerMatchFeedback({
+      jobId: row.job_id,
+      candidateId: row.candidate_id,
+      employerId: params.employerId,
+      status: params.status,
+    }).catch((err) => console.error("employer match label failed", err));
+  }
+  return ok;
 }
 
 /** Re-export for tests / callers that need the in-memory snapshot after scoped memory writes. */

@@ -1,0 +1,14 @@
+---
+description: Changing Gemini intake prompts or admin prompt overrides.
+alwaysApply: false
+---
+
+# Prompt changes
+
+1. Default prompt **files** live under `src/infrastructure/ai/prompts/` (loaded by `resolveAdminSettings`).
+2. Bump **`PROMPT_BUNDLE_VERSION`** in `src/domain/types.ts` when defaults change so stale admin DB overrides refresh.
+3. Admin-edited prompts stored in `admin_settings` with matching `prompt_bundle_version`.
+4. Extraction schemas: `src/infrastructure/ai/schemas.ts` — keep Zod patches aligned with prompts.
+5. Live CV tests (optional): `npm run test:cv-live` — requires API key; not CI-default.
+
+After prompt changes, smoke-test one employee and one employer chat turn locally.

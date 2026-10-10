@@ -409,6 +409,7 @@ export async function runJobDescriptionExtraction(params: {
   }
 }
 
+/** Not wired in match rebuild (cost/latency per pair). Use rule-based explainMatch unless product enables. */
 export async function enrichReasonWithAi(
   reason: string,
   candidateSummary: string,

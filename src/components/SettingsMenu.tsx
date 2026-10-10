@@ -7,7 +7,8 @@ import { useTranslation } from "@/components/LocaleProvider";
 import type { Locale } from "@/i18n/types";
 import { formatAppVersion } from "@/lib/version";
 import { clearSessionOnLogout, roleLandingPath } from "@/lib/client-session";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { readStoredUser } from "@/lib/client-session";
 
 export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" }) {
   const variant = props.variant ?? "fixed";
@@ -22,11 +23,18 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
   const [rateOpen, setRateOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const { data: oauthSession } = useSession();
   const [signedIn, setSignedIn] = useState(false);
   const [devAuth, setDevAuth] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+
+  const [hasLocalSession, setHasLocalSession] = useState(false);
+  useEffect(() => {
+    setHasLocalSession(Boolean(readStoredUser()));
+  }, [pathname, open]);
+  const showSignOut = Boolean(oauthSession?.user || signedIn || hasLocalSession);
 
   useEffect(() => {
     void fetch("/api/session")
@@ -202,7 +210,7 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
               </MenuButton>
             </section>
 
-            {signedIn ? (
+            {showSignOut ? (
               <button
                 type="button"
                 role="menuitem"

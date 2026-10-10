@@ -4,6 +4,7 @@ import { getActiveJob, normalizeEmployerRecord } from "@/domain/employer-jobs";
 import { normalizeField } from "@/domain/field-questions";
 import type { FieldQuestion, Match, StoreData } from "@/domain/types";
 import { rebuildMatches } from "./rebuild-matches";
+import type { MatchEmbeddingIndex } from "./match-scoring";
 
 export function approveMatch(store: StoreData, matchId: string): StoreData {
   const match = store.matches.find((m) => m.id === matchId);
@@ -88,4 +89,11 @@ export function askFieldQuestion(
 
 export function refreshStoreMatches(store: StoreData): StoreData {
   return { ...store, matches: rebuildMatches(store) as Match[] };
+}
+
+export function refreshStoreMatchesWithEmbeddings(
+  store: StoreData,
+  embeddingIndex?: MatchEmbeddingIndex,
+): StoreData {
+  return { ...store, matches: rebuildMatches(store, embeddingIndex) as Match[] };
 }

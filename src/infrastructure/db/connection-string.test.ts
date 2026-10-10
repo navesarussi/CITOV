@@ -23,13 +23,20 @@ describe("connection-string", () => {
     assert.match(out, /aws-0-us-east-1\.pooler\.supabase\.com:6543/);
   });
 
-  it("builds multiple pooler host candidates", () => {
+  it("builds a small pooler candidate set (region env, not full sweep)", () => {
     const input =
       "postgresql://postgres:secret@db.abc123xyz.supabase.co:5432/postgres";
     const candidates = poolerConnectionCandidates(input);
-    assert.ok(candidates.length > 1);
-    assert.match(candidates[0]!, /aws-1-ap-south-1\.pooler\.supabase\.com:6543/);
-    assert.ok(candidates.some((c) => c.includes("aws-1-us-east-1.pooler.supabase.com:6543")));
+    assert.ok(candidates.length >= 2 && candidates.length <= 6);
+    assert.match(candidates[0]!, /aws-0-ap-southeast-1\.pooler\.supabase\.com:6543/);
+  });
+
+  it("returns single candidate when DATABASE_URL is already pooler", () => {
+    const input =
+      "postgresql://postgres.abc123xyz:secret@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres";
+    const candidates = poolerConnectionCandidates(input);
+    assert.equal(candidates.length, 1);
+    assert.equal(candidates[0], input);
   });
 
   it("round-trips buildDatabaseUrl", () => {

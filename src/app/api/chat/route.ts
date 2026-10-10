@@ -8,13 +8,17 @@ import {
 } from "@/application/chat";
 import { employeeHasCv } from "@/domain/candidate-mini-card";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
-import type { CandidateCard, StoreData } from "@/domain/types";
+import type { CandidateCard, JobCard, StoreData } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
 import { assertActor } from "@/infrastructure/auth-guard";
 import {
   persistEmployeeTurn,
   persistEmployerTurn,
 } from "@/infrastructure/db/scoped-store";
+import {
+  scheduleCandidateEmbeddingRefresh,
+  scheduleJobEmbeddingRefresh,
+} from "@/application/card-embedding-sync";
 import { scheduleMatchRebuild } from "@/infrastructure/db/match-scheduler";
 import { hasGeminiKey } from "@/infrastructure/ai/schemas";
 import {
@@ -133,6 +137,11 @@ export async function POST(req: Request) {
 
           await persistTurn(role, userId, result);
           after(() => {
+            if (role === "employee") {
+              scheduleCandidateEmbeddingRefresh(userId, result.card as CandidateCard);
+            } else if (result.jobId) {
+              scheduleJobEmbeddingRefresh(userId, result.jobId, result.card as JobCard);
+            }
             scheduleMatchRebuild();
           });
 

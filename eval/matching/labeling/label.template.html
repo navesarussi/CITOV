@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>תיוג התאמות — Holdout v1</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4f;
+      --text: #e8eef7;
+      --muted: #94a3b8;
+      --good: #22c55e;
+      --acc: #eab308;
+      --bad: #ef4444;
+      --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 { margin: 0 0 0.35rem; font-size: 1.25rem; }
+    .guidelines {
+      font-size: 0.9rem;
+      color: var(--muted);
+      max-width: 52rem;
+    }
+    .guidelines strong { color: var(--text); }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar label { font-size: 0.85rem; color: var(--muted); }
+    input[type="file"] { max-width: 14rem; font-size: 0.8rem; }
+    button, .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+    button:hover { border-color: var(--accent); }
+    button.primary { background: #1e3a5f; border-color: var(--accent); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .progress-wrap {
+      flex: 1;
+      min-width: 10rem;
+    }
+    progress { width: 100%; height: 0.5rem; accent-color: var(--accent); }
+    .progress-text { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+    main { padding: 1.25rem; max-width: 56rem; margin: 0 auto; }
+    .pair-nav { display: flex; gap: 0.5rem; margin-bottom: 1rem; align-items: center; }
+    .pair-id { font-family: ui-monospace, monospace; font-size: 0.8rem; color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.1rem;
+    }
+    .card h2 { margin: 0 0 0.5rem; font-size: 1rem; color: var(--accent); }
+    .title { font-size: 1.15rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .facts { color: var(--muted); font-size: 0.95rem; }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 1.25rem 0;
+    }
+    .actions button.good { border-color: var(--good); }
+    .actions button.acc { border-color: var(--acc); }
+    .actions button.bad { border-color: var(--bad); }
+    .actions button.selected.good { background: rgba(34,197,94,0.2); }
+    .actions button.selected.acc { background: rgba(234,179,8,0.2); }
+    .actions button.selected.bad { background: rgba(239,68,68,0.2); }
+    kbd {
+      font-size: 0.75rem;
+      padding: 0.1rem 0.35rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--muted);
+    }
+    textarea {
+      width: 100%;
+      min-height: 4rem;
+      background: #0c1118;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.6rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem; }
+    .empty { text-align: center; padding: 3rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>תיוג זוגות משרה–מועמד (Holdout)</h1>
+    <div class="guidelines">
+      <p><strong>מתאים (good):</strong> הייתם מציגים את המועמד/ת למעסיק/ה לראיון — תפקיד, כישורים ותנאים עיקריים מסתדרים.</p>
+      <p><strong>סביר (acceptable):</strong> יש פערים (מיקום, שכר, בכירות, תפקיד קרוב) אבל עדיין שווה שיחה — לא דחייה מיידית.</p>
+      <p><strong>לא מתאים (bad):</strong> פער מהותי — תחום/תפקיד שונה, חובה חסרה, או התאמה מטעה.</p>
+      <p>קיצורי מקלדת: <kbd>1</kbd> מתאים · <kbd>2</kbd> סביר · <kbd>3</kbd> לא מתאים · <kbd>←</kbd>/<kbd>→</kbd> ניווט · <kbd>S</kbd> שמירה לקובץ</p>
+    </div>
+  </header>
+  <div class="toolbar">
+    <label>טעינת CSV (אופציונלי): <input type="file" id="fileInput" accept=".csv,text/csv" /></label>
+    <button type="button" id="exportCsv" class="primary">ייצוא CSV</button>
+    <button type="button" id="exportJson">ייצוא JSON</button>
+    <div class="progress-wrap">
+      <progress id="prog" max="100" value="0"></progress>
+      <div class="progress-text" id="progText">0 / 0 מתויגים</div>
+    </div>
+  </div>
+  <main id="main">
+    <div class="empty" id="empty">טוען זוגות…</div>
+  </main>
+  <script>
+    const EMBEDDED = __HOLDOUT_PAIRS_JSON__;
+    const STORAGE_KEY = "holdout-v1-labels";
+
+    /** @typedef {{ pair_id: string, job_id: string, job_title: string, job_key_requirements: string, candidate_id: string, candidate_title: string, candidate_key_facts: string, label?: string, note?: string }} PairRow */
+
+    /** @type {PairRow[]} */
+    let pairs = [];
+    let index = 0;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!Array.isArray(saved)) return;
+        const byId = new Map(saved.map((r) => [r.pair_id, r]));
+        pairs = pairs.map((p) => {
+          const s = byId.get(p.pair_id);
+          if (!s) return p;
+          return { ...p, label: s.label || "", note: s.note || "" };
+        });
+      } catch (_) { /* ignore */ }
+    }
+
+    function saveState() {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(
+          pairs.map(({ pair_id, label, note }) => ({ pair_id, label: label || "", note: note || "" })),
+        ),
+      );
+    }
+
+    function labeledCount() {
+      return pairs.filter((p) => p.label === "good" || p.label === "acceptable" || p.label === "bad").length;
+    }
+
+    function updateProgress() {
+      const n = labeledCount();
+      const el = document.getElementById("prog");
+      const tx = document.getElementById("progText");
+      if (el) el.value = pairs.length ? Math.round((n / pairs.length) * 100) : 0;
+      if (tx) tx.textContent = `${n} / ${pairs.length} מתויגים · זוג ${index + 1}`;
+    }
+
+    function setLabel(label) {
+      if (!pairs[index]) return;
+      pairs[index].label = label;
+      saveState();
+      updateProgress();
+      render();
+      if (index < pairs.length - 1) {
+        index += 1;
+        render();
+      }
+    }
+
+    function render() {
+      const main = document.getElementById("main");
+      if (!main) return;
+      if (!pairs.length) {
+        main.innerHTML = '<div class="empty">אין זוגות. טענו holdout-v1.csv או פתחו את label.html שנוצר מהסקריפט.</div>';
+        return;
+      }
+      const p = pairs[index];
+      const sel = (v) => (p.label === v ? " selected" : "");
+      main.innerHTML = `
+        <div class="pair-nav">
+          <button type="button" id="prevBtn" ${index === 0 ? "disabled" : ""}>הקודם</button>
+          <button type="button" id="nextBtn" ${index >= pairs.length - 1 ? "disabled" : ""}>הבא</button>
+          <span class="pair-id">${p.pair_id}</span>
+        </div>
+        <div class="grid">
+          <section class="card">
+            <h2>משרה · ${p.job_id}</h2>
+            <div class="title">${escapeHtml(p.job_title)}</div>
+            <div class="facts">${escapeHtml(p.job_key_requirements)}</div>
+          </section>
+          <section class="card">
+            <h2>מועמד/ת · ${p.candidate_id}</h2>
+            <div class="title">${escapeHtml(p.candidate_title)}</div>
+            <div class="facts">${escapeHtml(p.candidate_key_facts)}</div>
+          </section>
+        </div>
+        <div class="actions">
+          <button type="button" class="good${sel("good")}" data-label="good">מתאים <kbd>1</kbd></button>
+          <button type="button" class="acc${sel("acceptable")}" data-label="acceptable">סביר <kbd>2</kbd></button>
+          <button type="button" class="bad${sel("bad")}" data-label="bad">לא מתאים <kbd>3</kbd></button>
+        </div>
+        <label for="note">הערה (אופציונלי)</label>
+        <textarea id="note" placeholder="למשל: פער מיקום, חובה חסרה, תפקיד קרוב…">${escapeHtml(p.note || "")}</textarea>
+        <p class="hint">הערות נשמרות אוטומטית ב-localStorage ובייצוא.</p>
+      `;
+      document.getElementById("prevBtn")?.addEventListener("click", () => { index = Math.max(0, index - 1); render(); });
+      document.getElementById("nextBtn")?.addEventListener("click", () => { index = Math.min(pairs.length - 1, index + 1); render(); });
+      document.querySelectorAll("[data-label]").forEach((btn) => {
+        btn.addEventListener("click", () => setLabel(btn.getAttribute("data-label")));
+      });
+      const noteEl = document.getElementById("note");
+      noteEl?.addEventListener("input", () => {
+        pairs[index].note = noteEl.value;
+        saveState();
+      });
+      updateProgress();
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function parseCsv(text) {
+      const t = text.replace(/^\uFEFF/, "");
+      const rows = [];
+      let i = 0;
+      const line = [];
+      let field = "";
+      let inQ = false;
+      while (i < t.length) {
+        const c = t[i];
+        if (inQ) {
+          if (c === '"') {
+            if (t[i + 1] === '"') { field += '"'; i += 2; continue; }
+            inQ = false; i++; continue;
+          }
+          field += c; i++; continue;
+        }
+        if (c === '"') { inQ = true; i++; continue; }
+        if (c === ",") { line.push(field); field = ""; i++; continue; }
+        if (c === "\n" || c === "\r") {
+          if (c === "\r" && t[i + 1] === "\n") i++;
+          line.push(field);
+          if (line.some((x) => x.trim())) rows.push([...line]);
+          line.length = 0;
+          field = "";
+          i++;
+          continue;
+        }
+        field += c; i++;
+      }
+      if (field || line.length) { line.push(field); rows.push(line); }
+      return rows;
+    }
+
+    function rowsFromCsv(text) {
+      const rows = parseCsv(text);
+      if (!rows.length) return [];
+      const header = rows[0].map((h) => h.trim());
+      const idx = (name) => header.indexOf(name);
+      return rows.slice(1).map((cols) => ({
+        pair_id: cols[idx("pair_id")] ?? "",
+        job_id: cols[idx("job_id")] ?? "",
+        job_title: cols[idx("job_title")] ?? "",
+        job_key_requirements: cols[idx("job_key_requirements")] ?? "",
+        candidate_id: cols[idx("candidate_id")] ?? "",
+        candidate_title: cols[idx("candidate_title")] ?? "",
+        candidate_key_facts: cols[idx("candidate_key_facts")] ?? "",
+        label: (cols[idx("label")] ?? "").trim(),
+        note: (cols[idx("note")] ?? "").trim(),
+      })).filter((r) => r.pair_id);
+    }
+
+    function csvExport() {
+      const header = ["pair_id","job_id","job_title","job_key_requirements","candidate_id","candidate_title","candidate_key_facts","label","note"];
+      const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const lines = [header.join(",")];
+      for (const r of pairs) {
+        lines.push(header.map((h) => esc(r[h])).join(","));
+      }
+      return "\uFEFF" + lines.join("\n") + "\n";
+    }
+
+    function download(name, content, mime) {
+      const blob = new Blob([content], { type: mime });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    document.getElementById("exportCsv")?.addEventListener("click", () => {
+      download("holdout-v1-labeled.csv", csvExport(), "text/csv;charset=utf-8");
+    });
+    document.getElementById("exportJson")?.addEventListener("click", () => {
+      download(
+        "holdout-v1-labeled.json",
+        JSON.stringify({ version: "holdout-v1", exportedAt: new Date().toISOString(), pairs }, null, 2) + "\n",
+        "application/json",
+      );
+    });
+
+    document.getElementById("fileInput")?.addEventListener("change", async (ev) => {
+      const file = ev.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      pairs = rowsFromCsv(text);
+      index = 0;
+      loadState();
+      render();
+    });
+
+    document.addEventListener("keydown", (ev) => {
+      if (ev.target && (ev.target.tagName === "TEXTAREA" || ev.target.tagName === "INPUT")) {
+        if (ev.key === "s" && (ev.ctrlKey || ev.metaKey)) {
+          ev.preventDefault();
+          download("holdout-v1-labeled.csv", csvExport(), "text/csv;charset=utf-8");
+        }
+        return;
+      }
+      if (ev.key === "1") setLabel("good");
+      else if (ev.key === "2") setLabel("acceptable");
+      else if (ev.key === "3") setLabel("bad");
+      else if (ev.key === "ArrowLeft") { index = Math.min(pairs.length - 1, index + 1); render(); }
+      else if (ev.key === "ArrowRight") { index = Math.max(0, index - 1); render(); }
+      else if (ev.key === "s" || ev.key === "S") download("holdout-v1-labeled.csv", csvExport(), "text/csv;charset=utf-8");
+    });
+
+    pairs = Array.isArray(EMBEDDED) ? EMBEDDED.map((p) => ({ ...p, label: p.label || "", note: p.note || "" })) : [];
+    loadState();
+    render();
+  </script>
+</body>
+</html>

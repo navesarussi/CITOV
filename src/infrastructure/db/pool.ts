@@ -1,6 +1,8 @@
 import dns from "node:dns/promises";
 import { Pool } from "pg";
 import { parseDatabaseUrl, poolerConnectionCandidates } from "./connection-string";
+import { appendPoolerQueryParams, poolUsesTransactionMode } from "./pool-config";
+import { logDbTiming, startDbTimer } from "./db-timing";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -43,46 +45,57 @@ async function probeConnection(connectionString: string): Promise<string> {
 }
 
 async function resolveConnectionString(): Promise<string> {
+  const elapsed = startDbTimer();
   const raw = process.env.DATABASE_URL?.trim();
   if (!raw) throw new Error("DATABASE_URL is not set");
 
-  const ordered = [
-    ...(global.__shidukhPgUrl ? [global.__shidukhPgUrl] : []),
-    ...poolerConnectionCandidates(raw),
-  ];
-  const candidates = [...new Set(ordered)];
+  if (global.__shidukhPgUrl) {
+    logDbTiming("resolveConnectionString cache-hit", elapsed());
+    return global.__shidukhPgUrl;
+  }
 
-  // Fast path: try preferred/cached host first before sweeping every region.
+  let parsedHost = "";
+  try {
+    parsedHost = parseDatabaseUrl(raw).host;
+  } catch {
+    /* ignore */
+  }
+
+  const candidates = [...new Set(poolerConnectionCandidates(raw))];
+
+  // DATABASE_URL already targets Supavisor — connect directly (no multi-region sweep).
+  if (parsedHost.includes("pooler.supabase.com") && candidates.length === 1) {
+    const hit = appendPoolerQueryParams(candidates[0]!);
+    global.__shidukhPgUrl = hit;
+    logDbTiming("resolveConnectionString pooler-direct", elapsed(), { host: parsedHost });
+    return hit;
+  }
+
   const preferred = candidates[0];
   if (preferred) {
     try {
       if (await hostResolves(preferred)) {
-        const hit = await probeConnection(preferred);
+        const hit = appendPoolerQueryParams(await probeConnection(preferred));
         global.__shidukhPgUrl = hit;
+        logDbTiming("resolveConnectionString probe-ok", elapsed(), { tried: 1 });
         return hit;
       }
     } catch {
-      // fall through to batched probe
+      // fall through
     }
   }
 
-  const dnsHits = await Promise.all(candidates.map(async (c) => ((await hostResolves(c)) ? c : null)));
-  const reachable = dnsHits.filter((c): c is string => Boolean(c));
-  const toTry = reachable.length > 0 ? reachable : candidates;
-
-  const batchSize = 4;
+  const toTry = candidates.length <= 6 ? candidates : candidates.slice(0, 6);
   let lastError = "unknown";
-  for (let i = 0; i < toTry.length; i += batchSize) {
-    const batch = toTry.slice(i, i + batchSize);
-    const results = await Promise.allSettled(batch.map((c) => probeConnection(c)));
-    const hit = results.find((r) => r.status === "fulfilled");
-    if (hit && hit.status === "fulfilled") {
-      global.__shidukhPgUrl = hit.value;
-      return hit.value;
-    }
-    const last = results.findLast((r) => r.status === "rejected");
-    if (last && last.status === "rejected") {
-      lastError = last.reason instanceof Error ? last.reason.message : String(last.reason);
+  for (const c of toTry) {
+    try {
+      if (!(await hostResolves(c))) continue;
+      const hit = appendPoolerQueryParams(await probeConnection(c));
+      global.__shidukhPgUrl = hit;
+      logDbTiming("resolveConnectionString probe-ok", elapsed(), { tried: toTry.indexOf(c) + 1 });
+      return hit;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
     }
   }
   throw new Error(`Could not connect to Supabase via pooler (${toTry.length} tried): ${lastError}`);
@@ -100,17 +113,20 @@ export function getResolvedDatabaseHost(): string | null {
 
 export async function getPool(): Promise<Pool> {
   if (!global.__shidukhPg) {
+    const elapsed = startDbTimer();
     const connectionString = await resolveConnectionString();
     global.__shidukhPgUrl = connectionString;
+    const txPool = poolUsesTransactionMode(connectionString);
     global.__shidukhPg = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      // Sized for ~50 concurrent users across a few warm instances via Supavisor.
       max: poolMax(),
       idleTimeoutMillis: 10_000,
       connectionTimeoutMillis: 8_000,
       allowExitOnIdle: true,
+      ...(txPool ? { maxUses: 7500 } : {}),
     });
+    logDbTiming("getPool init", elapsed(), { txPool, max: poolMax() });
   }
   return global.__shidukhPg;
 }

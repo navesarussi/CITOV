@@ -1,0 +1,14 @@
+---
+description: Changing matching scores or employer queue behavior — always measure.
+alwaysApply: false
+---
+
+# Matching + eval
+
+1. **Domain scores** — `src/domain/matching.ts` (rules), `src/domain/semantic-matching.ts` (vectors), `src/application/match-scoring.ts` (production blend).
+2. **Production rebuild** — `src/application/rebuild-matches.ts`; embeddings loaded in `rebuildAndWriteMatches` via `card-embeddings.ts`.
+3. **Before merging algorithm changes** — run `npm run eval:matching`; update `docs/EVAL_MATCHING.md` with numbers.
+4. **Real semantic numbers** — `npm run eval:embed-fixtures` with `GOOGLE_GENERATIVE_AI_API_KEY` → `eval/matching/fixtures/embeddings.json` (gitignored). Committed `embeddings.fixture.json` is pseudo-only.
+5. **Env tuning** — `MATCHING_MODE`, `MATCHING_SEMANTIC_WEIGHT`, `MATCHING_RULE_WEIGHT`, `MATCHING_QUEUE_THRESHOLD`.
+
+Register new eval matchers in `scripts/eval-matching.ts` / `eval/matching/eval-matchers.ts`.

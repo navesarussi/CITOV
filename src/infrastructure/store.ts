@@ -32,7 +32,12 @@ export async function writeMatches(matches: Match[]): Promise<void> {
  */
 export async function rebuildAndWriteMatches(): Promise<void> {
   const snap = await readMatchingStore();
-  await writeMatches(refreshStoreMatches(snap).matches);
+  const { loadMatchingEmbeddingIndex } = await import("./db/card-embeddings");
+  const index = await loadMatchingEmbeddingIndex(snap);
+  const { refreshStoreMatchesWithEmbeddings } = await import(
+    "@/application/employer-actions"
+  );
+  await writeMatches(refreshStoreMatchesWithEmbeddings(snap, index).matches);
 }
 
 export async function updateStore(

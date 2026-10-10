@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ארכיטקטורת Shidukh — מסמך טכני</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --text: #1a1a2e;
+      --muted: #5c6370;
+      --accent: #0d47a1;
+      --border: #dde3ea;
+      --code-bg: #f0f4f8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      font-size: 17px;
+    }
+    header {
+      background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+      color: #fff;
+      padding: 2.5rem 1.5rem 2rem;
+    }
+    header h1 { margin: 0 0 0.5rem; font-size: 1.85rem; font-weight: 600; }
+    header p { margin: 0; opacity: 0.92; max-width: 42rem; }
+    nav {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1.5rem;
+      font-size: 0.9rem;
+      z-index: 10;
+    }
+    nav a { color: var(--accent); text-decoration: none; margin-left: 1rem; }
+    nav a:hover { text-decoration: underline; }
+    main { max-width: 52rem; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    h2 {
+      margin: 2.5rem 0 1rem;
+      font-size: 1.45rem;
+      color: var(--accent);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.35rem;
+    }
+    h3 { margin: 1.5rem 0 0.75rem; font-size: 1.15rem; }
+    p { margin: 0.75rem 0; }
+    ul, ol { margin: 0.5rem 0 1rem; padding-right: 1.25rem; }
+    li { margin: 0.35rem 0; }
+    .muted { color: var(--muted); font-size: 0.95rem; }
+    .diagram {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1.25rem 0;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.92rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.5rem 0.65rem;
+      text-align: right;
+    }
+    th { background: var(--code-bg); }
+    code, pre {
+      font-family: ui-monospace, "Cascadia Code", monospace;
+      font-size: 0.88em;
+    }
+    pre {
+      background: var(--code-bg);
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      direction: ltr;
+      text-align: left;
+    }
+    .callout {
+      background: #e3f2fd;
+      border-right: 4px solid var(--accent);
+      padding: 0.85rem 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Shidukh — ארכיטקטורת מערכת</h1>
+    <p>POC להשמה מבוססת שיחה: כרטיסי מועמד/משרה, חילוץ Gemini, התאמה היברידית (כללים + embeddings), ותור התאמות למעסיק. המסמך מבוסס על הקוד ב־<code>src/</code> נכון ל־2026-10-10.</p>
+  </header>
+  <nav>
+    <a href="#context">הקשר</a>
+    <a href="#components">רכיבים</a>
+    <a href="#data">מודל נתונים</a>
+    <a href="#seq-chat">שיחה</a>
+    <a href="#seq-cv">קו״ח</a>
+    <a href="#seq-match">התאמה</a>
+    <a href="#seq-employer">מעסיק</a>
+    <a href="#decisions">החלטות</a>
+    <a href="#limits">מגבלות</a>
+  </nav>
+  <main>
+
+    <h2 id="context">הקשר מערכתי (System Context)</h2>
+    <p>משתמשים: <strong>מועמד/ת</strong> (employee), <strong>מעסיק/ה</strong> (employer), <strong>מנהל/ת</strong> (admin). המערכת רצה על <strong>Vercel</strong> (Next.js 16, Node runtime ב־API), עם <strong>Postgres</strong> (Supabase או DATABASE_URL ישיר), <strong>Google OAuth</strong> (Auth.js / next-auth v5), ו־<strong>Google Gemini</strong> דרך Vercel AI SDK (<code>@ai-sdk/google</code>).</p>
+    <div class="diagram mermaid">
+flowchart LR
+  subgraph users [משתמשים]
+    E[מועמד/ת]
+    ER[מעסיק/ה]
+    AD[Admin]
+  end
+  subgraph vercel [Vercel — Next.js]
+    APP[App Router + API Routes]
+  end
+  subgraph external [שירותים חיצוניים]
+    G[Google OAuth]
+    GM[Gemini — chat / structured / embeddings]
+    DB[(Postgres + pgvector)]
+  end
+  E --> APP
+  ER --> APP
+  AD --> APP
+  APP --> G
+  APP --> GM
+  APP --> DB
+    </div>
+
+    <h2 id="components">תרשים רכיבים</h2>
+    <p>Clean Architecture: <strong>domain</strong> (לוגיקה טהורה), <strong>application</strong> (use cases), <strong>infrastructure</strong> (DB, AI, HTTP). ה־UI ב־<code>src/app</code> ו־<code>src/components</code> קורא ל־API.</p>
+    <div class="diagram mermaid">
+flowchart TB
+  subgraph ui [Presentation — Next.js App Router]
+    P["/ employee · employer"]
+    ADP["/admin/*"]
+    API["/api/* routes"]
+  end
+  subgraph app [Application]
+    CT[chat-turn / chat]
+    CV[cv-import / cv-upload-chat]
+    RM[rebuild-matches]
+    MS[match-scoring]
+    EA[employer-actions]
+    CES[card-embedding-sync]
+  end
+  subgraph domain [Domain]
+    M[matching / semantic-matching]
+    MC[matching-calibration]
+    CET[card-embedding-text]
+    CVm[cv-merge / field-questions]
+  end
+  subgraph infra [Infrastructure]
+    INT[intake / cv-extraction / embeddings]
+    DBL[normalized-store / slice-store]
+    PG[(schema + card_embedding_segments)]
+    AUTH[auth-guard + Auth.js]
+  end
+  P --> API
+  ADP --> API
+  API --> AUTH
+  API --> app
+  app --> domain
+  app --> infra
+  infra --> PG
+  INT --> GM_ext[Gemini API]
+    </div>
+
+    <h3>נתיבי API עיקריים</h3>
+    <table>
+      <thead><tr><th>נתיב</th><th>תפקיד</th></tr></thead>
+      <tbody>
+        <tr><td><code>POST /api/chat</code></td><td>תור שיחה NDJSON — streaming תשובה + חילוץ מובנה במקביל</td></tr>
+        <tr><td><code>POST /api/cv/analyze</code></td><td>חילוץ קו״ח דו-מעברי + עדכון פרופיל</td></tr>
+        <tr><td><code>POST /api/employer/action</code></td><td>אישור/דחיית match, שאלות שדה למועמדים</td></tr>
+        <tr><td><code>/api/auth/[...nextauth]</code></td><td>Google sign-in</td></tr>
+        <tr><td><code>/api/admin/*</code></td><td>ניהול מועמדים, מעסיקים, prompts</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="data">מודל נתונים</h2>
+    <p>DDL ב־<code>src/infrastructure/db/schema-sql.ts</code> + הרחבות ב־<code>schema.ts</code> (pgvector, cv jsonb, jobs jsonb).</p>
+    <table>
+      <thead><tr><th>טבלה</th><th>תוכן</th></tr></thead>
+      <tbody>
+        <tr><td><code>app_users</code></td><td>משתמש, role (employee|employer), google_id</td></tr>
+        <tr><td><code>employee_profiles</code></td><td><code>card</code> JSONB, <code>pending_field_question_ids</code>, <code>cv</code> JSONB (מסמכים, conflicts, inferences)</td></tr>
+        <tr><td><code>employer_profiles</code></td><td><code>card</code>, <code>jobs[]</code> JSONB (משרות מרובות), <code>active_job_id</code></td></tr>
+        <tr><td><code>chat_messages</code></td><td>היסטוריה לפי owner + <code>conversation_context</code> + <code>job_id</code></td></tr>
+        <tr><td><code>matches</code></td><td>ציון, reason, status (queued|approved|rejected), job_id + candidate_id</td></tr>
+        <tr><td><code>field_questions</code> / <code>field_answers</code></td><td>שאלות תחום משותפות ותשובות מועמדים</td></tr>
+        <tr><td><code>card_embedding_segments</code></td><td>וקטורים 768d לפי segment: role | skills | profile</td></tr>
+        <tr><td><code>ai_usage</code></td><td>מעקב עלות טוקנים</td></tr>
+        <tr><td><code>candidate_document_blobs</code></td><td>bytes של קבצי קו״ח</td></tr>
+      </tbody>
+    </table>
+    <p>כרטיס מועמד/משרה הוא JSONB עשיר (skills, mustHaves, narrative, …). פרופיל CV מחזיק <code>fieldEvidence</code>, <code>conflicts</code>, <code>pendingInferences</code> — לא רק שדות שטוחים.</p>
+
+    <h2 id="seq-chat">רצף: תור שיחה (Chat Turn)</h2>
+    <p>ב־<code>src/app/api/chat/route.ts</code>: לאחר אימות (<code>assertActor</code>), מועמד חייב קו״ח (<code>employeeHasCv</code>). עם מפתח Gemini — <strong>שני קריאות במקביל</strong>: <code>stream*Reply</code> (טקסט, temp 0.7) ו־<code>extract*Patch</code> (structured, temp 0.25). התשובה מוזרמת ללקוח כ־delta מדומה (typing); בסיום — <code>apply*Turn</code> ב־application (מיזוג כרטיס + conflicts).</p>
+    <div class="diagram mermaid">
+sequenceDiagram
+  participant UI as ChatPanel
+  participant API as POST /api/chat
+  participant App as chat-turn
+  participant AI as intake.ts
+  participant DB as Postgres
+  participant After as after()
+  UI->>API: message + userId
+  API->>API: assertActor
+  par Stream reply
+    API->>AI: streamEmployeeReply (0.7)
+    AI-->>API: textStream
+    API-->>UI: NDJSON delta
+  and Structured extract
+    API->>AI: extractEmployeePatch (0.25)
+    AI-->>API: patch + fieldAnswers
+  end
+  API->>App: applyEmployeeTurn (merge + conflicts)
+  API->>DB: persistEmployeeTurn
+  API-->>UI: final JSON
+  API->>After: scheduleCandidateEmbeddingRefresh
+  After->>After: refreshCandidateEmbeddings
+  After->>After: scheduleMatchRebuild (debounced)
+  After->>DB: rebuildAndWriteMatches + hybrid scores
+    </div>
+    <div class="callout">
+      <strong>מיזוג בטוח:</strong> <code>applyCandidatePatchSafely</code> — שדה ריק מתמלא; ערך שונה פותח <code>conflict</code> ב־CV במקום דריסה (<code>openChatConflictOnCard</code>).
+    </div>
+
+    <h2 id="seq-cv">רצף: pipeline קו״ח (שני מעברים)</h2>
+    <p><code>runCvExtraction</code> ב־<code>cv-extraction.ts</code>: Pass A (עובדות מפורשות, temp 0.1, עד 4096 tokens), Pass B (inferences עם evidence, temp 0.2, עד 12 פריטים). טקסט נחתך ל־~14k תווים. ללא מפתח — heuristic. לאחר ניתוח — <code>scheduleCandidateEmbeddingRefresh</code> + <code>scheduleMatchRebuild</code> ב־<code>after()</code>.</p>
+    <div class="diagram mermaid">
+sequenceDiagram
+  participant UI as FileImport
+  participant API as POST /api/cv/analyze
+  participant CV as cv-import
+  participant AI as cv-extraction
+  participant App as applyCvExtraction
+  participant DB as Postgres
+  UI->>API: documentId
+  API->>CV: analyzeCandidateCv
+  CV->>AI: Pass A generateObject
+  AI->>AI: Pass B inferences (optional)
+  CV->>App: merge card + cv profile
+  API->>DB: persist profile / chat welcome
+  API->>API: after embedding + match rebuild
+    </div>
+
+    <h2 id="seq-match">רצף: התאמה היברידית + כיול</h2>
+    <p><code>rebuildMatches</code> סורק כל job × employee, מדלג על matches שכבר approved/rejected. ציון דרך <code>scoreCandidateForJob</code>: מצב <code>MATCHING_MODE</code> (ברירת מחדל hybrid), משקלות 80/20 semantic/rule, סף תור <code>MATCHING_QUEUE_THRESHOLD=0.6</code>.</p>
+    <p>Embeddings: שלושה segments (<code>card-embedding-text.ts</code>) — <strong>לא</strong> שכר/מיקום/ch must-haves בוקטור. דמיון קוסינוס מכויל: <code>calibrateCosineSimilarity</code> עם רצפה 0.75; segments ריקים מדולגים. Must-have gate + גמישות (<code>applyMustHaveGate</code>, bilingual aliases). אם אין וקטורים — fallback לכללים בלבד.</p>
+    <div class="diagram mermaid">
+sequenceDiagram
+  participant MS as match-scheduler
+  participant Store as rebuildAndWriteMatches
+  participant Idx as loadMatchingEmbeddingIndex
+  participant Score as match-scoring
+  participant Dom as semantic-matching
+  MS->>Store: debounced (~1.5s)
+  Store->>Idx: pgvector segments
+  loop each job x candidate
+    Store->>Score: scoreCandidateForJob
+    Score->>Dom: hybrid + calibration + must-have
+    Score-->>Store: score, queued if >= threshold
+  end
+  Store->>Store: writeMatches (queued only new)
+    </div>
+    <h3>מספרי eval (train, 90 זוגות, fixture Gemini אמיתי)</h3>
+    <table>
+      <thead><tr><th>Matcher</th><th>Thr</th><th>P@5</th><th>R@5</th><th>nDCG@5</th><th>Good miss</th><th>Bad queued</th></tr></thead>
+      <tbody>
+        <tr><td>rule-based-v1</td><td>0.28</td><td>30.4%</td><td>68.7%</td><td>0.780</td><td>8</td><td>1</td></tr>
+        <tr><td>hybrid-calibrated-v1 (production)</td><td>0.60</td><td>41.6%</td><td>91.0%</td><td>0.915</td><td>6</td><td>2</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">כיול נועד לפתור clustering של cosines גבוהים (~0.77–1) שלאחר מיפוי (c+1)/2 יצר 32 false queues. Holdout (~60 זוגות) מתויג ידנית — ראו <code>eval/matching/labeling/</code>.</p>
+
+    <h2 id="seq-employer">רצף: מעסיק — אישור / שאלת שדה</h2>
+    <p><code>POST /api/employer/action</code> → <code>employer-actions.ts</code>: <code>approveMatch</code> / <code>rejectMatch</code> משנים status; <code>askFieldQuestion</code> יוצר <code>field_questions</code> ומוסיף ל־<code>pendingFieldQuestionIds</code> של מועמדים באותו תחום. בשיחת מועמד — תשובות נ absorבות לכרטיס דרך <code>mergeAnswerIntoCard</code>.</p>
+    <div class="diagram mermaid">
+sequenceDiagram
+  participant ER as Employer UI
+  participant API as /api/employer/action
+  participant EA as employer-actions
+  participant DB as Postgres
+  participant EM as Employee chat
+  ER->>API: approve | reject | askQuestion
+  API->>EA: domain mutation on store
+  EA->>DB: persist matches / questions
+  Note over EM: pendingFieldQuestionIds
+  EM->>EM: chat answers → field_answers
+    </div>
+
+    <h2 id="decisions">החלטות הנדסיות ופשרות</h2>
+    <h3>למה שתי קריאות LLM בשיחה?</h3>
+    <ul>
+      <li><strong>Streaming טקסט</strong> ללא schema — חוויית משתמש טובה; <strong>generateObject</strong> נפרד — JSON אמין לכרטיס. temp גבוה יותר לשיחה (0.7), נמוך לחילוץ (0.25).</li>
+      <li>עלות: ~2× קריאות למעבר; מוצדק כי patch שגוי פוגע בהתאמות.</li>
+    </ul>
+    <h3>Conflicts במקום overwrite</h3>
+    <p>שומר אמון ומקור (קו״ח vs שיחה). מעסיק/מועמד יכולים ליישב later; prompts כוללים pending conflicts.</p>
+    <h3>Grounding ב-CV</h3>
+    <p>Pass A מחייב עובדות מפורשות; Pass B דורש <code>evidence</code> + confidence; inferences נשמרים כ־pending עד אישור.</p>
+    <h3>Fallback heuristic</h3>
+    <p>ללא <code>GOOGLE_GENERATIVE_AI_API_KEY</code> — intake/heuristic ו־matching rule-only; האפליקציה נשארת usable.</p>
+    <h3>למה לא embed שכר/מיקום?</h3>
+    <p>ערכים נומריים/גיאוגרפיים לא stable בוקטור; נשארים ב־<code>scoreMatch</code> (textScore, penalties) ו־must-have gate.</p>
+    <h3>בקרת עלות</h3>
+    <ul>
+      <li><code>ai_usage</code> + slice של 200 רשומות אחרונות בזיכרון store.</li>
+      <li>Rebuild matches debounced; embedding refresh serialized (<code>__shidukhEmbeddingRefreshRunning</code>).</li>
+      <li><code>enrichReasonWithAi</code> — מוגדר אך <strong>לא מחובר</strong> ל-rebuild (הערה בקוד).</li>
+    </ul>
+    <h3>גישה ופרטיות</h3>
+    <ul>
+      <li>ברירת מחדל: Auth.js session + התאמת userId; אופציונלי <code>ALLOW_DEMO</code>, dev login, <code>allowOpenAuth</code> לפיתוח.</li>
+      <li>CV blobs בטבלה נפרדת; גישת admin מוגבלת לנתיבי admin.</li>
+    </ul>
+    <h3>Observability</h3>
+    <p>Health routes (<code>/api/health/db|ai|auth</code>), לוג שגיאות Gemini + degraded flags ב־final chat frame. <code>[db-timing]</code> logs when <code>DB_TIMING_LOG≠0</code>. אין OpenTelemetry מוטמע ב-POC.</p>
+
+    <h3>ביצועים (DB / cold start)</h3>
+    <ul>
+      <li><code>DATABASE_URL</code> על pooler (פורט 6543, sin1) — חיבור ישיר בלי sweep של 104 hosts; cache <code>global.__shidukhPg</code>.</li>
+      <li><code>?pgbouncer=true</code> נוסף אוטומטית ל-transaction pooler (ללא prepared statements).</li>
+      <li><code>/api/health/db</code> — רק <code>select now()</code>, בלי <code>ensureSchema</code>.</li>
+      <li><code>ensureSchema</code> — דילוג מהיר כש-<code>app_users</code> + <code>match_labels</code> + migration קיימים (DDL פעם אחת).</li>
+    </ul>
+
+    <h3>תיוגים חיים</h3>
+    <p>טבלה <code>match_labels</code> (admin, employer_action, import). Admin <code>/admin/labeling</code> + מטריקות rule vs hybrid production על תיוגים ב-DB.</p>
+
+    <h2 id="limits">מגבלות ידועות ומפת דרכים</h2>
+    <ul>
+      <li><strong>RAG</strong> על תיאורי משרה מלאים — לא קיים; matching על כרטיס מstructured.</li>
+      <li><strong>MCP server</strong> לכלי התאמה — לא ב-production; eval offline ב־<code>npm run eval:matching</code>.</li>
+      <li><strong>LLM rerank</strong> — לא מיושם; דירוג = score יחיד.</li>
+      <li><strong>תיוגים ממשוב אמיתי</strong> — בדרך; holdout v1 + import labels.</li>
+      <li>Cross-language + flexibility — עדיין good-misses ב-eval; role-calibrated floor ומילון must-have מ mitigates.</li>
+      <li>Overfitting: hyperparameters כוילו על 90 זוגות train — דווח train/holdout נפרד ב-eval.</li>
+    </ul>
+
+  </main>
+  <footer>
+    Shidukh POC · docs/architecture.html · נוצר אוטומטית מקוד המאגר
+  </footer>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+  </script>
+</body>
+</html>

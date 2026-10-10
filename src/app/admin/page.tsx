@@ -67,6 +67,8 @@ export default function AdminPage() {
   const [employerPrompt, setEmployerPrompt] = useState("");
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMsg, setSeedMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
   const [aiMode, setAiMode] = useState<string | null>(null);
@@ -198,9 +200,32 @@ export default function AdminPage() {
       title="פורטל מנהלים"
       subtitle="סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט"
       actions={
-        <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
-          רענון
-        </Button>
+        <>
+          <Button
+            variant="secondary"
+            disabled={seeding}
+            onClick={() => {
+              setSeeding(true);
+              setSeedMsg(null);
+              void fetch("/api/admin/seed-demo", { method: "POST", body: "{}" })
+                .then((r) => r.json())
+                .then((d: { error?: string; skipped?: boolean; candidates?: number; jobs?: number }) => {
+                  if (d.error) setSeedMsg(d.error);
+                  else if (d.skipped) setSeedMsg("דמו כבר נטען (idempotent).");
+                  else setSeedMsg(`נטענו ${d.candidates} מועמדים ו-${d.jobs} משרות + embeddings.`);
+                  void load();
+                })
+                .catch(() => setSeedMsg("טעינת דמו נכשלה"))
+                .finally(() => setSeeding(false));
+            }}
+            className="min-h-9 px-3 py-1.5 text-sm"
+          >
+            {seeding ? "טוען דמו…" : "טעינת דמו"}
+          </Button>
+          <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
+            רענון
+          </Button>
+        </>
       }
     >
       <nav className="mb-4 flex flex-wrap gap-3 text-sm">
@@ -210,7 +235,11 @@ export default function AdminPage() {
         <Link href="/admin/employers" className="text-[var(--accent)] hover:underline">
           דפדפן מעסיקים
         </Link>
+        <Link href="/admin/labeling" className="text-[var(--accent)] hover:underline">
+          תיוג התאמות (live eval)
+        </Link>
       </nav>
+      {seedMsg ? <p className="mb-3 text-sm text-[var(--muted)]">{seedMsg}</p> : null}
 
       <section className="enter-delay grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AdminStatCard label="מעסיקים" value={stats.employers} />
