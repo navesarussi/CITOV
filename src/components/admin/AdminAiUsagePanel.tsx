@@ -161,7 +161,7 @@ export function AdminAiUsagePanel() {
 
       <Block title="50 קריאות אחרונות">
         <div className="max-h-80 overflow-auto">
-          <table className="w-full text-left text-xs">
+          <table className="admin-table-cards w-full text-left text-xs">
             <thead className="sticky top-0 bg-white text-[var(--muted)]">
               <tr>
                 <th className="py-1 pe-2">זמן</th>
@@ -169,23 +169,31 @@ export function AdminAiUsagePanel() {
                 <th className="py-1 pe-2">מודל</th>
                 <th className="py-1 pe-2">in/out</th>
                 <th className="py-1 pe-2">$</th>
-                <th className="py-1">ms</th>
+                <th className="py-1">מילישניות</th>
               </tr>
             </thead>
             <tbody>
               {data.recentCalls.map((r) => (
                 <tr key={r.id} className="border-t border-[var(--stroke)]">
-                  <td className="py-1 pe-2 whitespace-nowrap">
+                  <td data-label="זמן" className="py-1 pe-2 whitespace-nowrap">
                     {new Date(r.createdAt).toLocaleString("he-IL")}
                   </td>
-                  <td className="py-1 pe-2">{r.type}</td>
-                  <td className="py-1 pe-2 font-mono">{r.model ?? "—"}</td>
-                  <td className="py-1 pe-2 font-mono">
+                  <td data-label="סוג" className="py-1 pe-2">
+                    {r.type}
+                  </td>
+                  <td data-label="מודל" className="py-1 pe-2 font-mono">
+                    {r.model ?? "—"}
+                  </td>
+                  <td data-label="טוקנים" className="py-1 pe-2 font-mono">
                     {r.promptTokens}/{r.completionTokens}
                     {(r.cachedPromptTokens ?? 0) > 0 ? ` (+${r.cachedPromptTokens} c)` : ""}
                   </td>
-                  <td className="py-1 pe-2 font-mono">{usd(r.estimatedCostUsd)}</td>
-                  <td className="py-1">{r.latencyMs ?? "—"}</td>
+                  <td data-label="עלות" className="py-1 pe-2 font-mono">
+                    {usd(r.estimatedCostUsd)}
+                  </td>
+                  <td data-label="זמן תגובה" className="py-1">
+                    {r.latencyMs ?? "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

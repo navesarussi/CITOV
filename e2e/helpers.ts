@@ -1,15 +1,15 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 
+const secretHeaders = () => ({
+  "x-e2e-secret": e2eSecret(),
+  "Content-Type": "application/json",
+});
+
 export function e2eSecret(): string {
   const s = process.env.E2E_SECRET?.trim();
   if (!s) throw new Error("E2E_SECRET is required");
   return s;
 }
-
-const secretHeaders = () => ({
-  "x-e2e-secret": e2eSecret(),
-  "Content-Type": "application/json",
-});
 
 export async function createE2eSession(
   request: APIRequestContext,
@@ -82,6 +82,27 @@ export async function reportE2e(request: APIRequestContext, summary: Record<stri
     headers: secretHeaders(),
     data: summary,
   });
+}
+
+/** Sets HttpOnly e2e admin cookie (requires E2E_AUTH_ENABLED on server). */
+export async function syncE2eAdminAuth(page: Page, request: APIRequestContext) {
+  const res = await request.post("/api/e2e/admin-session", { headers: secretHeaders() });
+  if (!res.ok()) throw new Error(`e2e admin session failed: ${res.status()}`);
+  const state = await request.storageState();
+  if (state.cookies.length) {
+    await page.context().addCookies(
+      state.cookies.map((c) => ({
+        name: c.name,
+        value: c.value,
+        domain: c.domain,
+        path: c.path,
+        expires: c.expires,
+        httpOnly: c.httpOnly,
+        secure: c.secure,
+        sameSite: c.sameSite,
+      })),
+    );
+  }
 }
 
 export function writeStoredUser(

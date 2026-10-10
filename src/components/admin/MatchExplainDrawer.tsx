@@ -47,12 +47,12 @@ export function MatchExplainDrawer(props: {
 
   return (
     <div className="fixed inset-0 z-[80] flex justify-end bg-black/40" role="dialog">
-      <div className="flex h-full w-full max-w-xl flex-col bg-[var(--surface)] shadow-xl">
+      <div className="flex h-full w-full max-w-none flex-col bg-[var(--surface)] shadow-xl sm:max-w-xl">
         <header className="flex items-center justify-between border-b border-[var(--stroke)] px-4 py-3">
           <h2 className="text-lg font-semibold">למה ההתאמה הזו?</h2>
           <button
             type="button"
-            className="rounded-lg px-3 py-1 text-sm text-[var(--muted)] hover:bg-[var(--chip)]"
+            className="min-h-11 min-w-11 rounded-xl border border-[var(--stroke)] px-3 text-sm text-[var(--muted)] hover:bg-[var(--chip)]"
             onClick={props.onClose}
           >
             סגירה

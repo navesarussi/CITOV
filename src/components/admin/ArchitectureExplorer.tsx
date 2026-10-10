@@ -9,6 +9,7 @@ import type {
 } from "@/domain/admin-architecture-content";
 import { ARCHITECTURE_EDGES } from "@/domain/admin-architecture-content";
 import { ArchitectureDiagram } from "@/components/admin/architecture/ArchitectureDiagram";
+import { EndToEndJourneyMap } from "@/components/admin/architecture/EndToEndJourneyMap";
 import { adminTerms as T } from "@/i18n/admin-terms";
 import { deferEffectTask, useDeferredEffect } from "@/lib/deferred-effect";
 import Link from "next/link";
@@ -142,6 +143,8 @@ export function ArchitectureExplorer() {
 
       {data ? (
         <>
+          <EndToEndJourneyMap />
+
           <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile label="קריאות AI (7 ימים)" value={String(data.live.ai.calls7d)} sub={latencyHe ? `זמן תגובה ממוצע: ${latencyHe}` : undefined} />
             <StatTile label="עלות AI (7 ימים)" value={`$${data.live.ai.costUsd7d.toFixed(2)}`} />
