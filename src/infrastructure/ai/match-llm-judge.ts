@@ -98,9 +98,10 @@ export async function runTwoJudgeBatch(
     return { judgeA: new Map(), judgeB: new Map(), usage: [] };
   }
   const usage: AiTokenUsage[] = [];
-  let judgeA = judgeAOutputs ?? new Map<number, { label: RelevanceLabel; reasonHe: string; confidence: number }>();
-
-  if (!judgeAOutputs) {
+  const judgeA = new Map<number, { label: RelevanceLabel; reasonHe: string; confidence: number }>();
+  if (judgeAOutputs) {
+    for (const [k, v] of judgeAOutputs) judgeA.set(k, v);
+  } else {
     const systemA = loadPrompt("match-judge-a.md");
     const userA = pairs
       .map(
