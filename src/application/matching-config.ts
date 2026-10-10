@@ -1,7 +1,8 @@
 import type { MatchScoreMode } from "@/domain/matching-scorers";
 import type { HybridWeights } from "@/domain/semantic-matching";
 import { DEFAULT_HYBRID_WEIGHTS } from "@/domain/semantic-matching";
-import type { AdminSettings } from "@/domain/types";
+import { detectPairDomain, hybridWeightsForDomain } from "@/domain/work-domain";
+import type { AdminSettings, CandidateCard, JobCard } from "@/domain/types";
 
 export function readMatchingMode(): MatchScoreMode {
   const raw = process.env.MATCHING_MODE?.trim().toLowerCase();
@@ -16,6 +17,20 @@ export function readHybridWeights(): HybridWeights {
     return DEFAULT_HYBRID_WEIGHTS;
   }
   return { semantic: sem, rule };
+}
+
+/** Domain presets unless env explicitly overrides hybrid weights. */
+export function readHybridWeightsForPair(
+  candidate: CandidateCard,
+  job: JobCard,
+): HybridWeights {
+  if (
+    process.env.MATCHING_SEMANTIC_WEIGHT != null ||
+    process.env.MATCHING_RULE_WEIGHT != null
+  ) {
+    return readHybridWeights();
+  }
+  return hybridWeightsForDomain(detectPairDomain(candidate, job));
 }
 
 export function readQueueThreshold(settings?: AdminSettings | null): number {

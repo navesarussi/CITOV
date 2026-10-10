@@ -9,9 +9,10 @@ import type { SegmentVectors } from "@/domain/semantic-matching";
 import type { HybridWeights } from "@/domain/semantic-matching";
 import type { AdminSettings, CandidateCard, JobCard } from "@/domain/types";
 import { buildMatchScoreBreakdown } from "./match-score-detail";
+import { evaluateMatchHardFilters } from "@/domain/match-hard-filters";
 import {
   readDegradedRuleQueueFloor,
-  readHybridWeights,
+  readHybridWeightsForPair,
   readMatchingMode,
   readQueueThreshold,
 } from "./matching-config";
@@ -43,7 +44,14 @@ export function scoreCandidateForJob(params: {
   const jVec = params.index?.job.get(params.jobId);
   const vectors =
     cVec && jVec ? { candidate: cVec, job: jVec } : undefined;
-  const hybridWeights = params.hybridWeights ?? readHybridWeights();
+  const hybridWeights =
+    params.hybridWeights ??
+    readHybridWeightsForPair(params.candidate, params.job);
+  const hard = evaluateMatchHardFilters(
+    params.candidate,
+    params.job,
+    params.adminSettings,
+  );
   const { score, degraded } = scoreWithMode(
     mode,
     params.candidate,
@@ -71,17 +79,22 @@ export function scoreCandidateForJob(params: {
     hybridWeights,
     queueThreshold: queueMin,
   });
+  const blocked = !hard.pass;
+  const effectiveScore = blocked ? 0 : score;
+  if (blocked) {
+    reason = `hard filter: ${hard.reason}`;
+  }
   return {
-    score,
+    score: effectiveScore,
     reason,
-    queued: score >= queueMin,
+    queued: !blocked && effectiveScore >= queueMin,
     degraded,
     scoreBreakdown: {
       ...scoreBreakdown,
       effectiveMode,
       degraded,
       threshold: queueMin,
-      queued: score >= queueMin,
+      queued: !blocked && effectiveScore >= queueMin,
     },
   };
 }

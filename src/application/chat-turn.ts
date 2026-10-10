@@ -102,7 +102,7 @@ function applyCandidatePatchSafely(
 
   for (const [key, raw] of Object.entries(patch)) {
     if (raw === undefined || skip.has(key)) continue;
-    if (key === "skills" || key === "softSkills" || key === "languages") {
+    if (key === "skills" || key === "softSkills" || key === "languages" || key === "techStack") {
       const incoming = raw as string[];
       if (!incoming?.length) continue;
       const prev = (nextCard[key as "skills"] as string[]) ?? [];

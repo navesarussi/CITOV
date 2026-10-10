@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.24 — 2025-10-10
+
+- Domain-aware profiles: skills taxonomy (HE/EN aliases, skill→family) on `matchCanonical` and rule overlap; hi-tech optional fields (seniority, tech stack, industry domain, GitHub, clearance); domain-specific chat questions and field priorities; per-domain hybrid/rule/segment weight presets; optional salary-band hard filter; eval hi-tech pairs (`j26`, `c51`, `c52`).
+
 ## 0.4.23 — 2025-10-10
 
 - Admin mobile: fix התאמות list (stop filtering demo pairs after scope); job/candidate pickers; version badge in עוד only; compact dashboard פעולות menu; demo seed blocked when real users exist; Hebrew cost labels; `gemini-flash-latest` pricing; LLM judge B blind verdict then critique.

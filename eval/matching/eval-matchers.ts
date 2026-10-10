@@ -12,7 +12,7 @@ import {
 import { cosineToUnitFit } from "../../src/domain/vector-similarity";
 import type { MatcherDefinition } from "../../src/domain/matching-eval/types";
 import { computeBaseFit } from "../../src/domain/matching";
-import { readHybridWeights } from "../../src/application/matching-config";
+import { readHybridWeightsForPair } from "../../src/application/matching-config";
 import type { CandidateCard, JobCard } from "../../src/domain/types";
 import type { EvalEmbeddingFixture } from "./embed-fixture-types";
 
@@ -93,7 +93,14 @@ function scoreCalibrated(
   const base =
     mode === "semantic"
       ? computeSemanticMatchBase(candidate, job, cVec, jVec, opts)
-      : computeHybridBaseFit(candidate, job, cVec, jVec, readHybridWeights(), opts);
+      : computeHybridBaseFit(
+          candidate,
+          job,
+          cVec,
+          jVec,
+          readHybridWeightsForPair(candidate, job),
+          opts,
+        );
   return scoreFromBase(base, candidate, job);
 }
 

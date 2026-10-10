@@ -139,6 +139,13 @@ export const seedLabels = [
   lbl("j25", "c39", "acceptable", "synonym / english security guard"),
   lbl("j25", "c31", "bad", "false positive: cyber analyst not physical security"),
 
+  // j26 Cyber Security Analyst (hi-tech domain + salary hard filter)
+  lbl("j26", "c51", "good", "cyber stack + clearance"),
+  lbl("j26", "c05", "bad", "must-have missing: SIEM/incident response"),
+  lbl("j26", "c52", "bad", "frontend vs cyber analyst"),
+  lbl("j03", "c52", "good", "HE JS alias canonicalized to JavaScript + React"),
+  lbl("j06", "c52", "acceptable", "seniority: junior job vs mid frontend"),
+
   // Cross-cutting hard negatives (flexible candidate c50)
   lbl("j03", "c50", "bad", "false positive: generic worker should not match tech"),
   lbl("j01", "c50", "bad", "false positive: unrelated field"),
