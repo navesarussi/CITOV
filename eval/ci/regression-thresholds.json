@@ -1,0 +1,14 @@
+{
+  "extraction": {
+    "minPrecision": 0.95,
+    "minRecall": 0.95,
+    "maxHallucinationRate": 0.05
+  },
+  "matching": {
+    "matcherId": "hybrid-calibrated-v1",
+    "threshold": 0.6,
+    "minMacroNdcgAtK": 0.85,
+    "minMacroRecallAtK": 0.85,
+    "maxBadQueued": 3
+  }
+}
