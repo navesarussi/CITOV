@@ -3,10 +3,16 @@
 Labeled Hebrew-first set (25 jobs, 50 candidates, 90 pairs) under `eval/matching/`. **Fixture:** committed real Gemini vectors in `eval/matching/fixtures/embeddings.fixture.json` (`gemini-embedding-001`, 768d, 75 entities). Override locally with gitignored `embeddings.json`. Fallback: `embeddings.pseudo.fixture.json` (generate via `npm run eval:embed-fixtures` without API key — not semantic).
 
 ```bash
-npm run eval:matching      # metrics table + eval/matching/results/latest.json
+npm run eval:matching      # train + holdout tables + eval/matching/results/latest.json
+npm run eval:generate-holdout-sheet  # holdout-v1.csv + label.html (~60 pairs)
+npm run eval:import-labels -- path/to/labeled.csv  # → eval/matching/holdout-labels.json
 npm run eval:embed-fixtures  # refresh vectors (needs GOOGLE_GENERATIVE_AI_API_KEY)
 npm run seed:demo          # load eval cards into Postgres (needs DATABASE_URL; idempotent)
 ```
+
+## Holdout labeling (human)
+
+~60 pairs **not** in the 90 train labels: `eval/matching/labeling/holdout-v1.csv` (UTF-8 BOM). Open `eval/matching/labeling/label.html` locally (RTL, keyboard 1/2/3, export CSV/JSON). Import filled sheet with `eval:import-labels`; `eval:matching` then reports **Train** and **Holdout** separately.
 
 ## Overfitting note
 

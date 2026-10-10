@@ -9,8 +9,10 @@ import type { MatcherDefinition } from "../src/domain/matching-eval/types";
 import { matchingEvalDataset } from "../eval/matching/dataset";
 import { createEvalMatcherDefinitions } from "../eval/matching/eval-matchers";
 import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
+import { buildHoldoutEvalDataset } from "../eval/matching/load-holdout-labels";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
 import { PRODUCTION_MATCH_DEFAULTS } from "../eval/matching/eval-sweep";
+import type { MatchingEvalDataset } from "../src/domain/matching-eval/types";
 
 function formatPct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
@@ -103,6 +105,18 @@ function buildMatchers(): { matchers: MatcherDefinition[]; thresholds: number[] 
   return { matchers: list, thresholds };
 }
 
+function runEvalSplit(name: string, dataset: MatchingEvalDataset, matchers: MatcherDefinition[], thresholds: number[]): MatcherEvalResult[] {
+  validateMatchingDataset(dataset);
+  console.log(
+    `\n=== ${name} — ${dataset.jobs.length} jobs, ${dataset.candidates.length} candidates, ${dataset.labels.length} labeled pairs ===`,
+  );
+  const results = matchers.map((m, i) =>
+    evaluateMatcherOnDataset(dataset, m, 5, thresholds[i] ?? 0.28),
+  );
+  printTable(results);
+  return results;
+}
+
 function main(): void {
   validateMatchingDataset(matchingEvalDataset);
   const { matchers, thresholds } = buildMatchers();
@@ -110,29 +124,41 @@ function main(): void {
   const outDir = join(process.cwd(), "eval/matching/results");
   mkdirSync(outDir, { recursive: true });
 
-  const allResults: MatcherEvalResult[] = matchers.map((m, i) =>
-    evaluateMatcherOnDataset(matchingEvalDataset, m, 5, thresholds[i] ?? 0.28),
-  );
-
-  console.log(
-    `\nMatching eval — ${matchingEvalDataset.jobs.length} jobs, ${matchingEvalDataset.candidates.length} candidates, ${matchingEvalDataset.labels.length} labeled pairs`,
-  );
   console.log(
     `Production defaults: floor=${PRODUCTION_MATCH_DEFAULTS.cosineFloor} semantic/rule=${PRODUCTION_MATCH_DEFAULTS.semanticWeight}/${PRODUCTION_MATCH_DEFAULTS.ruleWeight} threshold=${PRODUCTION_MATCH_DEFAULTS.queueThreshold}`,
   );
   console.log(
-    "\nNote: grid-tuned threshold/weights were chosen on this same labeled set (~90 pairs) — treat as optimistic; holdout is future work.\n",
+    "\nTrain labels (~90 pairs) were used for grid tuning — metrics are optimistic on train.\n",
   );
-  printTable(allResults);
+
+  const trainResults = runEvalSplit("Train", matchingEvalDataset, matchers, thresholds);
+
+  const holdoutDataset = buildHoldoutEvalDataset();
+  let holdoutResults: MatcherEvalResult[] | undefined;
+  if (holdoutDataset) {
+    holdoutResults = runEvalSplit("Holdout", holdoutDataset, matchers, thresholds);
+  } else {
+    console.log(
+      "\n=== Holdout — skipped (no labels in eval/matching/holdout-labels.json) ===",
+    );
+    console.log(
+      "  Label eval/matching/labeling/holdout-v1.csv then: npm run eval:import-labels -- <file>",
+    );
+  }
 
   const hybrid = matchers.find((m) => m.id === "hybrid-calibrated-v1");
-  if (hybrid) thresholdSweep(hybrid);
+  if (hybrid) {
+    console.log("\n=== Threshold sweep (train only): hybrid-calibrated-v1 ===");
+    thresholdSweep(hybrid);
+  }
 
   const payload = {
     generatedAt: new Date().toISOString(),
     datasetVersion: matchingEvalDataset.version,
     productionDefaults: PRODUCTION_MATCH_DEFAULTS,
-    matchers: allResults,
+    train: trainResults,
+    holdout: holdoutResults ?? null,
+    matchers: trainResults,
   };
 
   writeFileSync(join(outDir, "latest.json"), `${JSON.stringify(payload, null, 2)}\n`, "utf8");
