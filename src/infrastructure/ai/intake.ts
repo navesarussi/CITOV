@@ -19,6 +19,8 @@ import {
 } from "./schemas";
 import { extractGeminiUsage } from "./usage-extract";
 import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
+import { resolvePromptText } from "@/infrastructure/db/prompt-versions";
+import { renderPromptTemplate } from "@/domain/admin";
 
 export { runCvExtraction } from "./cv-extraction";
 
@@ -390,7 +392,7 @@ export type CardExtraction<P> = {
   usage?: AiTokenUsage;
 };
 
-const JOB_EXTRACTION_SYSTEM = `את/ה עוזר/ת השמה שמחלץ/ת מידע מתיאור משרה אל כרטיס משרה.
+const JOB_EXTRACTION_SYSTEM_LEGACY = `את/ה עוזר/ת השמה שמחלץ/ת מידע מתיאור משרה אל כרטיס משרה.
 - חלץ/י אך ורק מה שמופיע במפורש בטקסט. אל תמציא/י ואל תנחש/י.
 - ערכים תמציתיים. שדה שלא מופיע בטקסט — אל תכלול/י אותו ב-patch.
 - העדף/י למלא: title, field, location, mustHaves, niceToHaves, requiredLanguages, salaryRange, workModel, seniorityLevel, personalityFit, teamCulture.
@@ -407,12 +409,14 @@ export async function runJobDescriptionExtraction(params: {
     return { patch: h.jobPatch ?? {}, provider: "heuristic" };
   }
   try {
+    const system =
+      (await resolvePromptText("job_card_extraction")) || JOB_EXTRACTION_SYSTEM_LEGACY;
     const { object, usage } = await callGeminiWithRetry(() =>
       generateObject({
         model: getGeminiModel(),
         temperature: 0.2,
         schema: z.object({ patch: jobPatchSchema }),
-        system: JOB_EXTRACTION_SYSTEM,
+        system,
         messages: [
           {
             role: "user",
@@ -437,13 +441,21 @@ export async function enrichReasonWithAi(
 ): Promise<{ text: string; usage?: AiTokenUsage }> {
   if (!hasGeminiKey() || (await isAiBudgetBlocked())) return { text: reason };
   try {
+    const template =
+      (await resolvePromptText("match_reason_enrich")) ||
+      `נסח במשפט אחד בעברית, אנושי ובלי כותרות, למה המועמד והמשרה מתאימים.
+מועמד: {{candidateSummary}}
+משרה: {{jobSummary}}
+בסיס: {{reason}}`;
+    const prompt = renderPromptTemplate(template, {
+      candidateSummary,
+      jobSummary,
+      reason,
+    });
     const { text, usage } = await callGeminiWithRetry(() =>
       generateText({
         model: getGeminiModel(),
-        prompt: `נסח במשפט אחד בעברית, אנושי ובלי כותרות, למה המועמד והמשרה מתאימים.
-מועמד: ${candidateSummary}
-משרה: ${jobSummary}
-בסיס: ${reason}`,
+        prompt,
       }),
     );
     return { text: text.trim() || reason, usage: extractUsage(usage) };

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminAiUsagePanel } from "@/components/admin/AdminAiUsagePanel";
-import { AdminPromptWorkbench } from "@/components/admin/AdminPromptWorkbench";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
@@ -55,15 +54,6 @@ type AdminStats = {
 
 type Dashboard = {
   stats: AdminStats;
-  prompts: {
-    candidatePrompt: string;
-    employerPrompt: string;
-    updatedAt?: string;
-    updatedBy?: string;
-    isCustom?: boolean;
-    defaultCandidatePrompt?: string;
-    defaultEmployerPrompt?: string;
-  };
 };
 
 function formatUsd(value: number): string {
@@ -79,18 +69,10 @@ export default function AdminPage() {
   const { status } = useSession();
   const [data, setData] = useState<Dashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [candidatePrompt, setCandidatePrompt] = useState("");
-  const [employerPrompt, setEmployerPrompt] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [resetting, setResetting] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-  const [isCustom, setIsCustom] = useState(false);
   const [aiMode, setAiMode] = useState<string | null>(null);
-  const [defaultCandidate, setDefaultCandidate] = useState("");
-  const [defaultEmployer, setDefaultEmployer] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -107,12 +89,7 @@ export default function AdminPage() {
         setError(json.error ?? "שגיאה בטעינה");
         return;
       }
-      setData(json);
-      setCandidatePrompt(json.prompts.candidatePrompt);
-      setEmployerPrompt(json.prompts.employerPrompt);
-      setIsCustom(Boolean(json.prompts.isCustom));
-      setDefaultCandidate(json.prompts.defaultCandidatePrompt ?? json.prompts.candidatePrompt);
-      setDefaultEmployer(json.prompts.defaultEmployerPrompt ?? json.prompts.employerPrompt);
+      setData({ stats: json.stats ?? json });
       setAiMode(ai?.mode ?? null);
       setError(null);
     } catch {
@@ -129,53 +106,6 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- dashboard fetch on auth ready
     void load();
   }, [status, load]);
-
-  async function savePrompts() {
-    setSaving(true);
-    setSaved(false);
-    try {
-      const res = await fetch("/api/admin/prompts", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidatePrompt, employerPrompt }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "שגיאה בשמירה");
-        return;
-      }
-      if (json.prompts) {
-        setCandidatePrompt(json.prompts.candidatePrompt);
-        setEmployerPrompt(json.prompts.employerPrompt);
-        setIsCustom(Boolean(json.prompts.isCustom));
-        setData((prev) => (prev ? { ...prev, prompts: json.prompts } : prev));
-      }
-      setSaved(true);
-      setError(null);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function resetPrompts() {
-    if (!confirm("לאפס לפרומפטים ברירת המחדל מהקבצים?")) return;
-    setResetting(true);
-    setSaved(false);
-    try {
-      const res = await fetch("/api/admin/prompts", { method: "DELETE" });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error ?? "שגיאה באיפוס");
-        return;
-      }
-      setCandidatePrompt(json.prompts.candidatePrompt);
-      setEmployerPrompt(json.prompts.employerPrompt);
-      setIsCustom(false);
-      await load();
-    } finally {
-      setResetting(false);
-    }
-  }
 
   if (!data && !error && status === "loading") {
     return (
@@ -222,12 +152,12 @@ export default function AdminPage() {
 
   if (!data) return null;
 
-  const { stats, prompts } = data;
+  const { stats } = data;
 
   return (
     <AdminShell
       title="פורטל מנהלים"
-      subtitle="סטטיסטיקות ועריכת פרומפטים בלייב לסוכני הצ׳אט"
+      subtitle="סטטיסטיקות, עלויות AI, ומצב המערכת"
       actions={
         <>
           <Button
@@ -263,16 +193,16 @@ export default function AdminPage() {
                   if (d.error) setSeedMsg(d.error);
                   else
                     setSeedMsg(
-                      `matchCanonical עודכן ל-${d.employees ?? 0} מועמדים ו-${d.employers ?? 0} מעסיקים.`,
+                      `אינדקס ההתאמות עודכן — ${d.employees ?? 0} מועמדים, ${d.employers ?? 0} מעסיקים.`,
                     );
                   void load();
                 })
-                .catch(() => setSeedMsg("עדכון matchCanonical נכשל"))
+                .catch(() => setSeedMsg("עדכון אינדקס ההתאמות נכשל"))
                 .finally(() => setBackfilling(false));
             }}
             className="min-h-9 px-3 py-1.5 text-sm"
           >
-            {backfilling ? "מעדכן…" : "עדכון matchCanonical"}
+            {backfilling ? "מעדכן…" : "עדכון אינדקס התאמות"}
           </Button>
           <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
             רענון
@@ -304,7 +234,7 @@ export default function AdminPage() {
           <ul className="mt-2 space-y-0.5 text-xs text-[var(--muted)]">
             {stats.aiUsage.byType.slice(0, 6).map((row) => (
               <li key={row.type}>
-                {row.type}: {row.calls} · {formatTokens(row.tokens)} tok · {formatUsd(row.costUsd)}
+                {row.type}: {row.calls} · {formatTokens(row.tokens)} טוקנים · {formatUsd(row.costUsd)}
               </li>
             ))}
           </ul>
@@ -324,7 +254,7 @@ export default function AdminPage() {
             </p>
           ) : null}
           <p className="mt-2 text-xs text-[var(--muted)]">
-            חישוב לפי טוקנים מה-API ומחירון Gemini (2025-10-01, ai-pricing.ts) — חשבונית Google היא מקור האמת.
+            חישוב לפי טוקנים מה-API ומחירון Gemini — חשבונית Google היא מקור האמת.
           </p>
           <a
             href="https://aistudio.google.com/usage"
@@ -361,13 +291,16 @@ export default function AdminPage() {
       </section>
 
       <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
-        <h2 className="text-sm font-semibold text-[var(--muted)]">מה חדש (0.2.0)</h2>
-        <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-[var(--ink)]">
-          <li>תצוגת מועמד/מעסיק — פרופיל אמיתי תחת חשבון המנהל</li>
-          <li>ניווט דשבורד אחיד + כותרות משרה בדפדפן מעסיקים</li>
-          <li>עלות AI לפי מחירון + תיוג קהל אופציונלי</li>
-        </ul>
-        <p className="mt-2 text-xs text-[var(--muted)]">פרטים מלאים ב־CHANGELOG.md ברепו.</p>
+        <h2 className="text-sm font-semibold text-[var(--muted)]">פרומפטים והנחיות סוכן</h2>
+        <p className="mt-2 text-sm text-[var(--ink)]">
+          עריכת כל פרומפטי המערכת — שיחה, חילוץ קו״ח, התאמה ותרגום — עם גרסאות ותצוגה מקדימה.
+        </p>
+        <Link
+          href="/admin/guidelines"
+          className="mt-3 inline-flex min-h-9 items-center rounded-xl border border-[var(--accent)] bg-[var(--accent)]/10 px-4 text-sm font-medium text-[var(--hero)] hover:bg-[var(--accent)]/20"
+        >
+          מעבר לעורך הפרומפטים
+        </Link>
       </section>
 
       <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
@@ -407,31 +340,14 @@ export default function AdminPage() {
         <p className="mt-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">{error}</p>
       ) : null}
 
-      <p className="mt-6 text-sm text-[var(--muted)]">
-        פרומפטים נשלחים מ־<code className="rounded bg-[var(--chip)] px-1">/api/chat</code>
-        {aiMode ? (
-          <span className="ms-2 font-medium text-[var(--accent)]">
-            · AI: {aiMode === "gemini" ? "Gemini" : "heuristic"}
+      {aiMode ? (
+        <p className="mt-6 text-sm text-[var(--muted)]">
+          מנוע שיחה:{" "}
+          <span className="font-medium text-[var(--accent)]">
+            {aiMode === "gemini" ? "Gemini" : "כללים (ללא מפתח API)"}
           </span>
-        ) : null}
-      </p>
-
-      <AdminPromptWorkbench
-        candidatePrompt={candidatePrompt}
-        employerPrompt={employerPrompt}
-        defaultCandidate={defaultCandidate}
-        defaultEmployer={defaultEmployer}
-        onCandidateChange={setCandidatePrompt}
-        onEmployerChange={setEmployerPrompt}
-        onSave={() => void savePrompts()}
-        onReset={() => void resetPrompts()}
-        saving={saving}
-        resetting={resetting}
-        saved={saved}
-        updatedAt={prompts.updatedAt}
-        updatedBy={prompts.updatedBy}
-        isCustom={isCustom}
-      />
+        </p>
+      ) : null}
     </AdminShell>
   );
 }

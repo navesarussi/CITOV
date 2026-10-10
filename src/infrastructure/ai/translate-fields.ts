@@ -1,5 +1,7 @@
 import { generateObject } from "ai";
 import { z } from "zod";
+import { renderPromptTemplate } from "@/domain/admin";
+import { resolvePromptText } from "@/infrastructure/db/prompt-versions";
 import { callGeminiWithRetry, getGeminiModel, hasGeminiKey } from "./gemini-client";
 
 const mapSchema = z.object({
@@ -14,18 +16,17 @@ export async function translateFieldMap(params: {
   const entries = Object.entries(params.fields).filter(([, v]) => v.trim().length > 0);
   if (entries.length === 0 || !hasGeminiKey()) return params.fields;
 
-  const language = params.targetLocale === "he" ? "Hebrew" : "English";
   try {
+    const template = await resolvePromptText("card_display_translation");
+    const prompt = renderPromptTemplate(template, {
+      targetLocale: params.targetLocale,
+      fields: JSON.stringify(Object.fromEntries(entries), null, 2),
+    });
     const { object } = await callGeminiWithRetry(() =>
       generateObject({
         model: getGeminiModel(),
         schema: mapSchema,
-        prompt: `Translate each value into natural ${language} for a job-seeker profile UI.
-Keep meaning. Do not add new facts. Preserve proper nouns when commonly left untranslated.
-Return JSON object "fields" with the SAME keys.
-
-Input:
-${JSON.stringify(Object.fromEntries(entries), null, 2)}`,
+        prompt,
       }),
     );
     return { ...params.fields, ...object.fields };

@@ -32,7 +32,9 @@ function clipCvText(text: string): string {
   return `${t.slice(0, MAX_CV_CHARS)}\n\n[…טקסט קו״ח קוצר לניתוח…]`;
 }
 
-const PASS_A_SYSTEM = `את/ה מגייס/ת מקצועית שמחלצת מקורות חיים עובדות מפורשות בלבד אל כרטיס מועמד/ת.
+import { resolvePromptText } from "@/infrastructure/db/prompt-versions";
+
+const PASS_A_SYSTEM_LEGACY = `את/ה מגייס/ת מקצועית שמחלצת מקורות חיים עובדות מפורשות בלבד אל כרטיס מועמד/ת.
 כללים מחייבים:
 1. חלץ/י אך ורק מידע שמופיע במפורש בטקסט. אל תמציא/י, אל תנחש/י.
 2. מלא/י רק שדות שיש להם ערך אמיתי בטקסט. שדה ריק = אל תכלול/י אותו ב-patch.
@@ -44,7 +46,7 @@ const PASS_A_SYSTEM = `את/ה מגייס/ת מקצועית שמחלצת מקו�
 8. fieldConfidence רק לשדות עמומים.
 החזר/י JSON קצר לפי הסכמה. אל תכלול inferences. אל תמלא שדות סתם.`;
 
-const PASS_B_SYSTEM = `את/ה אנליסט/ית השמה. הפק/י הסקות סאבטקסט מבוקרות בלבד.
+const PASS_B_SYSTEM_LEGACY = `את/ה אנליסט/ית השמה. הפק/י הסקות סאבטקסט מבוקרות בלבד.
 כללים:
 1. כל פריט: fieldKey + value קצר + evidence (ציטוט קצר) + confidence high|medium|low.
 2. מותר: ניהול מ"הובלתי צוות", בכירות מתואר/שנים, תחום מתפקידים, סגנון מניסוח.
@@ -93,13 +95,17 @@ export async function runCvExtraction(params: {
   try {
     const cvText = clipCvText(params.text);
     const cardHint = compactCard(params.card);
+    const passASystem =
+      (await resolvePromptText("cv_extraction_facts")) || PASS_A_SYSTEM_LEGACY;
+    const passBSystem =
+      (await resolvePromptText("cv_extraction_inferences")) || PASS_B_SYSTEM_LEGACY;
     const passA = await callGeminiWithRetry(() =>
       generateObject({
         model: getGeminiModel(),
         temperature: 0.1,
         maxOutputTokens: PASS_A_MAX_TOKENS,
         schema: cvExtractionSchema,
-        system: PASS_A_SYSTEM,
+        system: passASystem,
         messages: [
           {
             role: "user",
@@ -118,7 +124,7 @@ export async function runCvExtraction(params: {
           temperature: 0.2,
           maxOutputTokens: PASS_B_MAX_TOKENS,
           schema: cvInferencePassSchema,
-          system: PASS_B_SYSTEM,
+          system: passBSystem,
           messages: [
             {
               role: "user",

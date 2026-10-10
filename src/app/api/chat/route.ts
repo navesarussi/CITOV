@@ -204,7 +204,7 @@ async function runEmployeeStream(
   locale: "he" | "en",
   accountHolderFirstName?: string,
 ): Promise<ChatTurnResult> {
-  const prep = prepareEmployeeTurn(store, userId);
+  const prep = await prepareEmployeeTurn(store, userId);
 
   if (!hasGeminiKey()) {
     const h = heuristicEmployeeIntake(message, prep.card, prep.pendingQuestions, prep.chat);
@@ -293,7 +293,7 @@ async function runEmployerStream(
   message: string,
   jobId?: string,
 ): Promise<ChatTurnResult> {
-  const prep = prepareEmployerTurn(store, userId, jobId);
+  const prep = await prepareEmployerTurn(store, userId, jobId);
 
   if (!hasGeminiKey()) {
     const h = heuristicEmployerIntake(message, prep.card, prep.chat);
