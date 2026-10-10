@@ -22,6 +22,17 @@ export function userIsTestRow(user: { id: string; isTest?: boolean }): boolean {
   return Boolean(user.isTest) || isSandboxUserId(user.id);
 }
 
+/**
+ * Users excluded from automatic production match rebuild (chat/flexibility/backfill).
+ * Eval seed (`seed-*`) stays included so demo-only DBs keep queued matches after rebuild.
+ */
+export function skipUserInProductionMatchRebuild(userId: string): boolean {
+  if (isSandboxUserId(userId)) return true;
+  if (userId === "demo-employee" || userId === "demo-employer") return true;
+  if (userId.startsWith("e2e-")) return true;
+  return false;
+}
+
 export function matchIsTestRow(m: { isTest?: boolean; candidateId: string; jobOwnerId: string }): boolean {
   return (
     Boolean(m.isTest) ||
