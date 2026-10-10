@@ -1,5 +1,4 @@
 import { displayJobTitle } from "@/domain/admin-job-display";
-import { isDemoUserId } from "@/domain/admin";
 import type { MatchStatus, StoreData } from "@/domain/types";
 import { scoreCandidateForJob, type MatchEmbeddingIndex } from "@/application/match-scoring";
 import { readQueueThreshold } from "@/application/matching-config";
@@ -82,17 +81,20 @@ function rowsFromStoreMatches(
 ): AdminMatchRow[] {
   return store.matches
     .filter((m) => m.status === status)
-    .filter((m) => !jobId || m.jobId === jobId)
+    .filter((m) => {
+      const slotId = m.jobId || m.jobOwnerId;
+      return !jobId || slotId === jobId;
+    })
     .filter((m) => !candidateId || m.candidateId === candidateId)
-    .filter((m) => !isDemoUserId(m.jobOwnerId) && !isDemoUserId(m.candidateId))
     .map((m) => {
-      const job = resolveJob(store, m.jobOwnerId, m.jobId);
+      const slotId = m.jobId || m.jobOwnerId;
+      const job = resolveJob(store, m.jobOwnerId, slotId);
       return {
         matchId: m.id,
-        jobId: m.jobId,
+        jobId: slotId,
         candidateId: m.candidateId,
         jobOwnerId: m.jobOwnerId,
-        jobTitle: job ? displayJobTitle(job.slot) : m.jobId,
+        jobTitle: job ? displayJobTitle(job.slot) : slotId,
         employerName: userName(store, m.jobOwnerId),
         candidateLabel: candidateLabel(store, m.candidateId),
         score: m.score,
@@ -127,7 +129,6 @@ function belowThresholdRows(
     const slot = owner?.jobs?.find((j) => j.id === jobId);
     if (!owner || !slot) return [];
     for (const emp of store.employees) {
-      if (isDemoUserId(emp.userId)) continue;
       if (hasQueuedOrDecided(jobId, emp.userId)) continue;
       const scored = scoreCandidateForJob({
         candidate: emp.card,
@@ -158,9 +159,8 @@ function belowThresholdRows(
 
   if (candidateId) {
     const emp = resolveCandidate(store, candidateId);
-    if (!emp || isDemoUserId(candidateId)) return [];
+    if (!emp) return [];
     for (const er of store.employers) {
-      if (isDemoUserId(er.userId)) continue;
       for (const slot of er.jobs ?? []) {
         if (hasQueuedOrDecided(slot.id, candidateId)) continue;
         const scored = scoreCandidateForJob({
@@ -244,4 +244,28 @@ export function listAdminMatches(params: {
   const start = (page - 1) * pageSize;
   const rows = all.slice(start, start + pageSize);
   return { rows, total, page, pageSize };
+}
+
+export type AdminMatchPickerOption = { id: string; label: string };
+
+export function listAdminMatchPickers(store: StoreData): {
+  jobs: AdminMatchPickerOption[];
+  candidates: AdminMatchPickerOption[];
+} {
+  const jobs: AdminMatchPickerOption[] = [];
+  for (const er of store.employers) {
+    for (const slot of er.jobs ?? []) {
+      jobs.push({
+        id: slot.id,
+        label: `${displayJobTitle(slot)} · ${userName(store, er.userId)}`,
+      });
+    }
+  }
+  jobs.sort((a, b) => a.label.localeCompare(b.label, "he"));
+  const candidates = store.employees.map((e) => ({
+    id: e.userId,
+    label: candidateLabel(store, e.userId),
+  }));
+  candidates.sort((a, b) => a.label.localeCompare(b.label, "he"));
+  return { jobs, candidates };
 }

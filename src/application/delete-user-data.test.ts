@@ -7,49 +7,49 @@ import { NotFoundError } from "@/domain/errors";
 describe("deleteUserAccountData (memory store)", () => {
   it("refuses demo and removes a custom user", async () => {
     const prevDb = process.env.DATABASE_URL;
+    const prevNode = process.env.NODE_ENV;
     try {
-      process.env.DATABASE_URL = "";
-<<<<<<< HEAD
+      process.env.NODE_ENV = "development";
+      delete process.env.DATABASE_URL;
       writeMemoryStore(createSeedStore());
-=======
-    writeMemoryStore(createSeedStore());
->>>>>>> 195af6a (Resilience: awaited after(), degraded queue floor, M1-M4 hardening)
-    await assert.rejects(
-      () => deleteUserAccountData("demo-employee"),
-      (e: unknown) => e instanceof NotFoundError,
-    );
+      await assert.rejects(
+        () => deleteUserAccountData("demo-employee"),
+        (e: unknown) => e instanceof NotFoundError,
+      );
 
-    const store = readMemoryStore();
-    const customId = "real-user-1";
-    writeMemoryStore({
-      ...store,
-      users: [
-        ...store.users,
-        {
-          id: customId,
-          name: "Test",
-          role: "employee",
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      employees: [
-        ...store.employees,
-        {
-          userId: customId,
-          card: store.employees[0]!.card,
-          chat: [],
-          pendingFieldQuestionIds: [],
-        },
-      ],
-    });
+      const store = readMemoryStore();
+      const customId = "real-user-1";
+      writeMemoryStore({
+        ...store,
+        users: [
+          ...store.users,
+          {
+            id: customId,
+            name: "Test",
+            role: "employee",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        employees: [
+          ...store.employees,
+          {
+            userId: customId,
+            card: store.employees[0]!.card,
+            chat: [],
+            pendingFieldQuestionIds: [],
+          },
+        ],
+      });
 
-    await deleteUserAccountData(customId);
-    const after = readMemoryStore();
-    assert.ok(!after.users.some((u) => u.id === customId));
-    assert.ok(!after.employees.some((e) => e.userId === customId));
+      await deleteUserAccountData(customId);
+      const after = readMemoryStore();
+      assert.ok(!after.users.some((u) => u.id === customId));
+      assert.ok(!after.employees.some((e) => e.userId === customId));
     } finally {
       if (prevDb === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = prevDb;
+      if (prevNode === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = prevNode;
     }
   });
 });

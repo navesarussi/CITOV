@@ -5,8 +5,10 @@ import { signIn, useSession } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminAiUsagePanel } from "@/components/admin/AdminAiUsagePanel";
+import { AdminDashboardActions } from "@/components/admin/AdminDashboardActions";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
+import { aiUsageTypeLabelHe } from "@/application/ai-usage-labels";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
@@ -161,57 +163,60 @@ export default function AdminPage() {
   return (
     <AdminShell
       title="פורטל מנהלים"
-      subtitle="סטטיסטיקות, עלויות AI, ומצב המערכת"
+      subtitle="סטטיסטיקות, עלויות בינה מלאכותית, ומצב המערכת"
       actions={
-        <>
-          <Button
-            variant="secondary"
-            disabled={seeding}
-            onClick={() => {
-              setSeeding(true);
-              setSeedMsg(null);
-              void fetch("/api/admin/seed-demo", { method: "POST", body: "{}" })
-                .then((r) => r.json())
-                .then((d: { error?: string; skipped?: boolean; candidates?: number; jobs?: number }) => {
+        <AdminDashboardActions
+          seeding={seeding}
+          backfilling={backfilling}
+          onRefresh={() => void load()}
+          onSeed={() => {
+            if (
+              !window.confirm(
+                "לטעון מחדש את נתוני הדמו (מועמדים ומשרות לדוגמה)? פעולה זו אינה זמינה כשיש משתמשים אמיתיים במערכת.",
+              )
+            ) {
+              return;
+            }
+            setSeeding(true);
+            setSeedMsg(null);
+            void fetch("/api/admin/seed-demo", { method: "POST", body: "{}" })
+              .then((r) => r.json())
+              .then(
+                (d: {
+                  error?: string;
+                  skipped?: boolean;
+                  blocked?: boolean;
+                  candidates?: number;
+                  jobs?: number;
+                }) => {
                   if (d.error) setSeedMsg(d.error);
+                  else if (d.blocked)
+                    setSeedMsg("לא ניתן לטעון דמו — יש משתמשים אמיתיים. הדמו לא ידרוס נתונים קיימים.");
                   else if (d.skipped) setSeedMsg("דמו כבר נטען (idempotent).");
                   else setSeedMsg(`נטענו ${d.candidates} מועמדים ו-${d.jobs} משרות + embeddings.`);
                   void load();
-                })
-                .catch(() => setSeedMsg("טעינת דמו נכשלה"))
-                .finally(() => setSeeding(false));
-            }}
-            className="min-h-9 px-3 py-1.5 text-sm"
-          >
-            {seeding ? "טוען דמו…" : "טעינת דמו"}
-          </Button>
-          <Button
-            variant="secondary"
-            disabled={backfilling}
-            onClick={() => {
-              setBackfilling(true);
-              setSeedMsg(null);
-              void fetch("/api/admin/backfill-canonical", { method: "POST" })
-                .then((r) => r.json())
-                .then((d: { error?: string; employees?: number; employers?: number }) => {
-                  if (d.error) setSeedMsg(d.error);
-                  else
-                    setSeedMsg(
-                      `אינדקס ההתאמות עודכן — ${d.employees ?? 0} מועמדים, ${d.employers ?? 0} מעסיקים.`,
-                    );
-                  void load();
-                })
-                .catch(() => setSeedMsg("עדכון אינדקס ההתאמות נכשל"))
-                .finally(() => setBackfilling(false));
-            }}
-            className="min-h-9 px-3 py-1.5 text-sm"
-          >
-            {backfilling ? "מעדכן…" : "עדכון אינדקס התאמות"}
-          </Button>
-          <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
-            רענון
-          </Button>
-        </>
+                },
+              )
+              .catch(() => setSeedMsg("טעינת דמו נכשלה"))
+              .finally(() => setSeeding(false));
+          }}
+          onBackfill={() => {
+            setBackfilling(true);
+            setSeedMsg(null);
+            void fetch("/api/admin/backfill-canonical", { method: "POST" })
+              .then((r) => r.json())
+              .then((d: { error?: string; employees?: number; employers?: number }) => {
+                if (d.error) setSeedMsg(d.error);
+                else
+                  setSeedMsg(
+                    `אינדקס ההתאמות עודכן — ${d.employees ?? 0} מועמדים, ${d.employers ?? 0} מעסיקים.`,
+                  );
+                void load();
+              })
+              .catch(() => setSeedMsg("עדכון אינדקס ההתאמות נכשל"))
+              .finally(() => setBackfilling(false));
+          }}
+        />
       }
     >
       {seedMsg ? <p className="mb-3 text-sm text-[var(--muted)]">{seedMsg}</p> : null}
@@ -220,12 +225,12 @@ export default function AdminPage() {
         <AdminStatCard label="מעסיקים" value={stats.employers} />
         <AdminStatCard label="מועמדים" value={stats.candidates} />
         <AdminStatCard
-          label="מאצ׳ים"
+          label="התאמות"
           value={stats.matches.total}
           sub={`${stats.matches.approved} אושרו · ${stats.matches.queued} בתור`}
         />
         <AdminStatCard
-          label="עלות AI (לפי מחירון)"
+          label="עלות בינה מלאכותית (לפי מחירון)"
           value={formatUsd(stats.aiUsage.estimatedCostUsd)}
           sub={`${formatTokens(stats.aiUsage.totalTokens)} טוקנים · ${stats.aiUsage.totalCalls} קריאות · 24ש ${formatUsd(stats.aiUsage.last24hCostUsd)}`}
         >
@@ -238,7 +243,8 @@ export default function AdminPage() {
           <ul className="mt-2 space-y-0.5 text-xs text-[var(--muted)]">
             {stats.aiUsage.byType.slice(0, 6).map((row) => (
               <li key={row.type}>
-                {row.type}: {row.calls} · {formatTokens(row.tokens)} טוקנים · {formatUsd(row.costUsd)}
+                {aiUsageTypeLabelHe(row.type)}: {row.calls} · {formatTokens(row.tokens)} טוקנים ·{" "}
+                {formatUsd(row.costUsd)}
               </li>
             ))}
           </ul>
@@ -250,7 +256,7 @@ export default function AdminPage() {
             ))}
           </ul>
           <p className="mt-2 text-xs text-[var(--muted)]">
-            חישוב לפי טוקנים מה-API ומחירון Gemini — חשבונית Google היא מקור האמת.
+            חישוב לפי טוקנים שדווחו מ-Google Gemini ומחירון הרשמי — חשבונית Google היא מקור האמת.
           </p>
           <a
             href="https://aistudio.google.com/usage"
@@ -300,7 +306,7 @@ export default function AdminPage() {
       </section>
 
       <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
-        <h2 className="text-sm font-semibold text-[var(--muted)]">פירוט מאצ׳ים</h2>
+        <h2 className="text-sm font-semibold text-[var(--muted)]">פירוט התאמות</h2>
         <div className="mt-2 flex flex-wrap gap-4 text-sm">
           <span>בתור: {stats.matches.queued}</span>
           <span>אושרו: {stats.matches.approved}</span>

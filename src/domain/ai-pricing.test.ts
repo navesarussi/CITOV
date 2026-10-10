@@ -20,4 +20,10 @@ describe("ai-pricing", () => {
     const cost = estimateCostUsd("gemini-2.5-pro", 1_000_000, 0, 0);
     assert.ok(Math.abs(cost - 1.25) < 0.001);
   });
+
+  it("maps gemini-flash-latest to 2.5 flash output rates", () => {
+    assert.equal(resolveGeminiPricingKey("gemini-flash-latest"), "gemini-2.5-flash");
+    const outputHeavy = estimateCostUsd("gemini-flash-latest", 0, 50_000, 0);
+    assert.ok(outputHeavy > 0.1, "50k output tokens should exceed $0.10 at list price");
+  });
 });

@@ -6,7 +6,7 @@ import {
   resolveGeminiPricingKey,
 } from "@/domain/ai-pricing";
 import type { AiUsageRecord, AiUsageType, StoreData } from "./types";
-import { isNonProductionUserId } from "./test-sandbox";
+import { isNonProductionUserId, matchIsTestRow } from "./test-sandbox";
 
 export { GEMINI_PRICING };
 /** @deprecated use estimateCostUsd */
@@ -151,14 +151,16 @@ export function computeAdminStats(store: StoreData): AdminStats {
     .sort((a, b) => a.score - b.score)
     .slice(0, 8);
 
+  const scopedMatches = store.matches.filter((m) => !matchIsTestRow(m));
+
   return {
     employers: realEmployers.length,
     candidates: realEmployees.length,
     matches: {
-      total: store.matches.length,
-      queued: store.matches.filter((m) => m.status === "queued").length,
-      approved: store.matches.filter((m) => m.status === "approved").length,
-      rejected: store.matches.filter((m) => m.status === "rejected").length,
+      total: scopedMatches.length,
+      queued: scopedMatches.filter((m) => m.status === "queued").length,
+      approved: scopedMatches.filter((m) => m.status === "approved").length,
+      rejected: scopedMatches.filter((m) => m.status === "rejected").length,
     },
     aiUsage: {
       totalCalls: usage.length,

@@ -52,7 +52,7 @@ export function AdminAiUsagePanel() {
     <section className="panel space-y-5 rounded-[var(--panel-radius)] p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-[var(--hero)]">עלויות AI — פירוט</h2>
+          <h2 className="text-lg font-bold text-[var(--hero)]">עלויות בינה מלאכותית — פירוט</h2>
           <p className="text-xs text-[var(--muted)]">מתעדכן אוטומטית כל 30 שניות · מקור: טבלת ai_usage</p>
         </div>
         <Button variant="secondary" className="min-h-9" onClick={() => void load()}>
