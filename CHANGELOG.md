@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2025-10-10
+
+- Candidate / admin preview: prominent CV dropzone + button when chat is locked; side-by-side profile + chat on desktop.
+- Chat panel fills available viewport height (embedded admin preview, mobile sticky composer, responsive grid).
+- Playwright responsive screenshots at 375 / 768 / 1280 / 1920 widths.
+
 ## 0.3.0 — 2025-10-10
 
 - Admin **ניטור**: `app_events` table, grouped issues, slow-route stats, AI budget banner/guard, E2E last run.

@@ -9,6 +9,7 @@ export default defineConfig({
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"], ["json", { outputFile: "e2e/results.json" }]],
+  outputDir: "e2e/test-results",
   use: {
     baseURL,
     trace: "on-first-retry",

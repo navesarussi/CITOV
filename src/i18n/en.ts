@@ -194,6 +194,8 @@ export const en = {
     error: "Could not read the file",
     cvTitle: "Upload CV",
     cvHint: "PDF, DOCX or TXT — deep analysis fills your profile.",
+    cvDropHint: "Drag a file here or click to choose",
+    cvDropActive: "Drop to upload your CV",
     cvSummary: "CV received · ~{fields} details updated · {roles} roles in history",
     cvConflictsHint: "We'll clarify a few points in chat.",
     jobTitle: "Upload job description",

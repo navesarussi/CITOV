@@ -320,9 +320,13 @@ export function ChatPanel(props: {
         ) : null}
       </div>
 
-      <div className="border-t border-[var(--stroke)] bg-white/80 p-4 backdrop-blur">
+      <div className="chat-surface__composer border-t border-[var(--stroke)] bg-white/80 p-4 backdrop-blur">
         {blocked && props.lockedOverlay ? (
-          <p className="text-center text-xs leading-5 text-[var(--muted)]">{t.chat.cvRequired}</p>
+          props.blockedFooter ? (
+            <div className="chat-composer-locked">{props.blockedFooter}</div>
+          ) : (
+            <p className="text-center text-xs leading-5 text-[var(--muted)]">{t.chat.cvRequired}</p>
+          )
         ) : blocked && props.blockedFooter ? (
           props.blockedFooter
         ) : (

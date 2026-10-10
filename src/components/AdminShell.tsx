@@ -37,7 +37,7 @@ export function AdminShell(props: {
           <AdminNav />
         </div>
       </header>
-      <main className="workspace-main max-w-5xl">
+      <main className="workspace-main flex max-w-5xl min-h-0 flex-1 flex-col">
         <AdminBudgetBanner />
         {props.children}
       </main>
