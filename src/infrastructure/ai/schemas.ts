@@ -183,6 +183,8 @@ export type AiTokenUsage = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  /** Gemini implicit/context cache read tokens (inputTokenDetails.cacheReadTokens). */
+  cachedPromptTokens?: number;
 };
 
 export type IntakeResult = {

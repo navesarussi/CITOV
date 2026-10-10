@@ -81,6 +81,16 @@ function embeddingVectors(
   return { candidate: cVec, job: jVec };
 }
 
+export function getLabelingPair(
+  store: StoreData,
+  jobId: string,
+  candidateId: string,
+  index: MatchEmbeddingIndex | undefined,
+  bucket = "review",
+): LabelingPair | null {
+  return buildRichPair(store, jobId, candidateId, bucket, index);
+}
+
 function buildRichPair(
   store: StoreData,
   jobId: string,

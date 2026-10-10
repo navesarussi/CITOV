@@ -350,6 +350,8 @@ export type AiUsageRecord = {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  /** Prompt tokens served from Gemini context cache (when reported). */
+  cachedPromptTokens?: number;
   estimatedCostUsd: number;
   createdAt: string;
 };

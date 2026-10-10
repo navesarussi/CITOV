@@ -1,6 +1,8 @@
 "use client";
 
 import type { LabelingPair } from "@/application/admin-labeling";
+import { LabelingScoreBreakdown } from "@/components/admin/labeling/LabelingScoreBreakdown";
+import { useTranslation } from "@/components/LocaleProvider";
 import type { LabelFieldRow } from "@/domain/labeling-field-map";
 import {
   labelingCandidateRows,
@@ -37,66 +39,38 @@ function CardBlock(props: {
 }
 
 export function LabelingPairView(props: { pair: LabelingPair }) {
+  const { t } = useTranslation();
   const { pair } = props;
-  const s = pair.scores;
+
   return (
     <div className="space-y-4">
-      <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4 text-sm">
-        <p className="font-semibold text-[var(--hero)]">ציונים והסבר</p>
-        <p className="mt-1">
-          Rule: <strong>{(s.ruleScore * 100).toFixed(1)}%</strong> · Hybrid:{" "}
-          <strong>{(s.hybridScore * 100).toFixed(1)}%</strong> · Semantic:{" "}
-          {(s.semanticScore * 100).toFixed(1)}% · סף תור: {s.queueThreshold.toFixed(2)} (
-          {s.hybridQueued ? "בתור" : "מחוץ לתור"})
-        </p>
-        <p className="mt-2 text-[var(--muted)]">{s.reason}</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <div className="rounded-xl bg-white/80 p-3 text-xs">
-            <p className="font-semibold">Rule breakdown</p>
-            <p>base {s.ruleBreakdown.baseFit.toFixed(2)} → after flex {s.ruleBreakdown.afterFlexibility.toFixed(2)}</p>
-            <p>
-              must-have overlap {(s.ruleBreakdown.mustHaveOverlap * 100).toFixed(0)}% · flex משולב{" "}
-              {s.ruleBreakdown.combinedFlex}
-            </p>
-          </div>
-          <div className="rounded-xl bg-white/80 p-3 text-xs">
-            <p className="font-semibold">Hybrid / semantic</p>
-            <p>
-              role {(s.segmentSimilarities.role * 100).toFixed(0)}% · skills{" "}
-              {(s.segmentSimilarities.skills * 100).toFixed(0)}% · profile{" "}
-              {(s.segmentSimilarities.profile * 100).toFixed(0)}%
-            </p>
-            <p>{s.semanticBreakdown.mustHaveGateDetail}</p>
-            <p>
-              weights {s.semanticBreakdown.weights.semantic}/{s.semanticBreakdown.weights.rule}
-            </p>
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-[var(--muted)]">
-          bucket: {pair.bucket} · {pair.jobId} ↔ {pair.candidateId}
-        </p>
-      </section>
+      <LabelingScoreBreakdown
+        scores={pair.scores}
+        bucket={pair.bucket}
+        jobId={pair.jobId}
+        candidateId={pair.candidateId}
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <CardBlock
-          title={pair.company.name || pair.employerName || "מעסיק"}
-          subtitle="כרטיס חברה"
+          title={pair.company.name || pair.employerName || t.adminLabeling.companyCard}
+          subtitle={t.adminLabeling.companyCard}
           rows={labelingCompanyRows(pair.company)}
         />
         <CardBlock
           title={pair.job.title}
-          subtitle={`משרה · ${pair.jobId}`}
+          subtitle={t.adminLabeling.jobCard}
           rows={labelingJobRows(pair.job)}
         />
         <CardBlock
           title={pair.candidate.desiredRole}
-          subtitle={`מועמד/ת · ${pair.candidateId}`}
+          subtitle={t.adminLabeling.candidateCard}
           rows={labelingCandidateRows(pair.candidate)}
         />
       </div>
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold text-[var(--hero)]">השוואת שדות (הדגשה)</h3>
+        <h3 className="mb-2 text-sm font-semibold text-[var(--hero)]">{t.adminLabeling.fieldCompare}</h3>
         <div className="grid gap-2 sm:grid-cols-2">
           {pair.fieldRows.map((row) => (
             <div
@@ -105,10 +79,11 @@ export function LabelingPairView(props: { pair: LabelingPair }) {
             >
               <p className="font-semibold">{row.label}</p>
               <p className="mt-1">
-                <span className="text-[var(--muted)]">משרה:</span> {row.jobValue || "—"}
+                <span className="text-[var(--muted)]">{t.adminLabeling.jobCard}:</span> {row.jobValue || "—"}
               </p>
               <p>
-                <span className="text-[var(--muted)]">מועמד:</span> {row.candidateValue || "—"}
+                <span className="text-[var(--muted)]">{t.adminLabeling.candidateCard}:</span>{" "}
+                {row.candidateValue || "—"}
               </p>
             </div>
           ))}
