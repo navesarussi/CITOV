@@ -32,18 +32,22 @@ export async function writeMatches(matches: Match[]): Promise<void> {
  */
 export async function rebuildAndWriteMatches(): Promise<void> {
   const { filterProductionStore } = await import("./db/store-scope");
-  const snap = filterProductionStore(await readMatchingStore());
   const { loadMatchingEmbeddingIndex } = await import("./db/card-embeddings");
-  const index = await loadMatchingEmbeddingIndex(snap);
   const { rebuildMatches } = await import("@/application/rebuild-matches");
   const { recordAppEventSafe } = await import("./db/app-events");
-  const { matches, stats } = rebuildMatches(snap, index);
-  await writeMatches(matches);
-  recordAppEventSafe({
-    kind: "match_rebuild",
-    severity: "info",
-    message: `Match rebuild: ${stats.newlyQueued} queued / ${stats.pairsConsidered} pairs (${stats.degradedToRule} rule fallback)`,
-    meta: stats,
+  const { withMatchRebuildAdvisoryLock } = await import("./db/normalized-store");
+
+  await withMatchRebuildAdvisoryLock(async () => {
+    const snap = filterProductionStore(await readMatchingStore());
+    const index = await loadMatchingEmbeddingIndex(snap);
+    const { matches, stats } = rebuildMatches(snap, index);
+    await writeMatches(matches);
+    recordAppEventSafe({
+      kind: "match_rebuild",
+      severity: "info",
+      message: `Match rebuild: ${stats.newlyQueued} queued / ${stats.pairsConsidered} pairs (${stats.degradedToRule} rule fallback)`,
+      meta: stats,
+    });
   });
 }
 

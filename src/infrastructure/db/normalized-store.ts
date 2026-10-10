@@ -541,11 +541,53 @@ export async function writeNormalizedStore(store: StoreData): Promise<void> {
   }
 }
 
-/** Replace just the matches table — used by the deferred, off-critical-path refresh. */
+/** מזהה נעילה גלובלי ל-rebuild תור התאמות production (לא sandbox). */
+export const MATCH_REBUILD_ADVISORY_LOCK_ID = 914_023_001;
+
+/**
+ * נעילת Postgres סביב rebuild+כתיבה — מונעת מרוץ read/write בין instances.
+ * בזיכרון (ללא DB) מריצה ישירות.
+ */
+export async function withMatchRebuildAdvisoryLock<T>(work: () => Promise<T>): Promise<T> {
+  if (shouldUseMemoryStore()) return work();
+
+  await ensureSchema();
+  const pool = await getPool();
+  const client = await pool.connect();
+  try {
+    await client.query(`select pg_advisory_lock($1)`, [MATCH_REBUILD_ADVISORY_LOCK_ID]);
+    return await work();
+  } finally {
+    try {
+      await client.query(`select pg_advisory_unlock($1)`, [MATCH_REBUILD_ADVISORY_LOCK_ID]);
+    } finally {
+      client.release();
+    }
+  }
+}
+
+/** לוגיקת merge לבדיקות — שומר sandbox + decided, מחליף queued production בלבד. */
+export function applyProductionQueuedMatchReplace(
+  existing: Match[],
+  rebuilt: Match[],
+): Match[] {
+  const productionQueued = rebuilt.filter((m) => !m.isTest && m.status === "queued");
+  const kept = existing.filter((m) => m.isTest || m.status !== "queued");
+  return [...kept, ...productionQueued].sort((a, b) => b.score - a.score);
+}
+
+/**
+ * מחליף רק שורות queued של production — לא נוגע ב-sandbox ובהחלטות approved/rejected.
+ */
 export async function replaceMatches(matches: Match[]): Promise<void> {
+  const productionQueued = matches.filter((m) => !m.isTest && m.status === "queued");
+
   if (shouldUseMemoryStore()) {
     const data = readMemoryStore();
-    writeMemoryStore({ ...data, matches });
+    writeMemoryStore({
+      ...data,
+      matches: applyProductionQueuedMatchReplace(data.matches, matches),
+    });
     invalidateStoreCache();
     return;
   }
@@ -556,14 +598,18 @@ export async function replaceMatches(matches: Match[]): Promise<void> {
   try {
     await client.query("begin");
     began = true;
-    await client.query(`delete from matches`);
-    await bulkInsert(
-      client,
-      "matches",
-      MATCH_COLUMNS,
-      MATCH_COLUMNS.map(() => null),
-      matches.map(matchRow),
+    await client.query(
+      `delete from matches where is_test = false and status = 'queued'`,
     );
+    if (productionQueued.length > 0) {
+      await bulkInsert(
+        client,
+        "matches",
+        MATCH_COLUMNS,
+        MATCH_COLUMNS.map(() => null),
+        productionQueued.map(matchRow),
+      );
+    }
     await client.query("commit");
     began = false;
     invalidateStoreCache();

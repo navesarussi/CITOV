@@ -1,6 +1,10 @@
 {
   "name": "citov",
+<<<<<<< HEAD
   "version": "0.4.7",
+=======
+  "version": "0.4.6",
+>>>>>>> origin/main
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
