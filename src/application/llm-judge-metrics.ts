@@ -19,7 +19,7 @@ function pairKey(jobId: string, candidateId: string): string {
   return `${jobId}:${candidateId}`;
 }
 
-/** Latest human label per pair (admin / test-run / crowd — excludes llm-judge sources). */
+/** Latest human label per pair (admin / test-run — excludes llm-judge and legacy crowd). */
 async function latestHumanLabelsByPair(): Promise<Map<string, import("@/domain/matching-eval/types").RelevanceLabel>> {
   const rows = await listMatchLabels(10_000);
   const map = new Map<string, import("@/domain/matching-eval/types").RelevanceLabel>();

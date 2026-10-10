@@ -37,8 +37,6 @@ type AdminStats = {
       cachedTokens?: number;
     }[];
     byDay?: { day: string; costUsd: number; calls: number; tokens: number }[];
-    crowdLabels?: number;
-    adminCrowdAgreementRate?: number | null;
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -247,14 +245,6 @@ export default function AdminPage() {
               </li>
             ))}
           </ul>
-          {(stats.aiUsage.crowdLabels ?? 0) > 0 ? (
-            <p className="mt-2 text-xs text-[var(--muted)]">
-              תיוג קהל: {stats.aiUsage.crowdLabels}
-              {stats.aiUsage.adminCrowdAgreementRate != null
-                ? ` · הסכמה מנהל↔קהל ${(stats.aiUsage.adminCrowdAgreementRate * 100).toFixed(0)}%`
-                : null}
-            </p>
-          ) : null}
           <p className="mt-2 text-xs text-[var(--muted)]">
             חישוב לפי טוקנים מה-API ומחירון Gemini — חשבונית Google היא מקור האמת.
           </p>

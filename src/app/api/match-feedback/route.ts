@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       candidateId: match.candidateId,
       label: "bad",
       note: body.note?.trim() || "לא רלוונטי (מועמד/ת)",
-      source: "crowd",
+      source: "candidate_action",
       labelerUserId: body.userId,
       labelerRole: "candidate",
       ruleScore: scores.ruleScore,
