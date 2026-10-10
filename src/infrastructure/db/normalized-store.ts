@@ -2,7 +2,7 @@
  * Postgres-backed app store — normalized tables, bulk writes, and legacy blob migration.
  */
 import type { Pool, PoolClient } from "pg";
-import type { AdminSettings, Match, Role, StoreData, User } from "@/domain/types";
+import type { AdminSettings, FieldQuestion, Match, Role, StoreData, User } from "@/domain/types";
 import {
   emptyCandidateCard,
   emptyJobCard,
@@ -16,6 +16,7 @@ import { getPool } from "./pool";
 import {
   getCachedStore,
   invalidateStoreCache,
+  isStoreCacheFresh,
   markNormalizedDataPresent,
   setCachedStore,
 } from "./store-cache";
@@ -57,9 +58,25 @@ async function deleteNotIn(
   idColumn: string,
   ids: string[],
 ): Promise<void> {
+  if (table === "app_users" && process.env.ALLOW_FULL_STORE_WRITE !== "1") {
+    const pending = ids.length
+      ? await client.query<{ n: string }>(
+          `select count(*)::text as n from app_users where not (${idColumn} = any($1::text[]))`,
+          [ids],
+        )
+      : await client.query<{ n: string }>(`select count(*)::text as n from app_users`);
+    const n = Number(pending.rows[0]?.n ?? 0);
+    if (n > 0) {
+      throw new Error(
+        `Blocked full-store write: would delete ${n} app_users row(s). Use targeted APIs.`,
+      );
+    }
+  }
   if (ids.length) {
     await client.query(`delete from ${table} where not (${idColumn} = any($1::text[]))`, [ids]);
-  } else {
+  } else if (process.env.ALLOW_FULL_STORE_WRITE === "1") {
+    await client.query(`delete from ${table}`);
+  } else if (table !== "app_users") {
     await client.query(`delete from ${table}`);
   }
 }
@@ -494,6 +511,62 @@ export async function setEmployerVerified(userId: string, verified: boolean): Pr
   invalidateStoreCache();
 }
 
+/** Persist a new field question + pending ids on matching employees (no full-store write). */
+export async function persistFieldQuestionDelta(
+  question: FieldQuestion,
+  employeePending: { userId: string; pendingFieldQuestionIds: string[] }[],
+): Promise<void> {
+  if (shouldUseMemoryStore()) {
+    const data = readMemoryStore();
+    writeMemoryStore({
+      ...data,
+      fieldQuestions: [...data.fieldQuestions, question],
+      employees: data.employees.map((e) => {
+        const hit = employeePending.find((p) => p.userId === e.userId);
+        return hit ? { ...e, pendingFieldQuestionIds: hit.pendingFieldQuestionIds } : e;
+      }),
+    });
+    invalidateStoreCache();
+    return;
+  }
+  await ensureSchema();
+  const pool = await getPool();
+  const client = await pool.connect();
+  let began = false;
+  try {
+    await client.query("begin");
+    began = true;
+    await client.query(
+      `insert into field_questions (id, field, question, source_job_id, source_employer_id, created_at)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (id) do nothing`,
+      [
+        question.id,
+        question.field,
+        question.question,
+        question.sourceJobId,
+        question.sourceEmployerId,
+        question.createdAt,
+      ],
+    );
+    for (const row of employeePending) {
+      await client.query(
+        `update employee_profiles set pending_field_question_ids = $2::jsonb, updated_at = now()
+         where user_id = $1`,
+        [row.userId, JSON.stringify(row.pendingFieldQuestionIds)],
+      );
+    }
+    await client.query("commit");
+    began = false;
+    invalidateStoreCache();
+  } catch (e) {
+    if (began) await client.query("rollback");
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 export async function findUserByEmailOrGoogle(
   email: string,
   googleId?: string,
@@ -528,7 +601,7 @@ export async function readNormalizedStore(): Promise<StoreData> {
     return readMemoryStore();
   }
   const cached = getCachedStore();
-  if (cached) return cached;
+  if (cached && isStoreCacheFresh()) return cached;
 
   await ensureSchema();
   const pool = await getPool();
@@ -561,6 +634,11 @@ export async function readNormalizedStore(): Promise<StoreData> {
 }
 
 export async function writeNormalizedStore(store: StoreData): Promise<void> {
+  if (!shouldUseMemoryStore() && process.env.ALLOW_FULL_STORE_WRITE !== "1") {
+    throw new Error(
+      "Full store write blocked. Set ALLOW_FULL_STORE_WRITE=1 only for offline maintenance scripts.",
+    );
+  }
   if (shouldUseMemoryStore()) {
     writeMemoryStore(store);
     invalidateStoreCache();

@@ -10,7 +10,7 @@ import { nextTestRunLabelingPairs } from "@/application/test-sandbox/labeling-qu
 import { parseAdminDataScope } from "@/infrastructure/admin-data-scope";
 import { filterStoreByScope } from "@/infrastructure/db/store-scope";
 import { readNormalizedStore } from "@/infrastructure/db/normalized-store";
-import { readMatchingStore, readStore, writeStore } from "@/infrastructure/store";
+import { readMatchingStore, readStore } from "@/infrastructure/store";
 import { upsertAdminSettings } from "@/infrastructure/db/normalized-store";
 import { ok, fail } from "@/infrastructure/http";
 
@@ -29,13 +29,6 @@ async function GETHandler(req: Request) {
     const url = new URL(req.url);
     const jobId = url.searchParams.get("jobId")?.trim();
     const candidateId = url.searchParams.get("candidateId")?.trim();
-    const excludeRaw = url.searchParams.get("exclude")?.trim() ?? "";
-    const excludeKeys = new Set(
-      excludeRaw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-    );
     const metrics = await extendedLiveMetrics(store, index);
     if (jobId && candidateId) {
       const pair = getLabelingPair(store, jobId, candidateId, index, scope === "test" ? "test-run" : "review");
@@ -44,7 +37,7 @@ async function GETHandler(req: Request) {
     const pairs =
       scope === "test"
         ? await nextTestRunLabelingPairs(store, index, 1)
-        : await nextLabelingPairs(store, index, 1, excludeKeys);
+        : await nextLabelingPairs(store, index, 1);
     return ok({ pair: pairs[0] ?? null, metrics, dataScope: scope });
   } catch (e) {
     return fail(e, undefined, { route: ROUTE });
@@ -91,7 +84,6 @@ async function POSTHandler(req: Request) {
         updatedBy: gate.email ?? "admin",
       };
       await upsertAdminSettings(settings);
-      await writeStore({ ...full, adminSettings: settings });
       const store = await readMatchingStore();
       const index = mergeEvalFixtureIntoIndex(await loadMatchingEmbeddingIndex(store));
       const metrics = await extendedLiveMetrics(store, index);
