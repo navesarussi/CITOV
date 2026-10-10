@@ -39,3 +39,14 @@ export function writeMemorySegmentVectors(
 export function resetMemoryEmbeddings(): void {
   store.clear();
 }
+
+/** Remove cached vectors for a user (candidate row + employer job slots). */
+export function purgeMemoryEmbeddingsForUser(userId: string, jobSlotIds: string[]): void {
+  for (const k of [...store.keys()]) {
+    if (k.startsWith(`candidate:${userId}:`)) store.delete(k);
+    if (k.startsWith(`job:${userId}:`)) store.delete(k);
+  }
+  for (const slotId of jobSlotIds) {
+    store.delete(key("job", userId, slotId));
+  }
+}

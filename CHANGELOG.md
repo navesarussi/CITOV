@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.19 — 2025-10-10
+
+- Security (H3): complete delete-my-data — embeddings, degraded turns, employer field questions, match labels, event PII scrub, CV blobs; blocks demo/test users; UI surfaces API errors.
+
 ## 0.4.18 — 2025-10-10
 
 - Security (H2): chat message length cap + JSON `Content-Length` guard; per-user AI rate limit persisted in Postgres (`user_rate_limit_windows`) with dev memory-store fallback.
