@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "008_crowd_labels_and_usage_thinking";
+const MIGRATION_VERSION = "009_app_events_monitoring";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -95,6 +95,26 @@ alter table match_labels add column if not exists labeler_role text;
 alter table match_labels drop constraint if exists match_labels_source_check;
 alter table match_labels add constraint match_labels_source_check
   check (source in ('admin', 'employer_action', 'import', 'crowd'));
+
+create table if not exists app_events (
+  id text primary key,
+  kind text not null,
+  severity text not null default 'info' check (severity in ('info', 'warn', 'critical')),
+  route text,
+  status_code integer,
+  message text not null,
+  stack text,
+  user_id text,
+  user_email text,
+  meta jsonb,
+  duration_ms integer,
+  fingerprint text not null,
+  issue_status text not null default 'open' check (issue_status in ('open', 'resolved')),
+  created_at timestamptz not null default now()
+);
+create index if not exists app_events_fingerprint_idx on app_events (fingerprint, created_at desc);
+create index if not exists app_events_kind_idx on app_events (kind, created_at desc);
+create index if not exists app_events_created_idx on app_events (created_at desc);
 `;
 
 let schemaReady: Promise<void> | undefined;

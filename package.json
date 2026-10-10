@@ -1,6 +1,6 @@
 {
   "name": "shidukh-poc",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test src/domain/*.test.ts src/domain/**/*.test.ts src/application/*.test.ts src/infrastructure/*.test.ts src/infrastructure/**/*.test.ts src/infrastructure/ai/*.test.ts eval/matching/*.test.ts",
+    "test:e2e": "playwright test",
     "eval:matching": "tsx scripts/eval-matching.ts",
     "eval:generate-holdout-sheet": "tsx scripts/generate-holdout-labeling.ts",
     "eval:import-labels": "tsx scripts/eval-import-labels.ts",
@@ -33,6 +34,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",

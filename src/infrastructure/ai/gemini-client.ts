@@ -1,4 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { recordAppEventSafe } from "@/infrastructure/db/app-events";
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
 
@@ -63,7 +64,24 @@ export async function callGeminiWithRetry<T>(
       return await fn();
     } catch (err) {
       lastErr = err;
-      if (!isRetryableGeminiError(err) || attempt >= maxAttempts - 1) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (isRetryableGeminiError(err) && attempt < maxAttempts - 1) {
+        recordAppEventSafe({
+          kind: "ai_retry",
+          severity: "warn",
+          message: msg,
+          meta: { attempt: attempt + 1, maxAttempts },
+        });
+      }
+      if (!isRetryableGeminiError(err) || attempt >= maxAttempts - 1) {
+        recordAppEventSafe({
+          kind: "ai_failure",
+          severity: "critical",
+          message: msg,
+          stack: err instanceof Error ? err.stack : undefined,
+        });
+        throw err;
+      }
       rotateGeminiKey();
       modelCache.clear();
       await sleep(Math.min(8000, 600 * 2 ** attempt));

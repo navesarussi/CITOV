@@ -18,6 +18,7 @@ import {
   type JobPatch,
 } from "./schemas";
 import { extractGeminiUsage } from "./usage-extract";
+import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
 
 export { runCvExtraction } from "./cv-extraction";
 
@@ -37,7 +38,7 @@ export async function runEmployeeIntake(params: {
   locale?: "he" | "en";
   accountHolderFirstName?: string;
 }): Promise<IntakeResult> {
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     return heuristicEmployeeIntake(
       params.message,
       params.card,
@@ -102,7 +103,7 @@ export async function runEmployerIntake(params: {
   chat: ChatMessage[];
   systemPrompt: string;
 }): Promise<IntakeResult> {
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     return heuristicEmployerIntake(params.message, params.card, params.chat);
   }
 
@@ -225,7 +226,7 @@ export async function runCvWelcomeReply(params: {
   });
   const systemPrompt = params.systemPrompt + welcomeNote;
 
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     return {
       reply: heuristicCvWelcomeReply({
         card: params.card,
@@ -395,7 +396,7 @@ export async function runJobDescriptionExtraction(params: {
   text: string;
   card: JobCard;
 }): Promise<CardExtraction<JobPatch>> {
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     const h = heuristicEmployerIntake(params.text, params.card, []);
     return { patch: h.jobPatch ?? {}, provider: "heuristic" };
   }
@@ -428,7 +429,7 @@ export async function enrichReasonWithAi(
   candidateSummary: string,
   jobSummary: string,
 ): Promise<{ text: string; usage?: AiTokenUsage }> {
-  if (!hasGeminiKey()) return { text: reason };
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) return { text: reason };
   try {
     const { text, usage } = await callGeminiWithRetry(() =>
       generateText({

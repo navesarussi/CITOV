@@ -53,7 +53,11 @@ export type AdminStats = {
 };
 
 export function isDemoUserId(userId: string): boolean {
-  return DEMO_USER_IDS.has(userId) || userId.startsWith("seed-");
+  return (
+    DEMO_USER_IDS.has(userId) ||
+    userId.startsWith("seed-") ||
+    userId.startsWith("e2e-")
+  );
 }
 
 export function estimateAiCostUsd(

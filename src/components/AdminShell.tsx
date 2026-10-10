@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { AdminBudgetBanner } from "@/components/admin/AdminBudgetBanner";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { SettingsMenu } from "@/components/SettingsMenu";
 
@@ -36,7 +37,10 @@ export function AdminShell(props: {
           <AdminNav />
         </div>
       </header>
-      <main className="workspace-main max-w-5xl">{props.children}</main>
+      <main className="workspace-main max-w-5xl">
+        <AdminBudgetBanner />
+        {props.children}
+      </main>
     </div>
   );
 }

@@ -10,7 +10,11 @@ import { readMatchingStore, readStore, writeStore } from "@/infrastructure/store
 import { upsertAdminSettings } from "@/infrastructure/db/normalized-store";
 import { ok, fail } from "@/infrastructure/http";
 
-export async function GET(req: Request) {
+import { withApiLogging } from "@/infrastructure/api-route-log";
+
+const ROUTE = "/api/admin/labeling";
+
+async function GETHandler(req: Request) {
   try {
     const gate = await assertAdmin();
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
@@ -27,11 +31,11 @@ export async function GET(req: Request) {
     const pairs = await nextLabelingPairs(store, index, 1);
     return ok({ pair: pairs[0] ?? null, metrics });
   } catch (e) {
-    return fail(e);
+    return fail(e, undefined, { route: ROUTE });
   }
 }
 
-export async function POST(req: Request) {
+async function POSTHandler(req: Request) {
   try {
     const gate = await assertAdmin();
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
@@ -99,6 +103,9 @@ export async function POST(req: Request) {
     const next = await nextLabelingPairs(store, index, 1);
     return ok({ ok: true, metrics, pair: next[0] ?? null });
   } catch (e) {
-    return fail(e);
+    return fail(e, undefined, { route: ROUTE, userEmail: undefined });
   }
 }
+
+export const GET = withApiLogging(ROUTE, GETHandler);
+export const POST = withApiLogging(ROUTE, POSTHandler);
