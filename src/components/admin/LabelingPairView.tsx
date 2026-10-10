@@ -2,6 +2,11 @@
 
 import type { LabelingPair } from "@/application/admin-labeling";
 import type { LabelFieldRow } from "@/domain/labeling-field-map";
+import {
+  labelingCandidateRows,
+  labelingCompanyRows,
+  labelingJobRows,
+} from "@/domain/labeling-card-rows";
 
 function alignClass(align: LabelFieldRow["align"]): string {
   if (align === "match") return "bg-emerald-50 border-emerald-200";
@@ -29,62 +34,6 @@ function CardBlock(props: {
       </dl>
     </article>
   );
-}
-
-function jobRows(job: LabelingPair["job"]) {
-  return [
-    { label: "כותרת", value: job.title },
-    { label: "תחום", value: job.field },
-    { label: "מיקום", value: job.location },
-    { label: "מודל עבודה", value: job.workModel },
-    { label: "היקף", value: job.scope },
-    { label: "סוג העסקה", value: job.employmentType },
-    { label: "משמרות", value: job.shiftPattern },
-    { label: "סופ״ש / לילה", value: `${job.weekendsRequired} / ${job.nightShiftsRequired}` },
-    { label: "שכר", value: job.salaryRange || `${job.salaryMin}–${job.salaryMax}` },
-    { label: "ותק / בכירות", value: `${job.minExperienceYears} · ${job.seniorityLevel}` },
-    { label: "חובה", value: job.mustHaves.join(", ") },
-    { label: "יתרון", value: job.niceToHaves.join(", ") },
-    { label: "שפות", value: job.requiredLanguages.join(", ") },
-    { label: "כלי עבודה", value: job.toolsRequired },
-    { label: "אופי / התאמה", value: job.personalityFit },
-    { label: "תרבות צוות", value: job.teamCulture },
-    { label: "סגנון ניהול", value: job.managementStyle },
-    { label: "דרישות פיזיות", value: job.physicalDemands },
-    { label: "גמישות דרישות", value: String(job.flexibility) },
-    { label: "סיפור משרה", value: job.narrative },
-  ];
-}
-
-function candidateRows(c: LabelingPair["candidate"]) {
-  return [
-    { label: "תפקיד מבוקש", value: c.desiredRole },
-    { label: "תחום", value: c.field },
-    { label: "מיקום", value: c.location },
-    { label: "שכר", value: c.salaryExpectation || `${c.salaryMin}–${c.salaryMax}` },
-    { label: "ותק", value: String(c.experienceYears ?? "") + " " + c.experienceLevel },
-    { label: "כישורים", value: c.skills.join(", ") },
-    { label: "שפות", value: c.languages.join(", ") },
-    { label: "אופי", value: c.personality },
-    { label: "סגנון עבודה", value: c.workStyle },
-    { label: "קווים אדומים", value: c.dealBreakers },
-    { label: "משמרות", value: c.shiftPreference },
-    { label: "גמישות", value: String(c.flexibility) },
-    { label: "סיפור", value: c.narrative },
-  ];
-}
-
-function companyRows(co: LabelingPair["company"]) {
-  return [
-    { label: "חברה", value: co.name },
-    { label: "תעשייה", value: co.industry },
-    { label: "גודל", value: co.size },
-    { label: "מיקום", value: co.headquarters },
-    { label: "תרבות", value: co.culture },
-    { label: "ערכים", value: co.values },
-    { label: "סביבה", value: co.workEnvironment },
-    { label: "תקציר", value: co.summary },
-  ];
 }
 
 export function LabelingPairView(props: { pair: LabelingPair }) {
@@ -129,9 +78,21 @@ export function LabelingPairView(props: { pair: LabelingPair }) {
       </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <CardBlock title={pair.company.name || pair.employerName || "מעסיק"} subtitle="כרטיס חברה" rows={companyRows(pair.company)} />
-        <CardBlock title={pair.job.title} subtitle={`משרה · ${pair.jobId}`} rows={jobRows(pair.job)} />
-        <CardBlock title={pair.candidate.desiredRole} subtitle={`מועמד/ת · ${pair.candidateId}`} rows={candidateRows(pair.candidate)} />
+        <CardBlock
+          title={pair.company.name || pair.employerName || "מעסיק"}
+          subtitle="כרטיס חברה"
+          rows={labelingCompanyRows(pair.company)}
+        />
+        <CardBlock
+          title={pair.job.title}
+          subtitle={`משרה · ${pair.jobId}`}
+          rows={labelingJobRows(pair.job)}
+        />
+        <CardBlock
+          title={pair.candidate.desiredRole}
+          subtitle={`מועמד/ת · ${pair.candidateId}`}
+          rows={labelingCandidateRows(pair.candidate)}
+        />
       </div>
 
       <section>
