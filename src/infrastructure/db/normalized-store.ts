@@ -176,6 +176,10 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
             : undefined,
           updatedBy: admin.rows[0].updated_by ?? undefined,
           promptBundleVersion: admin.rows[0].prompt_bundle_version ?? undefined,
+          matchQueueThreshold:
+            admin.rows[0].match_queue_threshold != null
+              ? Number(admin.rows[0].match_queue_threshold)
+              : undefined,
         }
       : undefined,
     aiUsage: usage.rows.map((r) => ({
@@ -584,20 +588,22 @@ export async function upsertAdminSettings(settings: AdminSettings): Promise<void
   await ensureSchema();
   const pool = await getPool();
   await pool.query(
-    `insert into admin_settings (id, candidate_prompt, employer_prompt, updated_at, updated_by, prompt_bundle_version)
-     values ('main', $1, $2, $3, $4, $5)
+    `insert into admin_settings (id, candidate_prompt, employer_prompt, updated_at, updated_by, prompt_bundle_version, match_queue_threshold)
+     values ('main', $1, $2, $3, $4, $5, $6)
      on conflict (id) do update set
        candidate_prompt = excluded.candidate_prompt,
        employer_prompt = excluded.employer_prompt,
        updated_at = excluded.updated_at,
        updated_by = excluded.updated_by,
-       prompt_bundle_version = excluded.prompt_bundle_version`,
+       prompt_bundle_version = excluded.prompt_bundle_version,
+       match_queue_threshold = excluded.match_queue_threshold`,
     [
       settings.candidatePrompt,
       settings.employerPrompt,
       settings.updatedAt ?? null,
       settings.updatedBy ?? null,
       settings.promptBundleVersion ?? null,
+      settings.matchQueueThreshold ?? null,
     ],
   );
   invalidateStoreCache();

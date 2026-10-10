@@ -58,6 +58,7 @@ create index if not exists chat_messages_context_idx
 alter table employee_profiles add column if not exists cv jsonb not null default '{}'::jsonb;
 
 alter table admin_settings add column if not exists prompt_bundle_version text;
+alter table admin_settings add column if not exists match_queue_threshold double precision;
 
 create table if not exists candidate_document_blobs (
   id text primary key,

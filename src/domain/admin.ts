@@ -1,11 +1,13 @@
 import { storeEngagementStats } from "@/domain/admin-engagement";
-import type { AiUsageRecord, StoreData } from "./types";
+import { estimateCostUsd, GEMINI_PRICING } from "@/domain/ai-pricing";
+import type { AiUsageRecord, AiUsageType, StoreData } from "./types";
 
 const DEMO_USER_IDS = new Set(["demo-employee", "demo-employer"]);
 
-/** Gemini 2.5 Flash list pricing (USD per token) — POC estimate */
-export const GEMINI_FLASH_INPUT_USD = 0.075 / 1_000_000;
-export const GEMINI_FLASH_OUTPUT_USD = 0.3 / 1_000_000;
+export { GEMINI_PRICING };
+/** @deprecated use estimateCostUsd */
+export const GEMINI_FLASH_INPUT_USD = GEMINI_PRICING["gemini-2.5-flash"].input;
+export const GEMINI_FLASH_OUTPUT_USD = GEMINI_PRICING["gemini-2.5-flash"].output;
 
 export type AdminStats = {
   employers: number;
@@ -20,6 +22,10 @@ export type AdminStats = {
     totalCalls: number;
     totalTokens: number;
     estimatedCostUsd: number;
+    last24hCalls: number;
+    last24hTokens: number;
+    last24hCostUsd: number;
+    byType: { type: AiUsageType; calls: number; tokens: number; costUsd: number }[];
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -36,11 +42,37 @@ export type AdminStats = {
 };
 
 export function isDemoUserId(userId: string): boolean {
-  return DEMO_USER_IDS.has(userId);
+  return DEMO_USER_IDS.has(userId) || userId.startsWith("seed-");
 }
 
 export function estimateAiCostUsd(promptTokens: number, completionTokens: number): number {
-  return promptTokens * GEMINI_FLASH_INPUT_USD + completionTokens * GEMINI_FLASH_OUTPUT_USD;
+  return estimateCostUsd("gemini-2.5-flash", promptTokens, completionTokens);
+}
+
+function summarizeAiUsage(usage: AiUsageRecord[]) {
+  const since = Date.now() - 24 * 60 * 60 * 1000;
+  const byTypeMap = new Map<AiUsageType, { calls: number; tokens: number; costUsd: number }>();
+  let last24hCalls = 0;
+  let last24hTokens = 0;
+  let last24hCostUsd = 0;
+  for (const r of usage) {
+    const prev = byTypeMap.get(r.type) ?? { calls: 0, tokens: 0, costUsd: 0 };
+    prev.calls += 1;
+    prev.tokens += r.totalTokens;
+    prev.costUsd += r.estimatedCostUsd;
+    byTypeMap.set(r.type, prev);
+    if (new Date(r.createdAt).getTime() >= since) {
+      last24hCalls += 1;
+      last24hTokens += r.totalTokens;
+      last24hCostUsd += r.estimatedCostUsd;
+    }
+  }
+  return {
+    byType: [...byTypeMap.entries()].map(([type, v]) => ({ type, ...v })).sort((a, b) => b.costUsd - a.costUsd),
+    last24hCalls,
+    last24hTokens,
+    last24hCostUsd,
+  };
 }
 
 export function renderPromptTemplate(
@@ -87,6 +119,7 @@ export function computeAdminStats(store: StoreData): AdminStats {
       totalCalls: usage.length,
       totalTokens: usage.reduce((sum, r) => sum + r.totalTokens, 0),
       estimatedCostUsd: usage.reduce((sum, r) => sum + r.estimatedCostUsd, 0),
+      ...summarizeAiUsage(usage),
     },
     engagement: storeEngagementStats(store),
     users: realUsers.length,

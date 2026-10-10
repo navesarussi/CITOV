@@ -49,10 +49,16 @@ export function AdminShell(props: {
               תיוג התאמות
             </Link>
             <Link
-              href="/employee"
+              href="/admin/preview/employee"
               className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
             >
               תצוגת מועמד
+            </Link>
+            <Link
+              href="/admin/preview/employer"
+              className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
+            >
+              תצוגת מעסיק
             </Link>
           </div>
         </div>

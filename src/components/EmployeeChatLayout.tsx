@@ -20,9 +20,10 @@ export function EmployeeChatLayout(props: {
   onTurn: (payload: ChatTurnPayload) => void;
   onCvDone: () => void;
   onFlexibilityChange?: (value: number) => void;
+  readOnly?: boolean;
 }) {
   const { t } = useTranslation();
-  const blockedReason = props.hasCv ? undefined : "blocked";
+  const blockedReason = props.readOnly ? "blocked" : props.hasCv ? undefined : "blocked";
 
   const cvUpload = (
     <FileImport
@@ -79,7 +80,7 @@ export function EmployeeChatLayout(props: {
             blockedReason={blockedReason}
             onTurn={props.onTurn}
             onCvUpdated={props.onCvDone}
-            composerAddon={props.hasCv && !props.cvPending ? cvAttach : undefined}
+            composerAddon={props.readOnly ? undefined : props.hasCv && !props.cvPending ? cvAttach : undefined}
             lockedOverlay={
               props.hasCv ? undefined : (
                 <div className="employee-chat-locked">
