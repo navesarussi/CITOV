@@ -12,6 +12,7 @@ export type MatchCanonical = {
   desiredRole?: string;
   title?: string;
   field?: string;
+  location?: string;
   skills?: string[];
   languages?: string[];
   mustHaves?: string[];

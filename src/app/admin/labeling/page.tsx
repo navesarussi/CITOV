@@ -114,9 +114,13 @@ export default function AdminLabelingPage() {
   async function applySuggestedThreshold() {
     const threshold = metrics?.suggestedThreshold;
     if (threshold == null || submitting) return;
+    const current = (metrics?.queueThreshold ?? 0.6).toFixed(2);
     if (
       !confirm(
-        fmt(t.adminLabeling.applyThresholdConfirm, { value: threshold.toFixed(2) }),
+        fmt(t.adminLabeling.applyThresholdConfirm, {
+          current,
+          suggested: threshold.toFixed(2),
+        }),
       )
     ) {
       return;

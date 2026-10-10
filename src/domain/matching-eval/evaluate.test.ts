@@ -53,7 +53,7 @@ describe("matching-eval evaluate", () => {
     assert.ok(result.perJob[0].precisionAt5 >= 0.2);
   });
 
-  it("scores zero cross-language role overlap as missed good", () => {
+  it("matches Hebrew/English role overlap when canonical tokens align", () => {
     const dataset: MatchingEvalDataset = {
       version: "test",
       description: "cross-lang",
@@ -77,7 +77,7 @@ describe("matching-eval evaluate", () => {
       labels: [{ jobId: "j1", candidateId: "he", label: "good", reason: "synonym / english-hebrew" }],
     };
     const result = evaluateMatcherOnDataset(dataset, defaultRuleBasedMatcher, 5);
-    assert.equal(result.confusion.goodMissed.length, 1);
-    assert.ok(result.confusion.goodMissed[0].score < 0.28);
+    assert.equal(result.confusion.goodMissed.length, 0);
+    assert.ok(result.perJob[0].recallAt5 >= 1);
   });
 });

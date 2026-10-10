@@ -382,8 +382,12 @@ export const he: Messages = {
     labelBad: "לא מתאים",
     agreement: "הסכמה בין המערכת לאדם",
     queueThreshold: "סף כניסה לתור",
-    legacyMatcher: "ההתאמה הישנה",
-    smartMatcher: "ההתאמה החכמה",
+    legacyMatcher: "התאמה לפי מילים (חוקים)",
+    legacyMatcherHint:
+      "מסנן לפי חפיפת מילים וחוקים קבועים — מהיר ושקוף; פחות רגיש להבדלי ניסוח ושפה.",
+    smartMatcher: "התאמה היברידית (משמעות + חוקים)",
+    smartMatcherHint:
+      "משלבת דמיון משמעותי (embeddings) עם חוקים ודרישות חובה — קרוב יותר לחוויית המוצר.",
     kpiPrecision: "דיוק בחמישייה",
     kpiPrecisionTip: "מתוך חמש ההתאמות הראשונות — כמה סימנת כמתאים/סביר",
     kpiRecall: "כיסוי בחמישייה",
@@ -400,8 +404,10 @@ export const he: Messages = {
     suggestedThresholdBody:
       "מבוסס על {count} זוגות שתויגו — נקודת פתיחה בלבד; כדאי לבדוק שוב אחרי עוד תיוגים.",
     applyThreshold: "החלת הסף",
+    applyThresholdHelp:
+      "מעדכן את סף כניסה לתור ההתאמות (match_queue_threshold) — רק זוגות עם ציון היברידי מעל הסף נכנסים לתור. כרגע: {current}. מוצע מהתיוגים: {suggested}.",
     applyThresholdConfirm:
-      "להחיל סף {value} בהגדרות המנהל? (מדגם קטן — לבדוק שוב אחרי עוד תיוגים.)",
+      "להחליף את סף התור מ-{current} ל-{suggested}? (משפיע על התאמות חדשות; מדגם קטן — לבדוק שוב אחרי עוד תיוגים.)",
     scoreTitle: "פירוט הציון לזוג הזה",
     finalHybrid: "ציון התאמה חכמה",
     finalRule: "ציון התאמה קלאסי",

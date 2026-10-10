@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2 — 2025-10-10
+
+- Fix prod labeling 500: `ensureSchema` always runs idempotent ALTERs (`labeler_role`, `match_queue_threshold`, etc.).
+- Labeling field compare uses `matchCanonical`; demo seed shows Hebrew cards; admin **עדכון matchCanonical** action.
+- Clearer matcher labels and inline threshold help on `/admin/labeling`.
+
 ## 0.2.1 — 2025-10-10
 
 - Admin candidate/employer views use the signed-in admin’s real workspace profiles (same UX as `/employee` and `/employer`), not separate sandbox users.

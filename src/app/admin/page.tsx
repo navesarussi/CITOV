@@ -83,6 +83,7 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
   const [seedMsg, setSeedMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
@@ -248,6 +249,29 @@ export default function AdminPage() {
             className="min-h-9 px-3 py-1.5 text-sm"
           >
             {seeding ? "טוען דמו…" : "טעינת דמו"}
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={backfilling}
+            onClick={() => {
+              setBackfilling(true);
+              setSeedMsg(null);
+              void fetch("/api/admin/backfill-canonical", { method: "POST" })
+                .then((r) => r.json())
+                .then((d: { error?: string; employees?: number; employers?: number }) => {
+                  if (d.error) setSeedMsg(d.error);
+                  else
+                    setSeedMsg(
+                      `matchCanonical עודכן ל-${d.employees ?? 0} מועמדים ו-${d.employers ?? 0} מעסיקים.`,
+                    );
+                  void load();
+                })
+                .catch(() => setSeedMsg("עדכון matchCanonical נכשל"))
+                .finally(() => setBackfilling(false));
+            }}
+            className="min-h-9 px-3 py-1.5 text-sm"
+          >
+            {backfilling ? "מעדכן…" : "עדכון matchCanonical"}
           </Button>
           <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
             רענון

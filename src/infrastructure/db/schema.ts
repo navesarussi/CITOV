@@ -120,25 +120,21 @@ async function schemaAlreadyCurrent(pool: Awaited<ReturnType<typeof getPool>>): 
 async function runSchema(): Promise<void> {
   const elapsed = startDbTimer();
   const pool = await getPool();
-  if (await schemaAlreadyCurrent(pool)) {
-    logDbTiming("ensureSchema skipped (current)", elapsed());
+  const current = await schemaAlreadyCurrent(pool);
+  if (!current) {
+    await pool.query(NORMALIZED_SCHEMA_SQL);
     await pool.query(
       `insert into schema_migrations (version) values ($1) on conflict (version) do nothing`,
-      [MIGRATION_VERSION],
+      ["005_card_embeddings"],
     );
-    return;
   }
-  await pool.query(NORMALIZED_SCHEMA_SQL);
+  // Idempotent column/index patches — must run even when base tables already exist (prod drift).
   await pool.query(ALTERS);
-  await pool.query(
-    `insert into schema_migrations (version) values ($1) on conflict (version) do nothing`,
-    ["005_card_embeddings"],
-  );
   await pool.query(
     `insert into schema_migrations (version) values ($1) on conflict (version) do nothing`,
     [MIGRATION_VERSION],
   );
-  logDbTiming("ensureSchema applied DDL", elapsed());
+  logDbTiming(current ? "ensureSchema alters" : "ensureSchema full DDL", elapsed());
 }
 
 /**

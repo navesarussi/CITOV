@@ -380,8 +380,12 @@ export const en = {
     labelBad: "Not a match",
     agreement: "Human–system agreement",
     queueThreshold: "Queue threshold",
-    legacyMatcher: "Classic matching",
-    smartMatcher: "Smart matching",
+    legacyMatcher: "Word-based (rules)",
+    legacyMatcherHint:
+      "Token overlap and fixed rules — fast and transparent; less tolerant of wording and language differences.",
+    smartMatcher: "Hybrid (meaning + rules)",
+    smartMatcherHint:
+      "Combines semantic embeddings with rules and must-haves — closer to production matching.",
     kpiPrecision: "Precision at top 5",
     kpiPrecisionTip: "Share of top-ranked pairs you marked as good or acceptable",
     kpiRecall: "Recall at top 5",
@@ -398,8 +402,10 @@ export const en = {
     suggestedThresholdBody:
       "Based on {count} labeled pairs — a starting point only; re-check after more labels.",
     applyThreshold: "Apply threshold",
+    applyThresholdHelp:
+      "Updates the match queue threshold (match_queue_threshold) — only pairs above this hybrid score enter the queue. Current: {current}. Suggested from labels: {suggested}.",
     applyThresholdConfirm:
-      "Apply threshold {value} to admin settings? (Small sample — validate after more labels.)",
+      "Change queue threshold from {current} to {suggested}? (Affects new matches; small sample — validate after more labels.)",
     scoreTitle: "Score breakdown for this pair",
     finalHybrid: "Final smart score",
     finalRule: "Classic rule score",
