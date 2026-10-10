@@ -37,6 +37,7 @@ import { parseLocale } from "@/infrastructure/locale";
 import { enqueueDegradedTurn } from "@/infrastructure/db/degraded-turns";
 import { recordAppEventSafe } from "@/infrastructure/db/app-events";
 import { geminiCallTimeoutMs } from "@/infrastructure/ai/gemini-client";
+import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -234,7 +235,7 @@ async function runEmployeeStream(
 ): Promise<ChatTurnResult> {
   const prep = await prepareEmployeeTurn(store, userId);
 
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     const h = heuristicEmployeeIntake(message, prep.card, prep.pendingQuestions, prep.chat);
     await emitTyping(controller, h.reply);
     return applyEmployeeTurn({
@@ -275,7 +276,7 @@ async function runEmployeeStream(
   let degraded = false;
   let replyUsage;
   try {
-    const streamed = streamEmployeeReply({
+    const streamed = await streamEmployeeReply({
       message,
       card: prep.card,
       chat: prep.chat,
@@ -287,6 +288,7 @@ async function runEmployeeStream(
       locale,
       accountHolderFirstName,
     });
+    if (!streamed) throw new Error("gemini_budget_blocked");
     const streamDeadline = Date.now() + timeoutMs;
     for await (const delta of streamed.textStream) {
       if (Date.now() > streamDeadline) throw new Error("gemini_timeout");
@@ -334,7 +336,7 @@ async function runEmployerStream(
 ): Promise<ChatTurnResult> {
   const prep = await prepareEmployerTurn(store, userId, jobId);
 
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     const h = heuristicEmployerIntake(message, prep.card, prep.chat);
     await emitTyping(controller, h.reply);
     return applyEmployerTurn({
@@ -367,13 +369,14 @@ async function runEmployerStream(
   let degraded = false;
   let replyUsage;
   try {
-    const streamed = streamEmployerReply({
+    const streamed = await streamEmployerReply({
       message,
       card: prep.card,
       chat: prep.chat,
       systemPrompt: prep.systemPrompt,
       pendingJobConfirmations: prep.pendingJobConfirmations,
     });
+    if (!streamed) throw new Error("gemini_budget_blocked");
     const streamDeadline = Date.now() + timeoutMs;
     for await (const delta of streamed.textStream) {
       if (Date.now() > streamDeadline) throw new Error("gemini_timeout");
