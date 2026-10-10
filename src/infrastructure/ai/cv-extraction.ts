@@ -19,7 +19,7 @@ import {
   type AiTokenUsage,
   type CandidatePatch,
 } from "./schemas";
-import { extractGeminiUsage } from "./usage-extract";
+import { extractGeminiUsage, mergeAiTokenUsage } from "./usage-extract";
 
 /** Without caps Gemini can hit finishReason=length (~65k tokens) and fail structured parse. */
 const PASS_A_MAX_TOKENS = 4096;
@@ -153,16 +153,7 @@ export async function runCvExtraction(params: {
       console.error("cv subtext pass B failed; keeping pass A only", err);
     }
 
-    const usageA = extractUsage(passA.usage);
-    const usage =
-      usageA || usageB
-        ? {
-            promptTokens: (usageA?.promptTokens ?? 0) + (usageB?.promptTokens ?? 0),
-            completionTokens:
-              (usageA?.completionTokens ?? 0) + (usageB?.completionTokens ?? 0),
-            totalTokens: (usageA?.totalTokens ?? 0) + (usageB?.totalTokens ?? 0),
-          }
-        : undefined;
+    const usage = mergeAiTokenUsage(extractUsage(passA.usage), usageB);
 
     const gated = gateExtractedFields({
       sourceText: cvText,

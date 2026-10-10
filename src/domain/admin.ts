@@ -1,5 +1,10 @@
 import { storeEngagementStats } from "@/domain/admin-engagement";
-import { estimateCacheSavingsUsd, estimateCostUsd, GEMINI_PRICING } from "@/domain/ai-pricing";
+import {
+  estimateCacheSavingsUsd,
+  estimateCostUsd,
+  GEMINI_PRICING,
+  resolveGeminiPricingKey,
+} from "@/domain/ai-pricing";
 import type { AiUsageRecord, AiUsageType, StoreData } from "./types";
 import { isNonProductionUserId } from "./test-sandbox";
 
@@ -186,8 +191,7 @@ export function createAiUsageRecord(params: {
   const thinkingTokens = params.thinkingTokens ?? 0;
   const totalTokens = params.promptTokens + params.completionTokens + thinkingTokens;
   const cachedPromptTokens = params.cachedPromptTokens ?? 0;
-  const modelKey =
-    params.model?.includes("embedding") ? "gemini-embedding-001" : "gemini-2.5-flash";
+  const modelKey = resolveGeminiPricingKey(params.model);
   return {
     id: params.id,
     type: params.type,
@@ -197,8 +201,8 @@ export function createAiUsageRecord(params: {
     cachedPromptTokens: cachedPromptTokens > 0 ? cachedPromptTokens : undefined,
     thinkingTokens: thinkingTokens > 0 ? thinkingTokens : undefined,
     estimatedCostUsd:
-      estimateCostUsd(modelKey as "gemini-2.5-flash", params.promptTokens, params.completionTokens, cachedPromptTokens) +
-      estimateCostUsd("gemini-2.5-flash", 0, thinkingTokens, 0),
+      estimateCostUsd(modelKey, params.promptTokens, params.completionTokens, cachedPromptTokens) +
+      estimateCostUsd(modelKey, 0, thinkingTokens, 0),
     userId: params.userId,
     model: params.model,
     latencyMs: params.latencyMs,

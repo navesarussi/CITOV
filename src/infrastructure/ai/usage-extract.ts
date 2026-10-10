@@ -36,3 +36,23 @@ export function extractGeminiUsage(usage?: UsageLike | null): AiTokenUsage | und
     cachedPromptTokens: cachedPromptTokens > 0 ? cachedPromptTokens : undefined,
   };
 }
+
+/** Sum token fields across multi-pass Gemini calls (e.g. CV pass A + B). */
+export function mergeAiTokenUsage(
+  a?: AiTokenUsage | null,
+  b?: AiTokenUsage | null,
+): AiTokenUsage | undefined {
+  if (!a && !b) return undefined;
+  const promptTokens = (a?.promptTokens ?? 0) + (b?.promptTokens ?? 0);
+  const completionTokens = (a?.completionTokens ?? 0) + (b?.completionTokens ?? 0);
+  const thinkingTokens = (a?.thinkingTokens ?? 0) + (b?.thinkingTokens ?? 0);
+  const cachedPromptTokens = (a?.cachedPromptTokens ?? 0) + (b?.cachedPromptTokens ?? 0);
+  if (promptTokens === 0 && completionTokens === 0 && thinkingTokens === 0) return undefined;
+  return {
+    promptTokens,
+    completionTokens,
+    thinkingTokens: thinkingTokens > 0 ? thinkingTokens : undefined,
+    cachedPromptTokens: cachedPromptTokens > 0 ? cachedPromptTokens : undefined,
+    totalTokens: promptTokens + completionTokens + thinkingTokens,
+  };
+}

@@ -82,13 +82,15 @@ export type JudgeBatchPair = {
   candidate: CandidateCard;
 };
 
+export type JudgeUsageEntry = { usage: AiTokenUsage; model: string };
+
 export type JudgeBatchResult = {
   judgeA: Map<number, { label: RelevanceLabel; reasonHe: string; confidence: number }>;
   judgeB: Map<
     number,
     { label: RelevanceLabel; reasonHe: string; confidence: number; critiqueHe: string }
   >;
-  usage: AiTokenUsage[];
+  usage: JudgeUsageEntry[];
 };
 
 export async function runTwoJudgeBatch(
@@ -98,8 +100,9 @@ export async function runTwoJudgeBatch(
   if (!hasGeminiKey() || !pairs.length) {
     return { judgeA: new Map(), judgeB: new Map(), usage: [] };
   }
-  const usage: AiTokenUsage[] = [];
+  const usage: JudgeUsageEntry[] = [];
   const judgeA = new Map<number, { label: RelevanceLabel; reasonHe: string; confidence: number }>();
+  const modelA = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
   if (judgeAOutputs) {
     for (const [k, v] of judgeAOutputs) judgeA.set(k, v);
   } else {
@@ -112,7 +115,7 @@ export async function runTwoJudgeBatch(
       .join("\n\n---\n\n");
     const { object, usage: uA } = await callGeminiWithRetry(() =>
       generateObject({
-        model: getGeminiModel(),
+        model: getGeminiModel(modelA),
         temperature: 0.2,
         schema: judgeASchema,
         system: systemA,
@@ -120,7 +123,7 @@ export async function runTwoJudgeBatch(
       }),
     );
     const u = extractGeminiUsage(uA);
-    if (u) usage.push(u);
+    if (u) usage.push({ usage: u, model: modelA });
     for (const row of object.pairs) {
       judgeA.set(row.pairIndex, {
         label: row.label,
@@ -149,7 +152,7 @@ export async function runTwoJudgeBatch(
     }),
   );
   const u2 = extractGeminiUsage(uB);
-  if (u2) usage.push(u2);
+  if (u2) usage.push({ usage: u2, model: modelB });
 
   const judgeB = new Map<
     number,
