@@ -1,6 +1,7 @@
 import type { MatchScoreMode } from "@/domain/matching-scorers";
 import type { HybridWeights } from "@/domain/semantic-matching";
 import { DEFAULT_HYBRID_WEIGHTS } from "@/domain/semantic-matching";
+import type { AdminSettings } from "@/domain/types";
 
 export function readMatchingMode(): MatchScoreMode {
   const raw = process.env.MATCHING_MODE?.trim().toLowerCase();
@@ -17,7 +18,9 @@ export function readHybridWeights(): HybridWeights {
   return { semantic: sem, rule };
 }
 
-export function readQueueThreshold(): number {
+export function readQueueThreshold(settings?: AdminSettings | null): number {
+  const fromDb = settings?.matchQueueThreshold;
+  if (fromDb != null && Number.isFinite(fromDb)) return fromDb;
   const raw = Number(process.env.MATCHING_QUEUE_THRESHOLD ?? 0.6);
   return Number.isFinite(raw) ? raw : 0.6;
 }

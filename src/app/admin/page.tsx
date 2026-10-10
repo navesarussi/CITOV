@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
+import { AdminPromptWorkbench } from "@/components/admin/AdminPromptWorkbench";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
@@ -21,6 +22,10 @@ type AdminStats = {
     totalCalls: number;
     totalTokens: number;
     estimatedCostUsd: number;
+    last24hCalls: number;
+    last24hTokens: number;
+    last24hCostUsd: number;
+    byType: { type: string; calls: number; tokens: number; costUsd: number }[];
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -44,11 +49,10 @@ type Dashboard = {
     updatedAt?: string;
     updatedBy?: string;
     isCustom?: boolean;
+    defaultCandidatePrompt?: string;
+    defaultEmployerPrompt?: string;
   };
 };
-
-const PLACEHOLDER_HELP =
-  "{{known_facts}}, {{current_card}}, {{missing_field_key}}, {{pending_field_questions}}, {{recent_agent_questions}} — היסטוריית השיחה נשלחת אוטומטית כ-messages";
 
 function formatUsd(value: number): string {
   if (value < 0.01) return `$${value.toFixed(4)}`;
@@ -73,6 +77,8 @@ export default function AdminPage() {
   const [isCustom, setIsCustom] = useState(false);
   const [aiMode, setAiMode] = useState<string | null>(null);
   const [bootTimedOut, setBootTimedOut] = useState(false);
+  const [defaultCandidate, setDefaultCandidate] = useState("");
+  const [defaultEmployer, setDefaultEmployer] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -93,6 +99,8 @@ export default function AdminPage() {
       setCandidatePrompt(json.prompts.candidatePrompt);
       setEmployerPrompt(json.prompts.employerPrompt);
       setIsCustom(Boolean(json.prompts.isCustom));
+      setDefaultCandidate(json.prompts.defaultCandidatePrompt ?? json.prompts.candidatePrompt);
+      setDefaultEmployer(json.prompts.defaultEmployerPrompt ?? json.prompts.employerPrompt);
       setAiMode(ai?.mode ?? null);
       setError(null);
     } catch {
@@ -252,10 +260,17 @@ export default function AdminPage() {
         <AdminStatCard
           label="עלות AI (הערכה)"
           value={formatUsd(stats.aiUsage.estimatedCostUsd)}
-          sub={`${formatTokens(stats.aiUsage.totalTokens)} טוקנים · ${stats.aiUsage.totalCalls} קריאות`}
+          sub={`${formatTokens(stats.aiUsage.totalTokens)} טוקנים · ${stats.aiUsage.totalCalls} קריאות · 24ש ${formatUsd(stats.aiUsage.last24hCostUsd)}`}
         >
+          <ul className="mt-2 space-y-0.5 text-xs text-[var(--muted)]">
+            {stats.aiUsage.byType.slice(0, 6).map((row) => (
+              <li key={row.type}>
+                {row.type}: {row.calls} · {formatTokens(row.tokens)} tok · {formatUsd(row.costUsd)}
+              </li>
+            ))}
+          </ul>
           <p className="mt-2 text-xs text-[var(--muted)]">
-            הערכה פנימית מטוקנים — יתרה ותשלומים בפועל ב־Google.
+            הערכה פנימית (Gemini Flash + embedding rates ב־ai-pricing.ts) — חיוב בפועל ב־Google.
           </p>
           <a
             href="https://aistudio.google.com/usage"
@@ -320,79 +335,35 @@ export default function AdminPage() {
         )}
       </section>
 
-      <section className="enter-delay-2 mt-8 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-[var(--muted)]">
-            הפרומפטים נשלחים בכל הודעת צ׳אט מ־
-            <code className="mx-1 rounded bg-[var(--chip)] px-1.5 py-0.5 text-[11px]">
-              /api/chat
-            </code>
-            (מפתח Gemini רק בשרת).{" "}
-            <span className="font-medium text-[var(--ink)]">
-              {isCustom ? "מקור: עריכה מותאמת (DB)" : "מקור: קבצי ברירת מחדל"}
-            </span>
-            {aiMode ? (
-              <span className="ms-2 font-medium text-[var(--accent)]">
-                · מצב AI: {aiMode === "gemini" ? "Gemini פעיל" : "מקומי (חסר מפתח)"}
-              </span>
-            ) : null}
-          </p>
-        </div>
+      {error ? (
+        <p className="mt-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">{error}</p>
+      ) : null}
 
-        {error ? (
-          <p className="rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
-            {error}
-          </p>
+      <p className="mt-6 text-sm text-[var(--muted)]">
+        פרומפטים נשלחים מ־<code className="rounded bg-[var(--chip)] px-1">/api/chat</code>
+        {aiMode ? (
+          <span className="ms-2 font-medium text-[var(--accent)]">
+            · AI: {aiMode === "gemini" ? "Gemini" : "heuristic"}
+          </span>
         ) : null}
+      </p>
 
-        <div>
-          <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-lg font-semibold">פרומפט סוכן מועמדים</h2>
-            <span className="max-w-xl text-xs leading-5 text-[var(--muted)]">
-              {PLACEHOLDER_HELP}
-            </span>
-          </div>
-          <textarea
-            value={candidatePrompt}
-            onChange={(e) => setCandidatePrompt(e.target.value)}
-            dir="rtl"
-            rows={14}
-            className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4 font-mono text-xs leading-6 outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
-          />
-        </div>
-
-        <div>
-          <div className="mb-2 flex flex-wrap items-end justify-between gap-2">
-            <h2 className="text-lg font-semibold">פרומפט סוכן מעסיקים</h2>
-            <span className="max-w-xl text-xs leading-5 text-[var(--muted)]">
-              {PLACEHOLDER_HELP}
-            </span>
-          </div>
-          <textarea
-            value={employerPrompt}
-            onChange={(e) => setEmployerPrompt(e.target.value)}
-            dir="rtl"
-            rows={14}
-            className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] p-4 font-mono text-xs leading-6 outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/15"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button disabled={saving} onClick={() => void savePrompts()}>
-            {saving ? "שומר…" : "שמירת פרומפטים (לייב)"}
-          </Button>
-          <Button variant="secondary" disabled={resetting} onClick={() => void resetPrompts()}>
-            {resetting ? "מאפס…" : "איפוס לברירת מחדל"}
-          </Button>
-          {saved ? <span className="text-sm text-[var(--accent)]">נשמר — פעיל מההודעה הבאה</span> : null}
-          {prompts.updatedAt ? (
-            <span className="text-xs text-[var(--muted)]">
-              עודכן לאחרונה: {new Date(prompts.updatedAt).toLocaleString("he-IL")}
-              {prompts.updatedBy ? ` · ${prompts.updatedBy}` : ""}
-            </span>
-          ) : null}
-        </div>
-      </section>
+      <AdminPromptWorkbench
+        candidatePrompt={candidatePrompt}
+        employerPrompt={employerPrompt}
+        defaultCandidate={defaultCandidate}
+        defaultEmployer={defaultEmployer}
+        onCandidateChange={setCandidatePrompt}
+        onEmployerChange={setEmployerPrompt}
+        onSave={() => void savePrompts()}
+        onReset={() => void resetPrompts()}
+        saving={saving}
+        resetting={resetting}
+        saved={saved}
+        updatedAt={prompts.updatedAt}
+        updatedBy={prompts.updatedBy}
+        isCustom={isCustom}
+      />
     </AdminShell>
   );
 }

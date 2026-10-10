@@ -347,7 +347,8 @@ sequenceDiagram
     </ul>
 
     <h3>תיוגים חיים</h3>
-    <p>טבלה <code>match_labels</code> (admin, employer_action, import). Admin <code>/admin/labeling</code> + מטריקות rule vs hybrid production על תיוגים ב-DB.</p>
+    <p>טבלה <code>match_labels</code> (admin, employer_action, import). Admin <code>/admin/labeling</code> — כרטיסי משרה/חברה/מועמד מלאים, פירוט rule/hybrid/semantic, מטריקות חיות, אי-הסכמות, והצעת סף (admin_settings.match_queue_threshold). Holdout משתמש ב-eval fixture כשאין seed ב-DB.</p>
+    <p>פורטל מנהל: <code>/admin/preview/employee</code> ו-<code>/admin/preview/employer</code> (תצוגה read-only), עלות AI לפי <code>ai_usage</code> + <code>docs/PROMPTS.md</code>.</p>
 
     <h2 id="limits">מגבלות ידועות ומפת דרכים</h2>
     <ul>

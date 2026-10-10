@@ -285,6 +285,8 @@ export type EmployerRecord = {
   chat: ChatMessage[];
   jobs: JobSlot[];
   activeJobId: string;
+  /** Company-level card (shared across job slots). */
+  company?: import("./company-card").CompanyCard;
 };
 
 export type FieldQuestion = {
@@ -328,6 +330,8 @@ export type AdminSettings = {
   updatedBy?: string;
   /** Matches PROMPT_BUNDLE_VERSION when saved from admin; otherwise files win. */
   promptBundleVersion?: string;
+  /** Optional production queue threshold (overrides env when set). */
+  matchQueueThreshold?: number;
 };
 
 export type AiUsageType =
@@ -335,7 +339,10 @@ export type AiUsageType =
   | "employer_intake"
   | "enrich_reason"
   | "cv_import"
-  | "job_import";
+  | "job_import"
+  | "cv_extraction"
+  | "embedding"
+  | "admin_intake";
 
 export type AiUsageRecord = {
   id: string;

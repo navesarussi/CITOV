@@ -9,7 +9,7 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function overlap(a: string[], b: string[]): number {
+export function overlap(a: string[], b: string[]): number {
   if (a.length === 0 || b.length === 0) return 0;
   const setB = new Set(b.map(normalize));
   const hits = a.filter((item) => setB.has(normalize(item))).length;

@@ -1,4 +1,5 @@
 import { matchingEvalDataset } from "../../eval/matching/dataset";
+import { companyCardFromJobAndName } from "@/domain/company-card";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { EmployerRecord, StoreData, User } from "@/domain/types";
 import { readNormalizedStore, writeNormalizedStore } from "@/infrastructure/db/normalized-store";
@@ -46,13 +47,16 @@ export function buildDemoStoreFromEval(): StoreData {
       chat: [],
     }));
     const active = slots[0]?.id ?? "";
+    const employerName = `Demo employer ${Math.floor(i / jobsPerEmployer) + 1}`;
+    const firstCard = slots[0]?.card ?? chunk[0].card;
     employers.push(
       normalizeEmployerRecord({
         userId: employerId,
-        card: slots[0]?.card ?? { ...chunk[0].card },
+        card: firstCard,
         chat: [],
         jobs: slots,
         activeJobId: active,
+        company: companyCardFromJobAndName(employerName, firstCard),
       }),
     );
   }

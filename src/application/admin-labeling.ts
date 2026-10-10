@@ -1,37 +1,45 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { matchingEvalDataset } from "../../eval/matching/dataset";
 import { scoreMatch } from "@/domain/matching";
 import {
   defaultRuleBasedMatcher,
   evaluateMatcherOnDataset,
 } from "@/domain/matching-eval/evaluate";
-import type { EvalCandidate, EvalJob, EvalLabel, MatcherDefinition, MatchingEvalDataset } from "@/domain/matching-eval/types";
+import type {
+  EvalCandidate,
+  EvalJob,
+  EvalLabel,
+  MatcherDefinition,
+  MatchingEvalDataset,
+} from "@/domain/matching-eval/types";
+import { jobCandidateFieldRows, type LabelFieldRow } from "@/domain/labeling-field-map";
+import type { CompanyCard } from "@/domain/company-card";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
-import type { StoreData } from "@/domain/types";
+import type { CandidateCard, JobCard, StoreData } from "@/domain/types";
+import { readQueueThreshold } from "./matching-config";
 import { scoreCandidateForJob, type MatchEmbeddingIndex } from "./match-scoring";
 import { labeledPairKeys, listMatchLabels } from "@/infrastructure/db/match-labels";
+import { resolveLabelingPair } from "./labeling-pair-resolve";
+import { explainMatchPair, type MatchPairExplanation } from "./match-pair-explain";
 
 export type LabelingPair = {
   pairId: string;
   jobId: string;
   candidateId: string;
-  jobTitle: string;
-  jobSummary: string;
-  candidateTitle: string;
-  candidateSummary: string;
-  ruleScore: number;
-  hybridScore: number;
   bucket: string;
+  employerName: string;
+  job: JobCard;
+  candidate: CandidateCard;
+  company: CompanyCard;
+  fieldRows: LabelFieldRow[];
+  scores: MatchPairExplanation;
 };
 
 function holdoutRowsFromFile(): {
   pair_id: string;
   job_id: string;
   candidate_id: string;
-  job_title: string;
-  job_key_requirements: string;
-  candidate_title: string;
-  candidate_key_facts: string;
 }[] {
   try {
     const p = join(process.cwd(), "eval/matching/labeling/holdout-v1.pairs.json");
@@ -59,19 +67,50 @@ export function storeToEvalEntities(store: StoreData): {
   return { jobs, candidates };
 }
 
-function scoreHybrid(
-  cand: EvalCandidate,
-  job: EvalJob,
+function embeddingVectors(
+  index: MatchEmbeddingIndex | undefined,
+  jobId: string,
+  candidateId: string,
+): { candidate: import("@/domain/semantic-matching").SegmentVectors; job: import("@/domain/semantic-matching").SegmentVectors } | undefined {
+  if (!index) return undefined;
+  const cVec =
+    index.candidate.get(candidateId) ??
+    index.candidate.get(`seed-${candidateId}`);
+  const jVec = index.job.get(jobId);
+  if (!cVec || !jVec) return undefined;
+  return { candidate: cVec, job: jVec };
+}
+
+function buildRichPair(
+  store: StoreData,
+  jobId: string,
+  candidateId: string,
+  bucket: string,
   index?: MatchEmbeddingIndex,
-): number {
-  return scoreCandidateForJob({
-    candidate: cand.card,
-    job: job.card,
-    candidateId: cand.id,
-    jobId: job.id,
-    index,
-    mode: "hybrid",
-  }).score;
+): LabelingPair | null {
+  const resolved = resolveLabelingPair(store, jobId, candidateId);
+  if (!resolved) return null;
+  const vectors = embeddingVectors(index, jobId, candidateId);
+  const scores = explainMatchPair({
+    candidate: resolved.candidate,
+    job: resolved.job,
+    candidateId,
+    jobId,
+    vectors,
+    adminSettings: store.adminSettings,
+  });
+  return {
+    pairId: `${jobId}__${candidateId}`,
+    jobId,
+    candidateId,
+    bucket,
+    employerName: resolved.employerName,
+    job: resolved.job,
+    candidate: resolved.candidate,
+    company: resolved.company,
+    fieldRows: jobCandidateFieldRows(resolved.job, resolved.candidate),
+    scores,
+  };
 }
 
 export async function nextLabelingPairs(
@@ -80,86 +119,47 @@ export async function nextLabelingPairs(
   limit = 1,
 ): Promise<LabelingPair[]> {
   const labeled = await labeledPairKeys();
-  const { jobs, candidates } = storeToEvalEntities(store);
-  const jobMap = new Map(jobs.map((j) => [j.id, j]));
-  const candMap = new Map(candidates.map((c) => [c.id, c]));
   const out: LabelingPair[] = [];
 
   for (const row of holdoutRowsFromFile()) {
     if (out.length >= limit) break;
     const key = `${row.job_id}:${row.candidate_id}`;
     if (labeled.has(key)) continue;
-    const job = jobMap.get(row.job_id);
-    const cand = candMap.get(row.candidate_id);
-    if (job && cand) {
-      out.push(buildPair(job, cand, index, "holdout"));
+    const rich = buildRichPair(store, row.job_id, row.candidate_id, "holdout", index);
+    if (rich) {
+      out.push(rich);
       continue;
     }
-    out.push({
-      pairId: row.pair_id,
-      jobId: row.job_id,
-      candidateId: row.candidate_id,
-      jobTitle: row.job_title,
-      jobSummary: row.job_key_requirements,
-      candidateTitle: row.candidate_title,
-      candidateSummary: row.candidate_key_facts,
-      ruleScore: 0,
-      hybridScore: 0,
-      bucket: "holdout-seed",
-    });
   }
 
   if (out.length >= limit) return out.slice(0, limit);
 
-  const scored: LabelingPair[] = [];
+  const { jobs, candidates } = storeToEvalEntities(store);
+  const scored: { job: EvalJob; cand: EvalCandidate; rule: number; hybrid: number }[] = [];
   for (const job of jobs) {
     for (const cand of candidates) {
       const key = `${job.id}:${cand.id}`;
       if (labeled.has(key)) continue;
       const rule = scoreMatch(cand.card, job.card);
-      const hybrid = scoreHybrid(cand, job, index);
+      const hybrid = scoreCandidateForJob({
+        candidate: cand.card,
+        job: job.card,
+        candidateId: cand.id,
+        jobId: job.id,
+        index,
+        mode: "hybrid",
+      }).score;
       if (Math.abs(rule - hybrid) < 0.18) continue;
-      scored.push(buildPair(job, cand, index, "disagreement", rule, hybrid));
+      scored.push({ job, cand, rule, hybrid });
     }
   }
-  scored.sort((a, b) => Math.abs(b.hybridScore - b.ruleScore) - Math.abs(a.hybridScore - a.ruleScore));
+  scored.sort((a, b) => Math.abs(b.hybrid - b.rule) - Math.abs(a.hybrid - a.rule));
   for (const s of scored) {
     if (out.length >= limit) break;
-    if (out.some((x) => x.pairId === s.pairId)) continue;
-    out.push(s);
+    const rich = buildRichPair(store, s.job.id, s.cand.id, "disagreement", index);
+    if (rich) out.push(rich);
   }
   return out.slice(0, limit);
-}
-
-function buildPair(
-  job: EvalJob,
-  cand: EvalCandidate,
-  index: MatchEmbeddingIndex | undefined,
-  bucket: string,
-  ruleScore?: number,
-  hybridScore?: number,
-): LabelingPair {
-  const rule = ruleScore ?? scoreMatch(cand.card, job.card);
-  const hy = hybridScore ?? scoreHybrid(cand, job, index);
-  return {
-    pairId: `${job.id}__${cand.id}`,
-    jobId: job.id,
-    candidateId: cand.id,
-    jobTitle: job.card.title,
-    jobSummary: [
-      job.card.location,
-      job.card.mustHaves?.length ? `חובה: ${job.card.mustHaves.join(", ")}` : "",
-    ]
-      .filter(Boolean)
-      .join(" · "),
-    candidateTitle: cand.card.desiredRole,
-    candidateSummary: [cand.card.location, cand.card.skills?.slice(0, 4).join(", ")]
-      .filter(Boolean)
-      .join(" · "),
-    ruleScore: rule,
-    hybridScore: hy,
-    bucket,
-  };
 }
 
 export async function buildDatasetFromDbLabels(store: StoreData): Promise<MatchingEvalDataset | null> {
@@ -172,18 +172,36 @@ export async function buildDatasetFromDbLabels(store: StoreData): Promise<Matchi
     reason: r.note ?? undefined,
   }));
   const { jobs, candidates } = storeToEvalEntities(store);
-  const labelJobIds = new Set(labels.map((l) => l.jobId));
-  const labelCandIds = new Set(labels.map((l) => l.candidateId));
+  const evalJobs = new Map(matchingEvalDataset.jobs.map((j) => [j.id, j.card]));
+  const evalCands = new Map(matchingEvalDataset.candidates.map((c) => [c.id, c.card]));
+  const jobOut = [...jobs];
+  const candOut = [...candidates];
+  for (const l of labels) {
+    if (!jobOut.some((j) => j.id === l.jobId) && evalJobs.has(l.jobId)) {
+      jobOut.push({ id: l.jobId, card: evalJobs.get(l.jobId)! });
+    }
+    if (!candOut.some((c) => c.id === l.candidateId) && evalCands.has(l.candidateId)) {
+      candOut.push({ id: l.candidateId, card: evalCands.get(l.candidateId)! });
+    }
+    const seedId = `seed-${l.candidateId}`;
+    if (!candOut.some((c) => c.id === seedId)) {
+      const emp = store.employees.find((e) => e.userId === seedId);
+      if (emp) candOut.push({ id: seedId, card: emp.card });
+    }
+  }
   return {
     version: "db-labels-live",
     description: "Live labels from match_labels table",
-    jobs: jobs.filter((j) => labelJobIds.has(j.id)),
-    candidates: candidates.filter((c) => labelCandIds.has(c.id)),
+    jobs: jobOut.filter((j) => labels.some((l) => l.jobId === j.id)),
+    candidates: candOut.filter((c) => {
+      const bare = c.id.replace(/^seed-/, "");
+      return labels.some((l) => l.candidateId === c.id || l.candidateId === bare);
+    }),
     labels,
   };
 }
 
-function productionHybridMatcher(index?: MatchEmbeddingIndex): MatcherDefinition {
+export function productionHybridMatcher(index?: MatchEmbeddingIndex): MatcherDefinition {
   return {
     id: "hybrid-production",
     label: "Hybrid (production)",
@@ -202,21 +220,24 @@ function productionHybridMatcher(index?: MatchEmbeddingIndex): MatcherDefinition
 export async function liveLabelingMetrics(store: StoreData, index?: MatchEmbeddingIndex) {
   const dataset = await buildDatasetFromDbLabels(store);
   const totalLabels = await listMatchLabels().then((r) => r.length);
-  if (!dataset || dataset.labels.length < 3) {
+  const minRequired = 3;
+  if (!dataset || dataset.labels.length < minRequired) {
     return {
       totalLabels,
       ready: false,
-      message: "נדרשות לפחות 3 תיוגים להערכת מטריקות",
+      minRequired,
+      message: `נדרשות לפחות ${minRequired} תיוגים להערכת מטריקות (כרגע ${totalLabels})`,
     };
   }
   const matchers = [defaultRuleBasedMatcher, productionHybridMatcher(index)];
-  const thresholds = [0.28, 0.6];
+  const thresholds = [0.28, readQueueThreshold(store.adminSettings)];
   const results = matchers.map((m, i) =>
     evaluateMatcherOnDataset(dataset, m, 5, thresholds[i] ?? 0.28),
   );
   return {
     totalLabels,
     ready: true,
+    minRequired,
     labeledPairs: dataset.labels.length,
     matchers: results.map((r) => ({
       id: r.matcherId,
@@ -236,13 +257,22 @@ export function scoresForPair(
   candidateId: string,
   index?: MatchEmbeddingIndex,
 ): { ruleScore: number; hybridScore: number; matcherVersion: string } {
-  const { jobs, candidates } = storeToEvalEntities(store);
-  const job = jobs.find((j) => j.id === jobId);
-  const cand = candidates.find((c) => c.id === candidateId);
-  if (!job || !cand) {
+  const resolved = resolveLabelingPair(store, jobId, candidateId);
+  if (!resolved) {
     return { ruleScore: 0, hybridScore: 0, matcherVersion: "n/a" };
   }
-  const ruleScore = scoreMatch(cand.card, job.card);
-  const hybridScore = scoreHybrid(cand, job, index);
-  return { ruleScore, hybridScore, matcherVersion: "hybrid-production" };
+  const vectors = embeddingVectors(index, jobId, candidateId);
+  const ex = explainMatchPair({
+    candidate: resolved.candidate,
+    job: resolved.job,
+    candidateId,
+    jobId,
+    vectors,
+    adminSettings: store.adminSettings,
+  });
+  return {
+    ruleScore: ex.ruleScore,
+    hybridScore: ex.hybridScore,
+    matcherVersion: "hybrid-production",
+  };
 }

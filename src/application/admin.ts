@@ -10,11 +10,14 @@ import {
 
 export function getAdminDashboard(store: StoreData) {
   const settings = resolveAdminSettings(store.adminSettings);
+  const defaults = defaultPromptSnapshot();
   return {
     stats: computeAdminStats(store),
     prompts: {
       candidatePrompt: settings.candidatePrompt,
       employerPrompt: settings.employerPrompt,
+      defaultCandidatePrompt: defaults.candidatePrompt,
+      defaultEmployerPrompt: defaults.employerPrompt,
       updatedAt: settings.updatedAt,
       updatedBy: settings.updatedBy,
       isCustom: hasCustomAdminPrompts(store.adminSettings),
