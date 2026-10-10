@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.20 — 2025-10-10
+
+- Matching (H5/H4): semantic leg scaled by `semanticMustHaveFactor(overlap)`; role boost capped at 0.88 and skipped when must-have overlap &lt; 0.34.
+
 ## 0.4.19 — 2025-10-10
 
 - Security (H3): complete delete-my-data — embeddings, degraded turns, employer field questions, match labels, event PII scrub, CV blobs; blocks demo/test users; UI surfaces API errors.

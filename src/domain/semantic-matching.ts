@@ -150,6 +150,15 @@ export function computeMustHavePenalty(candidate: CandidateCard, job: JobCard): 
   return 1 - mustHaveOverlapRatio(candidate, job);
 }
 
+/** Scales semantic leg by must-have overlap (H5 — single overlap curve for hybrid). */
+export function semanticMustHaveFactor(overlap: number): number {
+  const o = Math.max(0, Math.min(1, overlap));
+  return 0.28 + 0.72 * o;
+}
+
+export const ROLE_BOOST_SCORE_CAP = 0.88;
+export const ROLE_BOOST_MIN_MUST_HAVE_OVERLAP = 0.34;
+
 /**
  * When must-haves are incomplete, scale down — stricter when employer/candidate
  * want an exact match (high flexibility score).
@@ -181,8 +190,9 @@ export function computeSemanticMatchBase(
     candidateTexts: candTexts,
     jobTexts: jobTexts,
   });
-  const penalty = 1 - mustHaveOverlapRatio(candidate, job);
-  return Math.max(0, Math.min(1, calibrated - penalty * 0.12));
+  const overlap = mustHaveOverlapRatio(candidate, job);
+  const scaled = calibrated * semanticMustHaveFactor(overlap);
+  return Math.max(0, Math.min(1, scaled));
 }
 
 export type HybridWeights = {
@@ -230,19 +240,26 @@ export function computeHybridBaseFitDetailed(
     candidateTexts: opts.candidateTexts,
     jobTexts: opts.jobTexts,
   });
+  const mhOverlap = mustHaveOverlapRatio(candidate, job);
   const ruleRole = textScore(candidate.desiredRole, job.title);
   let roleBoostApplied = false;
   let postRoleBoost = preGateBlend;
+  const mhOkForBoost =
+    job.mustHaves.length === 0 || mhOverlap >= ROLE_BOOST_MIN_MUST_HAVE_OVERLAP;
   if (
     readRoleBoostEnabled() &&
+    mhOkForBoost &&
     roleCalibrated >= 0.35 &&
     ruleRole < 0.2
   ) {
     roleBoostApplied = true;
-    postRoleBoost = Math.max(preGateBlend, 0.42 + 0.55 * roleCalibrated);
+    const floor = 0.42 + 0.55 * roleCalibrated;
+    postRoleBoost = Math.min(
+      ROLE_BOOST_SCORE_CAP,
+      Math.max(preGateBlend, floor),
+    );
   }
   let blend = postRoleBoost;
-  const mhOverlap = mustHaveOverlapRatio(candidate, job);
   const langGap = mustHaveLanguageGap(candidate, job);
   if (langGap) {
     blend *= 0.55;

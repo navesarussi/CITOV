@@ -5,7 +5,7 @@ When `MATCHING_ROLE_BOOST` is not `false`, hybrid blending applies a floor when:
 - calibrated role cosine ≥ 0.35, and
 - rule title `textScore` < 0.2
 
-Formula: `blend = max(blend, 0.42 + 0.55 * roleCalibrated)`.
+Formula: `blend = min(0.88, max(blend, 0.42 + 0.55 * roleCalibrated))` when must-have overlap ≥ 0.34 (or job has no must-haves).
 
 ## Evaluation
 
