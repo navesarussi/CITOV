@@ -98,3 +98,10 @@ export function explainMatch(candidate: CandidateCard, job: JobCard, score: numb
 export function shouldQueueForEmployer(score: number): boolean {
   return score >= 0.28;
 }
+
+/** Production-equivalent match score (base fit + combined flexibility). */
+export function scoreMatch(candidate: CandidateCard, job: JobCard): number {
+  const base = computeBaseFit(candidate, job);
+  const flex = combineFlexibility(candidate.flexibility, job.flexibility);
+  return applyFlexibility(base, flex);
+}
