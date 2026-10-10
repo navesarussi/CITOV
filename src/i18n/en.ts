@@ -412,6 +412,21 @@ export const en = {
       "Sets match_queue_threshold only — pairs above the hybrid score enter the queue. Reversible anytime. Current: {current}. Suggested: {suggested}.",
     applyThresholdReversible:
       "Reversible — labels are not deleted; only queue membership by hybrid score changes.",
+    llmJudgeTitle: "LLM judges (sandbox)",
+    llmJudgeHint:
+      "Judge A labels; Judge B is independent with critique. Auto-accept only on agreement and high confidence; disagreements and audit samples go to the owner queue.",
+    llmJudgeAgreementAb: "A↔B agreement",
+    llmJudgeAgreementAbTip: "Share of pairs where both judges chose the same label",
+    llmJudgePairsSub: "{n} pairs judged",
+    llmJudgeAutoSkip: "Auto-skipped",
+    llmJudgeAutoSkipTip: "High confidence agreement with no engine conflict — not queued for labeling",
+    llmJudgeOwnerQueue: "Owner queue",
+    llmJudgeOwnerQueueTip: "Judge disagreement, low confidence, threshold edge, or engine conflict",
+    llmJudgeDisagreementsSub: "{n} need a decision",
+    llmJudgeHumanAudit: "Human audit sample",
+    llmJudgeHumanAuditTip: "Human label vs Judge A on ~10% of auto-skipped pairs",
+    llmJudgeHumanAuditSub: "{n} pairs with human labels",
+    llmJudgeHumanAuditPending: "Label audit samples to measure agreement",
     applyThresholdConfirm:
       "Change queue threshold from {current} to {suggested}?\n\nOn {count} labeled pairs (hybrid):\n• In queue now: {queuedBefore}\n• In queue after: {queuedAfter}\n• Agreement with your labels: {agreementBefore}% → {agreementAfter}%",
     scoreTitle: "Score breakdown for this pair",

@@ -38,6 +38,27 @@ export type EngineeringDilemma = {
   whyHe: string;
 };
 
+export type ArchitectureEdge = { from: ArchitectureNodeId; to: ArchitectureNodeId };
+
+/** Logical data/control links for the interactive diagram (not every HTTP hop). */
+export const ARCHITECTURE_EDGES: ArchitectureEdge[] = [
+  { from: "browser", to: "next" },
+  { from: "next", to: "api" },
+  { from: "api", to: "chat" },
+  { from: "api", to: "cv" },
+  { from: "api", to: "matching" },
+  { from: "chat", to: "gemini" },
+  { from: "cv", to: "gemini" },
+  { from: "matching", to: "embeddings" },
+  { from: "embeddings", to: "gemini" },
+  { from: "api", to: "postgres" },
+  { from: "matching", to: "postgres" },
+  { from: "monitoring", to: "postgres" },
+  { from: "monitoring", to: "cron" },
+  { from: "cron", to: "gemini" },
+  { from: "cron", to: "chat" },
+];
+
 export const ARCHITECTURE_NODES: ArchitectureNode[] = [
   {
     id: "browser",

@@ -1,3 +1,6 @@
+/**
+ * Two-pass CV extraction (facts then gated fields). Token caps avoid finishReason=length parse failures.
+ */
 import { generateObject } from "ai";
 import {
   callGeminiWithRetry,

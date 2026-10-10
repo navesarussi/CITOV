@@ -1,3 +1,6 @@
+/**
+ * Server-side Gemini access — key rotation, model cache, retries, and degraded-mode event logging.
+ */
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { recordAppEventSafe } from "@/infrastructure/db/app-events";
 

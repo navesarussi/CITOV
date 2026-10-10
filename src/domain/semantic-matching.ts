@@ -1,3 +1,6 @@
+/**
+ * Segment-weighted semantic fit (cosine + calibration). Hybrid weights: see DEFAULT_HYBRID_WEIGHTS and docs/eval/.
+ */
 import type { EmbeddingSegment, EmbeddingSegmentTexts } from "./card-embedding-text";
 import {
   candidateEmbeddingTexts,

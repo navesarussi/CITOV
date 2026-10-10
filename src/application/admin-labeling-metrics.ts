@@ -9,6 +9,9 @@ import type { MatchEmbeddingIndex } from "./match-scoring";
 import { buildDatasetFromDbLabels, productionHybridMatcher } from "./admin-labeling";
 import { resolveLabelingPair } from "./labeling-pair-resolve";
 import { explainMatchPair } from "./match-pair-explain";
+import { buildLlmJudgeDashboardMetrics, type LlmJudgeDashboardMetrics } from "./llm-judge-metrics";
+
+export type { LlmJudgeDashboardMetrics };
 
 export type LabelCounts = Record<RelevanceLabel, number>;
 
@@ -185,6 +188,7 @@ export async function extendedLiveMetrics(
   const base = await import("./admin-labeling").then((m) => m.liveLabelingMetrics(store, index));
   const dataset = await buildDatasetFromDbLabels(store);
   const minRequired = 3;
+  const llmJudge = await buildLlmJudgeDashboardMetrics();
   if (!dataset) {
     return {
       ...base,
@@ -195,6 +199,7 @@ export async function extendedLiveMetrics(
       thresholdSweep: [] as ThresholdSweepRow[],
       suggestedThreshold: null as number | null,
       queueThreshold: readQueueThreshold(store.adminSettings),
+      llmJudge,
     };
   }
   const labelCounts = countLabels(dataset.labels);
@@ -211,5 +216,6 @@ export async function extendedLiveMetrics(
     thresholdSweep,
     suggestedThreshold: suggested?.threshold ?? null,
     queueThreshold: readQueueThreshold(store.adminSettings),
+    llmJudge,
   };
 }

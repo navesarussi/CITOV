@@ -1,16 +1,18 @@
 "use client";
 
-import type { ArchitectureLiveStats } from "@/application/admin-architecture-live";
+import type { ArchitectureLiveStats, ArchitectureNodeStat } from "@/application/admin-architecture-live";
 import type {
   ArchitectureNode,
   ArchitectureNodeId,
   EngineeringDilemma,
   FlowStep,
 } from "@/domain/admin-architecture-content";
+import { ARCHITECTURE_EDGES } from "@/domain/admin-architecture-content";
+import { ArchitectureDiagram } from "@/components/admin/architecture/ArchitectureDiagram";
 import { adminTerms as T } from "@/i18n/admin-terms";
 import { deferEffectTask, useDeferredEffect } from "@/lib/deferred-effect";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 type Payload = {
   nodes: ArchitectureNode[];
@@ -24,18 +26,28 @@ type Payload = {
 };
 
 const NODE_LAYOUT: { id: ArchitectureNodeId; col: number; row: number }[] = [
-  { id: "browser", col: 1, row: 0 },
-  { id: "next", col: 2, row: 0 },
-  { id: "api", col: 3, row: 0 },
-  { id: "chat", col: 1, row: 1 },
-  { id: "cv", col: 2, row: 1 },
-  { id: "matching", col: 3, row: 1 },
-  { id: "embeddings", col: 1, row: 2 },
-  { id: "postgres", col: 2, row: 2 },
-  { id: "gemini", col: 3, row: 2 },
-  { id: "monitoring", col: 1, row: 3 },
-  { id: "cron", col: 2, row: 3 },
+  { id: "browser", col: 0, row: 0 },
+  { id: "next", col: 1, row: 0 },
+  { id: "api", col: 2, row: 0 },
+  { id: "chat", col: 0, row: 1 },
+  { id: "cv", col: 1, row: 1 },
+  { id: "matching", col: 2, row: 1 },
+  { id: "embeddings", col: 0, row: 2 },
+  { id: "postgres", col: 1, row: 2 },
+  { id: "gemini", col: 2, row: 2 },
+  { id: "monitoring", col: 0, row: 3 },
+  { id: "cron", col: 1, row: 3 },
 ];
+
+/** Nodes emphasized per flow animation (approximate path). */
+const FLOW_NODE_HIGHLIGHT: Record<keyof Payload["flows"], ArchitectureNodeId[]> = {
+  cvUpload: ["browser", "api", "cv", "gemini", "postgres", "chat"],
+  chatMessage: ["browser", "next", "api", "chat", "gemini", "embeddings", "matching", "postgres"],
+  matchPipeline: ["matching", "embeddings", "gemini", "postgres"],
+  geminiDown: ["gemini", "chat", "cron", "monitoring"],
+};
+
+const FLOW_STEP_MS = 3200;
 
 function kindBadge(kind: FlowStep["kind"]): { label: string; className: string } {
   if (kind === "code") return { label: "קוד", className: "bg-slate-100 text-slate-800" };
@@ -53,12 +65,27 @@ function StatTile(props: { label: string; value: string; sub?: string }) {
   );
 }
 
+function NodeStatsList(props: { stats?: ArchitectureNodeStat[] }) {
+  if (!props.stats?.length) return null;
+  return (
+    <ul className="mt-4 space-y-2 rounded-2xl border border-[var(--stroke)] bg-white/80 p-3 text-sm">
+      {props.stats.map((s) => (
+        <li key={s.labelHe} className="flex justify-between gap-3">
+          <span className="text-[var(--muted)]">{s.labelHe}</span>
+          <span className="font-semibold text-[var(--hero)]">{s.value}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function ArchitectureExplorer() {
   const [data, setData] = useState<Payload | null>(null);
   const [error, setError] = useState("");
   const [selectedId, setSelectedId] = useState<ArchitectureNodeId | null>("matching");
   const [flowKey, setFlowKey] = useState<keyof Payload["flows"]>("matchPipeline");
   const [flowStep, setFlowStep] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(false);
   const [techOpen, setTechOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -79,8 +106,25 @@ export function ArchitectureExplorer() {
     });
   }, [load]);
 
-  const selected = data?.nodes.find((n) => n.id === selectedId) ?? null;
   const flow = data?.flows[flowKey];
+  const flowProgress = flow ? (flowStep + 1) / flow.steps.length : 0;
+
+  useDeferredEffect(() => {
+    if (!autoPlay || !flow) return;
+    const stepCount = flow.steps.length;
+    const id = window.setInterval(() => {
+      setFlowStep((s) => (s >= stepCount - 1 ? 0 : s + 1));
+    }, FLOW_STEP_MS);
+    return () => window.clearInterval(id);
+  }, [autoPlay, flowKey, flow?.steps.length]);
+
+  const flowHighlight = useMemo(() => FLOW_NODE_HIGHLIGHT[flowKey], [flowKey]);
+
+  const selected = data?.nodes.find((n) => n.id === selectedId) ?? null;
+  const nodeLive = selectedId && data ? data.live.nodeStats[selectedId] : undefined;
+
+  const latencyHe =
+    data?.live.ai.avgLatencyMs != null ? `${data.live.ai.avgLatencyMs} מילישניות` : undefined;
 
   return (
     <div className="space-y-10 pb-16" dir="rtl">
@@ -99,19 +143,8 @@ export function ArchitectureExplorer() {
       {data ? (
         <>
           <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatTile
-              label="קריאות AI (7 ימים)"
-              value={String(data.live.ai.calls7d)}
-              sub={
-                data.live.ai.avgLatencyMs != null
-                  ? `זמן תגובה ממוצע: ${data.live.ai.avgLatencyMs} ms`
-                  : undefined
-              }
-            />
-            <StatTile
-              label="עלות AI (7 ימים)"
-              value={`$${data.live.ai.costUsd7d.toFixed(2)}`}
-            />
+            <StatTile label="קריאות AI (7 ימים)" value={String(data.live.ai.calls7d)} sub={latencyHe ? `זמן תגובה ממוצע: ${latencyHe}` : undefined} />
+            <StatTile label="עלות AI (7 ימים)" value={`$${data.live.ai.costUsd7d.toFixed(2)}`} />
             <StatTile label="אירועי ניטור פתוחים" value={String(data.live.ai.errors7d)} />
             <StatTile
               label={T.threshold}
@@ -120,40 +153,46 @@ export function ArchitectureExplorer() {
             />
           </section>
 
+          {data.live.llmJudge.total > 0 ? (
+            <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <StatTile
+                label="שופטי LLM — הסכמה A↔B"
+                value={`${(data.live.llmJudge.judgeAgreementRate * 100).toFixed(0)}%`}
+                sub={`${data.live.llmJudge.total} זוגות נשפטו`}
+              />
+              <StatTile label="דילוג אוטומטי" value={String(data.live.llmJudge.autoSkipped)} sub="ביטחון גבוה + הסכמה" />
+              <StatTile label="תור בעלים" value={String(data.live.llmJudge.needsOwner)} sub="מחלוקת / סף / ביקורת" />
+              <StatTile
+                label="ביקורת אדם (דגימה)"
+                value={
+                  data.live.llmJudge.humanAuditAgreementRate != null
+                    ? `${(data.live.llmJudge.humanAuditAgreementRate * 100).toFixed(0)}%`
+                    : "—"
+                }
+                sub={
+                  data.live.llmJudge.humanAuditCompared > 0
+                    ? `${data.live.llmJudge.humanAuditCompared} זוגות עם תיוג אדם`
+                    : "ממתין לתיוג על דגימת ביקורת"
+                }
+              />
+            </section>
+          ) : null}
+
           <section className="grid gap-6 lg:grid-cols-[1fr_minmax(280px,340px)]">
             <div className="rounded-3xl border border-[var(--stroke)] bg-white/90 p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-[var(--hero)]">מפת רכיבים</h3>
-              <p className="mt-1 text-sm text-[var(--muted)]">לחצו על רכיב לפרטים.</p>
-              <div
-                className="mt-6 grid gap-3"
-                style={{
-                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              <p className="mt-1 text-sm text-[var(--muted)]">לחצו על רכיב לפרטים — קווים מציגים זרימת נתונים עיקרית.</p>
+              <ArchitectureDiagram
+                layout={NODE_LAYOUT}
+                nodes={data.nodes}
+                edges={ARCHITECTURE_EDGES}
+                selectedId={selectedId}
+                flowHighlight={autoPlay ? flowHighlight : undefined}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  setTechOpen(false);
                 }}
-              >
-                {NODE_LAYOUT.map(({ id, col, row }) => {
-                  const node = data.nodes.find((n) => n.id === id);
-                  if (!node) return null;
-                  const active = selectedId === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedId(id);
-                        setTechOpen(false);
-                      }}
-                      className={`rounded-2xl border px-3 py-4 text-right text-sm font-semibold transition duration-300 ${
-                        active
-                          ? "border-[var(--accent)] bg-[var(--accent)]/15 text-[var(--hero)] shadow-md scale-[1.02]"
-                          : "border-[var(--stroke)] bg-white hover:border-[var(--accent)]/60 hover:bg-[var(--accent)]/5"
-                      }`}
-                      style={{ gridColumn: col + 1, gridRow: row + 1 }}
-                    >
-                      {node.titleHe}
-                    </button>
-                  );
-                })}
-              </div>
+              />
             </div>
 
             <aside
@@ -165,18 +204,15 @@ export function ArchitectureExplorer() {
                 <>
                   <h3 className="text-xl font-bold text-[var(--hero)]">{selected.titleHe}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[var(--ink)]">{selected.summaryHe}</p>
+                  <NodeStatsList stats={nodeLive} />
                   <div className="mt-4 rounded-2xl bg-[var(--accent)]/8 p-4">
                     <p className="text-xs font-semibold text-[var(--accent)]">החלטת עיצוב</p>
                     <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">{selected.decisionHe}</p>
                   </div>
                   {selectedId === "matching" && data.live.eval.hybridNdcgAt5 != null ? (
                     <ul className="mt-4 space-y-1 text-sm text-[var(--muted)]">
-                      <li>
-                        דירוג איכות@5 (train): {(data.live.eval.hybridNdcgAt5 * 100).toFixed(1)}%
-                      </li>
-                      <li>
-                        כיסוי@5: {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%
-                      </li>
+                      <li>דירוג איכות@5 (train): {(data.live.eval.hybridNdcgAt5 * 100).toFixed(1)}%</li>
+                      <li>כיסוי@5: {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%</li>
                     </ul>
                   ) : null}
                   <button
@@ -213,9 +249,7 @@ export function ArchitectureExplorer() {
                     setFlowStep(0);
                   }}
                   className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                    flowKey === key
-                      ? "bg-[var(--hero)] text-white"
-                      : "bg-[var(--chip)] text-[var(--ink)] hover:bg-[var(--accent)]/15"
+                    flowKey === key ? "bg-[var(--hero)] text-white" : "bg-[var(--chip)] text-[var(--ink)] hover:bg-[var(--accent)]/15"
                   }`}
                 >
                   {data.flows[key].titleHe}
@@ -226,7 +260,16 @@ export function ArchitectureExplorer() {
               <div className="mt-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h3 className="text-lg font-semibold text-[var(--hero)]">{flow.titleHe}</h3>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      className={`rounded-lg px-3 py-1 text-sm font-medium ${
+                        autoPlay ? "bg-[var(--accent)] text-white" : "border border-[var(--stroke)]"
+                      }`}
+                      onClick={() => setAutoPlay((v) => !v)}
+                    >
+                      {autoPlay ? "עצור הדגמה" : "הדגמה אוטומטית"}
+                    </button>
                     <button
                       type="button"
                       className="rounded-lg border border-[var(--stroke)] px-3 py-1 text-sm disabled:opacity-40"
@@ -245,6 +288,16 @@ export function ArchitectureExplorer() {
                     </button>
                   </div>
                 </div>
+                <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--chip)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)] transition-all duration-500 ease-out"
+                    style={{ width: `${flowProgress * 100}%` }}
+                  />
+                </div>
+                <p className="mt-2 text-xs text-[var(--muted)]">
+                  שלב {flowStep + 1} מתוך {flow.steps.length}
+                  {flowKey === "matchPipeline" ? " — צבע «קוד» מול «מודל» בכל שלב" : null}
+                </p>
                 <ol className="mt-6 space-y-3">
                   {flow.steps.map((step, i) => {
                     const active = i === flowStep;
@@ -265,9 +318,7 @@ export function ArchitectureExplorer() {
                             {badge.label}
                           </span>
                         </div>
-                        {active ? (
-                          <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">{step.bodyHe}</p>
-                        ) : null}
+                        {active ? <p className="mt-2 text-sm leading-relaxed text-[var(--ink)]">{step.bodyHe}</p> : null}
                       </li>
                     );
                   })}
@@ -278,7 +329,9 @@ export function ArchitectureExplorer() {
 
           <section className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-3xl border border-[var(--stroke)] bg-white/90 p-6">
-              <h3 className="text-lg font-semibold text-[var(--hero)]">{T.matchingEngine} — {T.calibration}</h3>
+              <h3 className="text-lg font-semibold text-[var(--hero)]">
+                {T.matchingEngine} — {T.calibration}
+              </h3>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex justify-between gap-4 border-b border-[var(--stroke)] pb-2">
                   <dt className="text-[var(--muted)]">משקל ייצוג וקטורי</dt>
@@ -293,7 +346,9 @@ export function ArchitectureExplorer() {
                   <dd className="font-semibold">{data.live.matching.cosineFloor.toFixed(2)}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[var(--muted)]">{T.threshold} ל{T.queue}</dt>
+                  <dt className="text-[var(--muted)]">
+                    {T.threshold} ל{T.queue}
+                  </dt>
                   <dd className="font-semibold">{data.live.matching.queueThreshold.toFixed(2)}</dd>
                 </div>
               </dl>
@@ -303,10 +358,7 @@ export function ArchitectureExplorer() {
                   {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%
                 </p>
               ) : null}
-              <Link
-                href={data.live.sandboxReportLink}
-                className="mt-4 inline-flex text-sm font-semibold text-[var(--accent)] hover:underline"
-              >
+              <Link href={data.live.sandboxReportLink} className="mt-4 inline-flex text-sm font-semibold text-[var(--accent)] hover:underline">
                 דוח הרצה — נתוני בדיקה →
               </Link>
             </div>
