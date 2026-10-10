@@ -1,14 +1,16 @@
 # Changelog
 
-<<<<<<< HEAD
+## 0.4.9 — 2025-10-10
+
+- CV extraction: no chat-heuristic fallback on failure/budget miss — mark `failed` for retry instead of polluting card fields.
+
 ## 0.4.7 — 2025-10-10
 
 - Apply AI monthly budget guard on main chat stream path and patch/reply extractors.
-=======
+
 ## 0.4.6 — 2025-10-10
 
 - Match rebuild: replace production `queued` rows only (preserve sandbox + employer decisions); advisory lock around rebuild write.
->>>>>>> origin/main
 
 ## 0.4.5 — 2025-10-10
 

@@ -12,7 +12,6 @@ import { compactCard } from "@/domain/chat-context";
 import { gateExtractedFields } from "@/domain/extraction-evidence";
 import { isExtractTextUsable, sanitizeCvPatch } from "@/domain/cv-sanitize";
 import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
-import { heuristicEmployeeIntake } from "./heuristic";
 import {
   cvExtractionSchema,
   cvInferencePassSchema,
@@ -93,13 +92,7 @@ export async function runCvExtraction(params: {
   }
 
   if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
-    const h = heuristicEmployeeIntake(params.text, params.card, [], []);
-    const sanitized = sanitizeCvPatch({ patch: h.candidatePatch ?? {} });
-    return {
-      patch: sanitized.patch as CandidatePatch,
-      provider: "heuristic",
-      strippedCount: sanitized.strippedCount,
-    };
+    return { patch: {}, provider: "heuristic", failed: true };
   }
 
   try {
@@ -195,13 +188,7 @@ export async function runCvExtraction(params: {
       strippedCount: sanitized.strippedCount,
     };
   } catch (err) {
-    console.error("cv extraction Gemini failed, using heuristic", err);
-    const h = heuristicEmployeeIntake(params.text, params.card, [], []);
-    const sanitized = sanitizeCvPatch({ patch: h.candidatePatch ?? {} });
-    return {
-      patch: sanitized.patch as CandidatePatch,
-      provider: "heuristic",
-      strippedCount: sanitized.strippedCount,
-    };
+    console.error("cv extraction Gemini failed; queue retry", err);
+    return { patch: {}, provider: "gemini", failed: true };
   }
 }
