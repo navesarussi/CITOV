@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 — 2025-10-10
+
+- Admin **ניטור**: `app_events` table, grouped issues, slow-route stats, AI budget banner/guard, E2E last run.
+- AI budget env caps (`AI_BUDGET_USD_DAILY` / `MONTHLY`) with heuristic fallback when exceeded.
+- Playwright E2E workflow + `/api/e2e/session` / `/api/e2e/bootstrap` / `/api/e2e/report` (flagged `e2e-*` users excluded from metrics).
+- Optional owner alert on new critical issues (`OWNER_ALERT_EMAIL` + `RESEND_*` or `OWNER_ALERT_WEBHOOK`).
+
 ## 0.2.3 — 2025-10-10
 
 - Labeling POST: drop unused `labeler_role` insert; schema alters run statement-by-statement.

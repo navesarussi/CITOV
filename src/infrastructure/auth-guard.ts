@@ -7,6 +7,7 @@ import { getDevSession, isDevAuthEnabled } from "@/infrastructure/dev-auth";
 import { sessionOwnsUser } from "@/domain/session-ownership";
 import { findUserByEmailOrGoogle } from "@/infrastructure/db/normalized-store";
 import { findUserById, readActorStore } from "@/infrastructure/db/slice-store";
+import { isE2eAuthEnabled, readE2eSessionUserId } from "@/infrastructure/e2e-auth";
 import { resolveOAuthSessionEmail } from "@/infrastructure/session-email";
 
 export function allowDemo(): boolean {
@@ -22,6 +23,15 @@ async function authorizeUserId(
   locale: Locale,
 ): Promise<{ ok: true; user: User } | { ok: false; status: number; error: string }> {
   const api = getMessages(locale).api;
+
+  if (isE2eAuthEnabled()) {
+    const e2eId = await readE2eSessionUserId();
+    if (e2eId && e2eId === userId) {
+      const user = await findUserById(userId);
+      if (!user) return { ok: false, status: 404, error: api.userNotFound };
+      return { ok: true, user };
+    }
+  }
 
   if (allowDemo() && isDemoUserId(userId)) {
     const user =

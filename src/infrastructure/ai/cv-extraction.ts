@@ -7,6 +7,7 @@ import {
 import type { CandidateCard } from "@/domain/types";
 import { compactCard } from "@/domain/chat-context";
 import { isExtractTextUsable, sanitizeCvPatch } from "@/domain/cv-sanitize";
+import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
 import { heuristicEmployeeIntake } from "./heuristic";
 import {
   cvExtractionSchema,
@@ -79,7 +80,7 @@ export async function runCvExtraction(params: {
     return { patch: {}, provider: "heuristic", failed: true };
   }
 
-  if (!hasGeminiKey()) {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     const h = heuristicEmployeeIntake(params.text, params.card, [], []);
     const sanitized = sanitizeCvPatch({ patch: h.candidatePatch ?? {} });
     return {
