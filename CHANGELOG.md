@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.7 — 2025-10-10
+
+- Apply AI monthly budget guard on main chat stream path and patch/reply extractors.
+
 ## 0.4.5 — 2025-10-10
 
 - Extraction evidence: merge overlapping work-history intervals before summing experience years.

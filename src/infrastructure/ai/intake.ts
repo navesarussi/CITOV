@@ -155,7 +155,7 @@ const REPLY_ONLY_NOTE =
   "\n\n(בתשובה זו: החזר/י אך ורק טקסט שיחה טבעי בעברית למועמד/ת — בלי JSON, בלי patch, בלי fieldAnswers.)";
 
 /** Stream ONLY the conversational reply (no schema → clean token stream). */
-export function streamEmployeeReply(params: {
+export async function streamEmployeeReply(params: {
   message: string;
   card: CandidateCard;
   chat: ChatMessage[];
@@ -166,7 +166,8 @@ export function streamEmployeeReply(params: {
   openReliabilityNotes?: string;
   locale?: "he" | "en";
   accountHolderFirstName?: string;
-}): { textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } {
+}): Promise<{ textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } | null> {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) return null;
   const { system, messages } = buildEmployeeConversation({
     template: params.systemPrompt,
     message: params.message,
@@ -191,13 +192,14 @@ export function streamEmployeeReply(params: {
   return { textStream: result.textStream, usage };
 }
 
-export function streamEmployerReply(params: {
+export async function streamEmployerReply(params: {
   message: string;
   card: JobCard;
   chat: ChatMessage[];
   systemPrompt: string;
   pendingJobConfirmations?: string;
-}): { textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } {
+}): Promise<{ textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } | null> {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) return null;
   const { system, messages } = buildEmployerConversation({
     template: params.systemPrompt,
     message: params.message,
@@ -317,6 +319,9 @@ export async function extractEmployeePatch(params: {
   fieldAnswers: { questionId: string; answer: string }[];
   usage?: AiTokenUsage;
 }> {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
+    return { candidatePatch: {}, fieldAnswers: [] };
+  }
   try {
     const { system, messages } = buildEmployeeConversation({
       template: params.systemPrompt,
@@ -368,6 +373,9 @@ export async function extractEmployerPatch(params: {
   systemPrompt: string;
   pendingJobConfirmations?: string;
 }): Promise<{ jobPatch: JobPatch; usage?: AiTokenUsage }> {
+  if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
+    return { jobPatch: {} };
+  }
   try {
     const { system, messages } = buildEmployerConversation({
       template: params.systemPrompt,
