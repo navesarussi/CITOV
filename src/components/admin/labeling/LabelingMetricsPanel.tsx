@@ -166,6 +166,7 @@ export function LabelingMetricsPanel(props: {
               suggested: m.suggestedThreshold.toFixed(2),
             })}
           </p>
+          <p className="mt-1 text-xs text-[var(--muted)]">{t.adminLabeling.applyThresholdReversible}</p>
           <p className="mt-2 text-2xl font-bold text-[var(--hero)]">{m.suggestedThreshold.toFixed(2)}</p>
           <Button
             className="mt-3 min-h-11"

@@ -128,8 +128,14 @@ async function runSchema(): Promise<void> {
       ["005_card_embeddings"],
     );
   }
-  // Idempotent column/index patches — must run even when base tables already exist (prod drift).
-  await pool.query(ALTERS);
+  // Idempotent patches — one statement at a time so a constraint failure does not skip column adds.
+  for (const stmt of ALTERS.split(";").map((s) => s.trim()).filter(Boolean)) {
+    try {
+      await pool.query(stmt);
+    } catch (e) {
+      console.warn("ensureSchema alter skipped", stmt.slice(0, 80), e);
+    }
+  }
   await pool.query(
     `insert into schema_migrations (version) values ($1) on conflict (version) do nothing`,
     [MIGRATION_VERSION],

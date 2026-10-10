@@ -3,6 +3,7 @@
 import type { LabelingPair } from "@/application/admin-labeling";
 import { LabelingScoreBreakdown } from "@/components/admin/labeling/LabelingScoreBreakdown";
 import { useTranslation } from "@/components/LocaleProvider";
+import { hebrewDisplayCandidateCard, hebrewDisplayJobCard } from "@/domain/hebrew-display";
 import type { LabelFieldRow } from "@/domain/labeling-field-map";
 import {
   labelingCandidateRows,
@@ -41,6 +42,8 @@ function CardBlock(props: {
 export function LabelingPairView(props: { pair: LabelingPair }) {
   const { t } = useTranslation();
   const { pair } = props;
+  const jobView = hebrewDisplayJobCard(pair.job);
+  const candidateView = hebrewDisplayCandidateCard(pair.candidate);
 
   return (
     <div className="space-y-4">
@@ -58,12 +61,12 @@ export function LabelingPairView(props: { pair: LabelingPair }) {
           rows={labelingCompanyRows(pair.company)}
         />
         <CardBlock
-          title={pair.job.title}
+          title={jobView.title}
           subtitle={t.adminLabeling.jobCard}
           rows={labelingJobRows(pair.job)}
         />
         <CardBlock
-          title={pair.candidate.desiredRole}
+          title={candidateView.desiredRole}
           subtitle={t.adminLabeling.candidateCard}
           rows={labelingCandidateRows(pair.candidate)}
         />

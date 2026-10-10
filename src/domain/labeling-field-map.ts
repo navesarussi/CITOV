@@ -7,6 +7,7 @@ import {
   canonicalizeLocationToken,
   canonicalizeRoleToken,
 } from "./match-canonical";
+import { hebrewDisplayText } from "./hebrew-display";
 import type { CandidateCard, JobCard } from "./types";
 
 export type LabelFieldRow = {
@@ -22,6 +23,12 @@ function fmt(v: unknown): string {
   if (Array.isArray(v)) return v.filter(Boolean).join(", ");
   if (typeof v === "number") return String(v);
   return String(v).trim();
+}
+
+function fmtHebrew(v: unknown): string {
+  const raw = fmt(v);
+  if (!raw) return raw;
+  return hebrewDisplayText(raw);
 }
 
 function canonicalToken(token: string, mode: "role" | "location" | "field" | "language"): string {
@@ -227,8 +234,8 @@ export function jobCandidateFieldRows(job: JobCard, candidate: CandidateCard): L
   ];
 
   return rows.map((r) => {
-    const jobValue = fmt(r.jDisplay);
-    const candidateValue = fmt(r.cDisplay);
+    const jobValue = fmtHebrew(r.jDisplay);
+    const candidateValue = fmtHebrew(r.cDisplay);
     const jobCompare = fmt(r.jCanon);
     const candCompare = fmt(r.cCanon);
     return {
