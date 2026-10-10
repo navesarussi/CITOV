@@ -4,25 +4,28 @@ import {
   isTestLoginEnabled,
 } from "@/infrastructure/auth-flags";
 import { isDevAuthEnabled } from "@/infrastructure/dev-auth";
+import { assertAdmin } from "@/infrastructure/admin-guard";
 import { ok } from "@/infrastructure/http";
 
-/** Public auth wiring check — never returns secrets. */
-export async function GET() {
-  const authSecretConfigured = Boolean(process.env.AUTH_SECRET?.trim());
-  const authGoogleIdConfigured = Boolean(process.env.AUTH_GOOGLE_ID?.trim());
-  const authGoogleSecretConfigured = Boolean(process.env.AUTH_GOOGLE_SECRET?.trim());
-
+/** Public: `{ ok }`. Admin `?detail=1`: auth flags (no secrets). */
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const detail = url.searchParams.get("detail") === "1";
+  const configured = hasGoogleAuth();
+  if (!detail) {
+    return ok({ ok: configured });
+  }
+  const gate = await assertAdmin();
+  if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
   return ok({
-    googleAuth: hasGoogleAuth(),
+    ok: configured,
+    googleAuth: configured,
     googleEnabledFlag: isGoogleAuthEnabled(),
-    authSecretConfigured,
-    authGoogleIdConfigured,
-    authGoogleSecretConfigured,
+    authSecretConfigured: Boolean(process.env.AUTH_SECRET?.trim()),
+    authGoogleIdConfigured: Boolean(process.env.AUTH_GOOGLE_ID?.trim()),
+    authGoogleSecretConfigured: Boolean(process.env.AUTH_GOOGLE_SECRET?.trim()),
     authUrl: process.env.AUTH_URL?.trim() || null,
     devAuth: isDevAuthEnabled(),
     testLoginEnabled: isTestLoginEnabled(),
-    hint: hasGoogleAuth()
-      ? "Google OAuth is configured. Sign-in uses /api/auth/signin/google with CSRF."
-      : "Missing AUTH_SECRET and/or Google OAuth credentials on the server.",
   });
 }
