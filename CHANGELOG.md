@@ -1,9 +1,15 @@
 # Changelog
 
+<<<<<<< HEAD
+## 0.4.9 — 2025-10-10
+
+- CV extraction: no chat-heuristic fallback on failure/budget miss — mark `failed` for retry instead of polluting card fields.
+=======
 ## 0.4.8 — 2025-10-10
 
 - Gemini list pricing table (2.5 Flash/Pro, embeddings) aligned to Google docs; cached input ~10%.
 - CV extraction merges thinking/cached tokens across passes; judge B usage logged with its model id.
+>>>>>>> origin/main
 
 ## 0.4.7 — 2025-10-10
 

@@ -18,9 +18,9 @@ import {
 } from "@/domain/types";
 
 loadEnvLocal();
-const live = hasGeminiKey();
+const live = Boolean(process.env.DATABASE_URL?.trim()) && hasGeminiKey();
 
-describe("live CV extraction (Gemini)", { skip: !live }, () => {
+describe("live CV extraction (Gemini)", { skip: !live ? "needs DATABASE_URL and GOOGLE_GENERATIVE_AI_API_KEY" : false }, () => {
   it("extracts leadership subtext onto the candidate card", { timeout: 120_000 }, async () => {
     const extracted = await runCvExtraction({
       text: SUBTEXT_RICH_CV,
