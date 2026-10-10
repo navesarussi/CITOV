@@ -97,6 +97,7 @@ export async function runDemoSeed(options?: { force?: boolean }): Promise<{
     };
   }
   const next = buildDemoStoreFromEval();
+  process.env.ALLOW_FULL_STORE_WRITE = "1";
   await writeNormalizedStore({
     ...next,
     matches: current.matches,

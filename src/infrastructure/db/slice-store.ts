@@ -198,13 +198,14 @@ export async function readMatchingStore(): Promise<StoreData> {
   }
   await ensureSchema();
   const pool = await getPool();
-  const [users, employees, employers, matches] = await Promise.all([
+  const [users, employees, employers, matches, questions] = await Promise.all([
     pool.query(`select id, name, role, email, image, google_id, created_at from app_users`),
     pool.query(
       `select user_id, card, pending_field_question_ids from employee_profiles`,
     ),
     pool.query(`select user_id, card, jobs, active_job_id from employer_profiles`),
     pool.query(`select * from matches`),
+    pool.query(`select id, field, question, source_job_id, source_employer_id, created_at from field_questions`),
   ]);
   return filterProductionStore(
     emptyStore({
@@ -212,6 +213,14 @@ export async function readMatchingStore(): Promise<StoreData> {
       employees: employees.rows.map((e) => mapEmployee(e, false)),
       employers: employers.rows.map((e) => mapEmployer(e)),
       matches: matches.rows.map((m) => mapMatch(m)),
+      fieldQuestions: questions.rows.map((q) => ({
+        id: q.id,
+        field: q.field,
+        question: q.question,
+        sourceJobId: q.source_job_id,
+        sourceEmployerId: q.source_employer_id,
+        createdAt: new Date(q.created_at).toISOString(),
+      })),
     }),
   );
 }
