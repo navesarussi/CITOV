@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "@/components/LocaleProvider";
+import { readStoredUser } from "@/lib/client-session";
 
 type Job = {
   matchId: string;
   score: number;
   reason: string;
+  whyHe?: string[];
   employerName: string;
   card?: {
     title: string;
@@ -22,6 +25,22 @@ type Job = {
 
 export function OpportunityList(props: { jobs: Job[] }) {
   const { t, fmt } = useTranslation();
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function markNotRelevant(matchId: string) {
+    const user = readStoredUser();
+    if (!user?.id) return;
+    setBusyId(matchId);
+    try {
+      await fetch("/api/match-feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, matchId, action: "not_relevant" }),
+      });
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   if (props.jobs.length === 0) {
     return (
@@ -53,7 +72,28 @@ export function OpportunityList(props: { jobs: Job[] }) {
               {t.jobs.approved}
             </span>
           </div>
-          <p className="mt-4 text-sm leading-7 text-[var(--ink)]">{job.reason}</p>
+          {job.whyHe?.length ? (
+            <div className="mt-4 space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                למה הוצע לך
+              </p>
+              <ul className="list-inside list-disc text-sm leading-7 text-[var(--ink)]">
+                {job.whyHe.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm leading-7 text-[var(--ink)]">{job.reason}</p>
+          )}
+          <button
+            type="button"
+            disabled={busyId === job.matchId}
+            className="mt-3 text-xs font-medium text-[var(--muted)] underline-offset-2 hover:text-[var(--warn)] hover:underline disabled:opacity-50"
+            onClick={() => void markNotRelevant(job.matchId)}
+          >
+            לא רלוונטי
+          </button>
           {job.card?.salaryRange ? (
             <p className="mt-2 text-xs text-[var(--muted)]">
               {fmt(t.jobs.salary, { value: job.card.salaryRange })}

@@ -17,10 +17,14 @@ export async function GET(req: Request) {
       const er = store.employers.find((e) => e.userId === m.jobOwnerId);
       const user = store.users.find((u) => u.id === m.jobOwnerId);
       const card = jobCardForMatch(er, m.jobId);
+      const whyHe =
+        m.scoreBreakdown?.candidateReasonsHe ??
+        m.reason.split(" · ").slice(0, 3);
       return {
         matchId: m.id,
         score: m.score,
         reason: m.reason,
+        whyHe,
         employerName: user?.name ?? "מעסיק/ה",
         card,
       };

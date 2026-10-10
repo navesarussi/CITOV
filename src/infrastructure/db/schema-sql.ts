@@ -66,6 +66,7 @@ create table if not exists matches (
   candidate_id text not null references app_users (id) on delete cascade,
   score double precision not null,
   reason text not null,
+  score_breakdown jsonb,
   status text not null check (status in ('queued', 'approved', 'rejected')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

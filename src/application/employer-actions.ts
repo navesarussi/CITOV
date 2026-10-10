@@ -88,12 +88,14 @@ export function askFieldQuestion(
 }
 
 export function refreshStoreMatches(store: StoreData): StoreData {
-  return { ...store, matches: rebuildMatches(store) as Match[] };
+  return { ...store, matches: rebuildMatches(store).matches };
 }
 
 export function refreshStoreMatchesWithEmbeddings(
   store: StoreData,
   embeddingIndex?: MatchEmbeddingIndex,
 ): StoreData {
-  return { ...store, matches: rebuildMatches(store, embeddingIndex) as Match[] };
+  return { ...store, matches: rebuildMatches(store, embeddingIndex).matches };
 }
+
+export { rebuildMatches, type MatchRebuildStats } from "./rebuild-matches";

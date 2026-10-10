@@ -28,7 +28,7 @@ export function textScore(a: string, b: string): number {
   return hits === 0 ? 0 : hits / Math.max(tokensA.length, tokensB.size);
 }
 
-export function computeBaseFit(candidate: CandidateCard, job: JobCard): number {
+export function computeRuleComponents(candidate: CandidateCard, job: JobCard) {
   const role = textScore(candidate.desiredRole, job.title);
   const field = textScore(candidate.field, job.field);
   const location = textScore(candidate.location, job.location);
@@ -62,7 +62,24 @@ export function computeBaseFit(candidate: CandidateCard, job: JobCard): number {
     salary * 0.05 -
     mustPenalty * 0.1;
 
-  return Math.max(0, Math.min(1, raw));
+  const baseFit = Math.max(0, Math.min(1, raw));
+  return {
+    role,
+    field,
+    location,
+    skills,
+    soft,
+    languages,
+    personality,
+    culture,
+    salary,
+    mustPenalty,
+    baseFit,
+  };
+}
+
+export function computeBaseFit(candidate: CandidateCard, job: JobCard): number {
+  return computeRuleComponents(candidate, job).baseFit;
 }
 
 export function applyFlexibility(baseFit: number, flexibility: number): number {

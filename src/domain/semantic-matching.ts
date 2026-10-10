@@ -192,6 +192,76 @@ export const DEFAULT_HYBRID_WEIGHTS: HybridWeights = {
   rule: 0.2,
 };
 
+export function readRoleBoostEnabled(): boolean {
+  return process.env.MATCHING_ROLE_BOOST !== "false";
+}
+
+export type HybridFitTrace = {
+  value: number;
+  ruleBase: number;
+  semanticBase: number;
+  preGateBlend: number;
+  roleBoostApplied: boolean;
+  roleCalibrated: number;
+  ruleRoleScore: number;
+  postRoleBoost: number;
+  mustHaveOverlap: number;
+  mustHaveLanguageGap: boolean;
+  afterMustHaveGate: number;
+};
+
+export function computeHybridBaseFitDetailed(
+  candidate: CandidateCard,
+  job: JobCard,
+  candidateVec: SegmentVectors,
+  jobVec: SegmentVectors,
+  weights: HybridWeights = DEFAULT_HYBRID_WEIGHTS,
+  opts: SemanticFitOptions = {},
+): HybridFitTrace {
+  const rule = computeBaseFit(candidate, job);
+  const sem = computeSemanticMatchBase(candidate, job, candidateVec, jobVec, opts);
+  const wSum = weights.semantic + weights.rule;
+  let preGateBlend = wSum <= 0 ? rule : (weights.semantic * sem + weights.rule * rule) / wSum;
+  const { roleCalibrated } = computeCalibratedSemanticFit(candidateVec, jobVec, {
+    ...opts,
+    candidateTexts: opts.candidateTexts,
+    jobTexts: opts.jobTexts,
+  });
+  const ruleRole = textScore(candidate.desiredRole, job.title);
+  let roleBoostApplied = false;
+  let postRoleBoost = preGateBlend;
+  if (
+    readRoleBoostEnabled() &&
+    roleCalibrated >= 0.35 &&
+    ruleRole < 0.2
+  ) {
+    roleBoostApplied = true;
+    postRoleBoost = Math.max(preGateBlend, 0.42 + 0.55 * roleCalibrated);
+  }
+  let blend = postRoleBoost;
+  const mhOverlap = mustHaveOverlapRatio(candidate, job);
+  const langGap = mustHaveLanguageGap(candidate, job);
+  if (langGap) {
+    blend *= 0.55;
+  } else if (mhOverlap < 1) {
+    blend = applyMustHaveGate(blend, candidate, job);
+  }
+  const value = Math.max(0, Math.min(1, blend));
+  return {
+    value,
+    ruleBase: rule,
+    semanticBase: sem,
+    preGateBlend,
+    roleBoostApplied,
+    roleCalibrated,
+    ruleRoleScore: ruleRole,
+    postRoleBoost,
+    mustHaveOverlap: mhOverlap,
+    mustHaveLanguageGap: langGap,
+    afterMustHaveGate: value,
+  };
+}
+
 export function computeHybridBaseFit(
   candidate: CandidateCard,
   job: JobCard,
@@ -200,27 +270,14 @@ export function computeHybridBaseFit(
   weights: HybridWeights = DEFAULT_HYBRID_WEIGHTS,
   opts: SemanticFitOptions = {},
 ): number {
-  const rule = computeBaseFit(candidate, job);
-  const sem = computeSemanticMatchBase(candidate, job, candidateVec, jobVec, opts);
-  const wSum = weights.semantic + weights.rule;
-  if (wSum <= 0) return rule;
-  let blend = (weights.semantic * sem + weights.rule * rule) / wSum;
-  const { roleCalibrated } = computeCalibratedSemanticFit(candidateVec, jobVec, {
-    ...opts,
-    candidateTexts: opts.candidateTexts,
-    jobTexts: opts.jobTexts,
-  });
-  const ruleRole = textScore(candidate.desiredRole, job.title);
-  if (roleCalibrated >= 0.35 && ruleRole < 0.2) {
-    blend = Math.max(blend, 0.42 + 0.55 * roleCalibrated);
-  }
-  if (mustHaveLanguageGap(candidate, job)) {
-    blend *= 0.55;
-  } else {
-    const overlap = mustHaveOverlapRatio(candidate, job);
-    if (overlap < 1) blend = applyMustHaveGate(blend, candidate, job);
-  }
-  return Math.max(0, Math.min(1, blend));
+  return computeHybridBaseFitDetailed(
+    candidate,
+    job,
+    candidateVec,
+    jobVec,
+    weights,
+    opts,
+  ).value;
 }
 
 export function buildSemanticOptions(

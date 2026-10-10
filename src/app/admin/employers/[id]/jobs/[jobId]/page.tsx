@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AdminChatLog } from "@/components/admin/AdminChatLog";
+import { AdminMatchList } from "@/components/admin/AdminMatchList";
 import { AdminFieldGrid } from "@/components/admin/AdminFieldGrid";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
@@ -90,24 +91,15 @@ export default function AdminJobDetailPage() {
           </section>
           <section>
             <h2 className="mb-3 text-lg font-semibold">מאצ׳ים</h2>
-            {data.matches.length === 0 ? (
-              <p className="text-sm text-[var(--muted)]">אין מאצ׳ים.</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {data.matches.map((m) => (
-                  <li key={m.id} className="panel rounded-xl p-3">
-                    {m.scorePercent}% · {m.status} ·{" "}
-                    <Link
-                      href={`/admin/candidates/${m.candidateId}`}
-                      className="text-[var(--accent)] hover:underline"
-                    >
-                      {m.candidateId}
-                    </Link>
-                    <p className="mt-1 text-xs text-[var(--muted)]">{m.reason}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AdminMatchList
+              items={data.matches.map((m) => ({
+                id: m.id,
+                scorePercent: m.scorePercent,
+                reason: m.reason,
+                status: m.status,
+                meta: `מועמד ${m.candidateId}`,
+              }))}
+            />
           </section>
           <section>
             <h2 className="mb-3 text-lg font-semibold">צ׳אט</h2>

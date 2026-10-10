@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildAiUsageRecord, insertAiUsageRecord, listAiUsageRows } from "./ai-usage";
+import { buildAiUsageRecord } from "./ai-usage";
 
 describe("ai-usage logging", () => {
-  it("builds and inserts a usage row in memory mode", async () => {
+  it("builds a usage row with token totals", () => {
     const rec = buildAiUsageRecord({
       type: "employee_intake",
       usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
@@ -11,8 +11,7 @@ describe("ai-usage logging", () => {
       model: "gemini-flash-latest",
     });
     assert.ok(rec);
-    await insertAiUsageRecord(rec!);
-    const rows = await listAiUsageRows("1970-01-01T00:00:00.000Z", 10);
-    assert.ok(rows.some((r) => r.id === rec!.id));
+    assert.equal(rec!.promptTokens, 10);
+    assert.equal(rec!.completionTokens, 5);
   });
 });

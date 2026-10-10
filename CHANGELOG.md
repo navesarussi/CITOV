@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.5 — 2025-10-10
+
+- Persist structured `score_breakdown` on queued matches (rule components, semantic segments, hybrid gates, flexibility, engine config).
+- Admin **למה ההתאמה הזו?** drawer with Hebrew waterfall + side-by-side cards; candidates see top reasons and **לא רלוונטי** crowd label.
+- Match rebuilds log to monitoring; flexibility rebuild uses embedding-aware path; role-boost documented + holdout A/B test.
+
 ## 0.3.4 — 2025-10-10
 
 - CV/job extraction: evidence quote per fact field, deterministic source/number checks, failed/low/medium → pending user confirmation in chat.
