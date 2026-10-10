@@ -462,6 +462,7 @@ export const en = {
   },
   adminNav: {
     dashboard: "Dashboard",
+    matches: "Matches",
     candidates: "Candidates",
     employers: "Employers",
     labeling: "Match labeling",
@@ -475,6 +476,8 @@ export const en = {
   adminPages: {
     dashboardTitle: "Admin portal",
     dashboardSubtitle: "Stats, AI costs, and system health",
+    matchesTitle: "Matches",
+    matchesSubtitle: "All job–candidate pairs, filters, and score breakdown",
     candidatesTitle: "Candidates",
     candidatesSubtitle: "Card browser — read only",
     candidateDetailSubtitle: "Full card — read only",

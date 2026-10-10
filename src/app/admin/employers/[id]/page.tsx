@@ -97,10 +97,19 @@ export default function AdminEmployerDetailPage() {
             <h2 className="mb-3 text-lg font-semibold">משרות</h2>
             <ul className="space-y-2">
               {data.jobs.map((j) => (
-                <li key={j.jobId}>
+                <li key={j.jobId} className="panel rounded-[var(--panel-radius)] p-4">
+                  <div className="mb-2 flex justify-end">
+                    <Link
+                      href={`/admin/matches?jobId=${encodeURIComponent(j.jobId)}`}
+                      className="text-xs font-medium text-[var(--accent)] hover:underline"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      התאמות למשרה →
+                    </Link>
+                  </div>
                   <Link
                     href={`/admin/employers/${id}/jobs/${j.jobId}`}
-                    className="panel block rounded-[var(--panel-radius)] p-4 transition hover:border-[var(--accent)]"
+                    className="block transition hover:opacity-95"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>

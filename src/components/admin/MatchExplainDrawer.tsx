@@ -17,6 +17,8 @@ type ExplainPayload = {
 export function MatchExplainDrawer(props: {
   matchId: string | null;
   onClose: () => void;
+  /** Raise above mobile tab bar */
+  mobileAboveTabs?: boolean;
 }) {
   const [data, setData] = useState<ExplainPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,9 +47,16 @@ export function MatchExplainDrawer(props: {
 
   if (!props.matchId) return null;
 
+  const z = props.mobileAboveTabs ? "z-[100]" : "z-[80]";
+  const panelPad = props.mobileAboveTabs
+    ? "pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-0"
+    : "";
+
   return (
-    <div className="fixed inset-0 z-[80] flex justify-end bg-black/40" role="dialog">
-      <div className="flex h-full w-full max-w-none flex-col bg-[var(--surface)] shadow-xl sm:max-w-xl">
+    <div className={`fixed inset-0 ${z} flex justify-end bg-black/40`} role="dialog">
+      <div
+        className={`flex h-full w-full max-w-none flex-col bg-[var(--surface)] shadow-xl sm:max-w-xl ${panelPad}`}
+      >
         <header className="flex items-center justify-between border-b border-[var(--stroke)] px-4 py-3">
           <h2 className="text-lg font-semibold">למה ההתאמה הזו?</h2>
           <button

@@ -111,7 +111,9 @@ export default function AdminPage() {
     return (
       <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
         <main className="text-center">
-          <SettingsMenu />
+          <div className="hidden sm:block">
+            <SettingsMenu />
+          </div>
           <p className="text-[var(--muted)]">טוען פורטל מנהלים…</p>
           <Link href="/" className="mt-4 inline-block text-sm text-[var(--accent)]">
             חזרה להתחלה
@@ -126,7 +128,9 @@ export default function AdminPage() {
     return (
       <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
         <main className="panel max-w-lg rounded-[var(--panel-radius)] p-8 text-center">
-          <SettingsMenu />
+          <div className="hidden sm:block">
+            <SettingsMenu />
+          </div>
           <p className="text-[var(--muted)]">{displayError}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             {needsSignIn ? (
