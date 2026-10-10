@@ -5,10 +5,12 @@ import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import type { SandboxRunReport } from "@/application/test-sandbox/run-report";
+import { useTranslation } from "@/components/LocaleProvider";
 
 type ReportPayload = SandboxRunReport & { recordedAt?: string };
 
 export default function SandboxReportPage() {
+  const { t } = useTranslation();
   const [report, setReport] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
@@ -74,7 +76,7 @@ export default function SandboxReportPage() {
   const rb = report?.rebuild;
 
   return (
-    <AdminShell title="דוח הרצה — נתוני בדיקה" subtitle="הערכת 150×150, שיפוט AI, וסטטיסטיקות מנוע ההתאמות">
+    <AdminShell title={t.adminPages.sandboxTitle} subtitle={t.adminPages.sandboxSubtitle}>
       <div className="mb-4 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => void load()} disabled={loading}>
           רענון

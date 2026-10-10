@@ -9,6 +9,7 @@ import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/components/LocaleProvider";
 
 type AdminStats = {
   employers: number;

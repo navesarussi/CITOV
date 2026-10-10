@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/components/LocaleProvider";
 
 type Row = {
   userId: string;
@@ -16,6 +17,7 @@ type Row = {
 };
 
 export default function AdminEmployersPage() {
+  const { t } = useTranslation();
   const [rows, setRows] = useState<Row[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,8 +49,8 @@ export default function AdminEmployersPage() {
 
   return (
     <AdminShell
-      title="מעסיקים"
-      subtitle="דפדפן כרטיסים — קריאה בלבד"
+      title={t.adminPages.employersTitle}
+      subtitle={t.adminPages.employersSubtitle}
       actions={
         <Button variant="secondary" onClick={() => void load()} className="min-h-9 px-3 py-1.5 text-sm">
           רענון
