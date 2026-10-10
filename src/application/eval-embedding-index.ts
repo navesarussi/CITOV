@@ -1,4 +1,4 @@
-import { loadEvalEmbeddingFixture } from "../../eval/matching/load-embed-fixture";
+import { loadEvalEmbeddingFixture } from "@/application/eval-embed-fixture";
 import type { MatchEmbeddingIndex } from "./match-scoring";
 import type { SegmentVectors } from "@/domain/semantic-matching";
 

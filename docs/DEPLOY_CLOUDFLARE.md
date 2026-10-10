@@ -1,6 +1,6 @@
 # Deploy CITOV to Cloudflare Workers (parallel to Vercel)
 
-Vercel remains the primary path (`npm run build` / Git deploy). Cloudflare uses **OpenNext** (`@opennextjs/cloudflare`) and does **not** change Vercel config.
+Vercel remains the primary path (`npm run build` / Git deploy). Cloudflare uses **OpenNext** (`@opennextjs/cloudflare`) and does **not** change Vercel config unless `CF_WORKERS_BUILD=1` (set only by `cf:*` scripts).
 
 ## Prerequisites
 
@@ -37,7 +37,7 @@ Set in `.dev.vars` (or Cloudflare dashboard → Workers → citov → Settings �
 ## Commands
 
 ```bash
-# Build OpenNext worker + static assets (runs `next build` internally)
+# Build OpenNext worker + static assets (Next standalone + bundle diet)
 npm run cf:build
 
 # Local smoke (after build)
@@ -53,8 +53,14 @@ npm run cf:deploy
 Wrangler also accepts:
 
 ```bash
-npx wrangler deploy --env=""   # uses wrangler.jsonc `name`: citov
+export CLOUDFLARE_API_TOKEN="..."   # Workers Scripts Edit
+export CLOUDFLARE_ACCOUNT_ID="..."  # dash.cloudflare.com → right sidebar
+npm run cf:deploy
+# or:
+npx wrangler deploy
 ```
+
+Login alternative: `npx wrangler login` (stores OAuth; token not required on that machine).
 
 ## Custom domain
 
@@ -73,9 +79,10 @@ Workers & Pages → citov → **Triggers** → Add route / custom domain. Update
 |------|--------|
 | `export const runtime = "nodejs"` routes | OK with `nodejs_compat` |
 | `next/server` **`after()`** (chat, CV, flexibility) | Relies on OpenNext/Workers async context; smoke-test deferred work after deploy |
-| **`readFileSync`** prompts / eval JSON | Bundled at build time if paths resolve; admin-only paths may fail if files missing from bundle — prefer env/DB on Workers |
-| **`unpdf` / `mammoth`** | Listed in `serverExternalPackages`; test CV upload on preview |
-| **Bundle size** | Workers Free **~3 MiB compressed** script limit — run `wrangler deploy` dry-run / dashboard after build (see PR report) |
+| **`readFileSync`** prompts / eval JSON | Prompts still read at runtime; eval fixtures stripped from CF bundle (see below) |
+| **`unpdf` / `mammoth`** | **Stubbed on CF** — PDF/DOCX upload returns empty/unsupported; use Vercel for full CV parsing |
+| **Admin demo seed** | CF build uses empty eval dataset stub — `seed-demo` on Workers seeds no eval cards unless you deploy via Vercel |
+| **Bundle size** | See below — tuned for Workers Free **~3 MiB gzip** script limit |
 | **Next.js 16.2.10** | `@opennextjs/cloudflare@1.19.0` (peer `>=16.2.3`); newer OpenNext requires Next ≥16.3.8 |
 
 ## Bundle size (Workers Free)
@@ -84,11 +91,35 @@ After `npm run cf:build`, check upload size:
 
 ```bash
 npx wrangler deploy --dry-run
+# Optional: explode bundle for analysis
+npx wrangler deploy --dry-run --outdir /tmp/cf-bundle-out
+# OpenNext esbuild metafile (after build):
+#   .open-next/server-functions/default/handler.mjs.meta.json
 ```
 
-Example (2026-10-10, main @ v0.4.24): **~3829 KiB gzip (~3.74 MiB)** — **above Workers Free ~3 MiB compressed script limit**. Paid Workers or bundle trimming (drop dev/e2e routes from prod, lazy-load `mammoth`/`unpdf`, Hyperdrive-only DB) may be required.
+**Baseline (pre-diet):** ~**3829 KiB gzip** (~3.74 MiB) — over Free tier.
 
-Static assets are served via **Assets** binding (not counted in the script limit the same way).
+**Current (CF bundle diet):** ~**2913 KiB gzip** (~2.84 MiB) — **under the 3 MiB Free limit** (target ≤2.8 MiB is ~46 KiB tighter; see levers below if you need more headroom).
+
+### What the CF diet removes or stubs
+
+| Cut | Mechanism |
+|-----|-----------|
+| **@vercel/og + resvg/yoga WASM** (~900+ KiB gzip) | `scripts/cf-patch-turbopack-runtime.mjs` stubs Turbopack `@vercel/og` imports; `next.config` aliases og modules |
+| **`mammoth` / `unpdf` + deps** (~200+ KiB gzip) | Resolve aliases → `src/infrastructure/cf-build-stubs/*` |
+| **Eval seed cards + 2 MiB embedding fixture** | `@/application/eval-*` boundary modules aliased to stubs when `CF_WORKERS_BUILD=1` |
+| **Trace noise** | `outputFileTracingExcludes` for `eval/fixtures`, `scripts/`, `e2e/`, `docs/` |
+| **Image optimizer** | `images.unoptimized: true` on CF build only |
+
+Vercel `npm run build` does **not** set `CF_WORKERS_BUILD` and keeps full eval, CV parsers, and OG stack.
+
+### `cf:build` pipeline
+
+1. `CF_WORKERS_BUILD=1 npm run build` (standalone output)
+2. `node scripts/cf-patch-turbopack-runtime.mjs`
+3. `opennextjs-cloudflare build --skipNextBuild`
+
+Static assets are served via **Assets** binding (not counted in the script gzip limit the same way).
 
 ## Smoke test (local)
 
@@ -107,4 +138,7 @@ Do not replace Vercel Git integration. Use CF deploy manually or a separate work
 
 - `wrangler.jsonc` — Worker entry `.open-next/worker.js`, assets, `nodejs_compat`
 - `open-next.config.ts` — OpenNext Cloudflare adapter config
+- `next.config.ts` — CF-only aliases when `CF_WORKERS_BUILD=1`
+- `src/infrastructure/cf-build-stubs/` — Worker bundle stubs
+- `scripts/cf-patch-turbopack-runtime.mjs` — OG/WASM strip
 - `public/_headers` — long-cache `_next/static` (Cloudflare Assets)
