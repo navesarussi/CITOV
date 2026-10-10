@@ -5,6 +5,10 @@
 - Gemini list pricing table (2.5 Flash/Pro, embeddings) aligned to Google docs; cached input ~10%.
 - CV extraction merges thinking/cached tokens across passes; judge B usage logged with its model id.
 
+## 0.4.7 — 2025-10-10
+
+- Apply AI monthly budget guard on main chat stream path and patch/reply extractors.
+
 ## 0.4.6 — 2025-10-10
 
 - Match rebuild: replace production `queued` rows only (preserve sandbox + employer decisions); advisory lock around rebuild write.
