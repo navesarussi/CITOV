@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.6 — 2025-10-10
+
+- Match rebuild: replace production `queued` rows only (preserve sandbox + employer decisions); advisory lock around rebuild write.
+
 ## 0.4.5 — 2025-10-10
 
 - Extraction evidence: merge overlapping work-history intervals before summing experience years.
