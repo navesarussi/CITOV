@@ -1,10 +1,14 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { formatAppVersion } from "@/lib/version";
 import { useTranslation } from "@/components/LocaleProvider";
 
 export function AppVersionFooter() {
+  const pathname = usePathname() ?? "";
   const { fmt, t } = useTranslation();
+
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <footer

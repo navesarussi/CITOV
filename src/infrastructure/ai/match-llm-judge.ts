@@ -133,38 +133,69 @@ export async function runTwoJudgeBatch(
     }
   }
 
-  const systemB = loadPrompt("match-judge-b.md");
-  const userB = pairs
-    .map((p) => {
-      const a = judgeA.get(p.pairIndex);
-      return `[pairIndex=${p.pairIndex}]\nCards:\n${cardBlock(p.job, p.candidate)}\n\nJudge A: label=${a?.label ?? "?"} confidence=${a?.confidence ?? 0} reason=${a?.reasonHe ?? ""}`;
-    })
+  const modelB = process.env.GEMINI_JUDGE_B_MODEL?.trim() || "gemini-2.5-pro";
+  const userBBlind = pairs
+    .map(
+      (p) =>
+        `[pairIndex=${p.pairIndex} jobId=${p.jobId} candidateId=${p.candidateId}]\n${cardBlock(p.job, p.candidate)}`,
+    )
     .join("\n\n---\n\n");
 
-  const modelB = process.env.GEMINI_JUDGE_B_MODEL?.trim() || "gemini-2.5-pro";
-  const { object: objectB, usage: uB } = await callGeminiWithRetry(() =>
+  const { object: blindB, usage: uBlind } = await callGeminiWithRetry(() =>
     generateObject({
       model: getGeminiModel(modelB),
       temperature: 0.25,
-      schema: judgeBSchema,
-      system: systemB,
-      prompt: userB,
+      schema: judgeASchema,
+      system: loadPrompt("match-judge-b-blind.md"),
+      prompt: userBBlind,
     }),
   );
-  const u2 = extractGeminiUsage(uB);
-  if (u2) usage.push({ usage: u2, model: modelB });
+  const uBlindParsed = extractGeminiUsage(uBlind);
+  if (uBlindParsed) usage.push({ usage: uBlindParsed, model: modelB });
 
   const judgeB = new Map<
     number,
     { label: RelevanceLabel; reasonHe: string; confidence: number; critiqueHe: string }
   >();
-  for (const row of objectB.pairs) {
+  for (const row of blindB.pairs) {
     judgeB.set(row.pairIndex, {
       label: row.label,
       reasonHe: row.reasonHe,
       confidence: row.confidence,
-      critiqueHe: row.critiqueHe,
+      critiqueHe: "",
     });
+  }
+
+  const critiqueSchema = z.object({
+    pairs: z.array(
+      z.object({
+        pairIndex: z.number().int(),
+        critiqueHe: z.string(),
+      }),
+    ),
+  });
+  const userCritique = pairs
+    .map((p) => {
+      const a = judgeA.get(p.pairIndex);
+      const b = judgeB.get(p.pairIndex);
+      return `[pairIndex=${p.pairIndex}]\nCards:\n${cardBlock(p.job, p.candidate)}\n\nJudge A: label=${a?.label ?? "?"} confidence=${a?.confidence ?? 0} reason=${a?.reasonHe ?? ""}\n\nYour verdict (already locked): label=${b?.label ?? "?"} confidence=${b?.confidence ?? 0} reason=${b?.reasonHe ?? ""}`;
+    })
+    .join("\n\n---\n\n");
+
+  const { object: critiqueB, usage: uCrit } = await callGeminiWithRetry(() =>
+    generateObject({
+      model: getGeminiModel(modelB),
+      temperature: 0.2,
+      schema: critiqueSchema,
+      system: loadPrompt("match-judge-b.md"),
+      prompt: userCritique,
+    }),
+  );
+  const uCritParsed = extractGeminiUsage(uCrit);
+  if (uCritParsed) usage.push({ usage: uCritParsed, model: modelB });
+  for (const row of critiqueB.pairs) {
+    const prev = judgeB.get(row.pairIndex);
+    if (prev) judgeB.set(row.pairIndex, { ...prev, critiqueHe: row.critiqueHe });
   }
 
   return { judgeA, judgeB, usage };

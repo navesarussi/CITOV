@@ -27,7 +27,14 @@ export function resolveGeminiPricingKey(model?: string | null): GeminiPricingKey
   const m = (model ?? "").toLowerCase();
   if (m.includes("embedding")) return "gemini-embedding-001";
   if (m.includes("2.5-pro") || m.includes("2-5-pro")) return "gemini-2.5-pro";
-  if (m.includes("2.5-flash") || m.includes("2-5-flash")) return "gemini-2.5-flash";
+  if (
+    m.includes("2.5-flash") ||
+    m.includes("2-5-flash") ||
+    m.includes("flash-latest") ||
+    (m.includes("flash") && !m.includes("lite"))
+  ) {
+    return "gemini-2.5-flash";
+  }
   return "default";
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.23 — 2025-10-10
+
+- Admin mobile: fix התאמות list (stop filtering demo pairs after scope); job/candidate pickers; version badge in עוד only; compact dashboard פעולות menu; demo seed blocked when real users exist; Hebrew cost labels; `gemini-flash-latest` pricing; LLM judge B blind verdict then critique.
+
 ## 0.4.22 — 2025-10-10
 
 - Degraded match queue floor (`MATCH_DEGRADED_RULE_QUEUE_FLOOR`, default 0.38).

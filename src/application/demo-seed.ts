@@ -1,3 +1,4 @@
+import { isNonProductionUserId } from "@/domain/test-sandbox";
 import { matchingEvalDataset } from "../../eval/matching/dataset";
 import { companyCardFromJobAndName } from "@/domain/company-card";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
@@ -85,10 +86,15 @@ export function buildDemoStoreFromEval(): StoreData {
 
 export async function runDemoSeed(options?: { force?: boolean }): Promise<{
   skipped: boolean;
+  blocked?: boolean;
   candidates: number;
   jobs: number;
 }> {
   const current = await readNormalizedStore();
+  const hasRealUsers = current.users.some((u) => !isNonProductionUserId(u.id));
+  if (hasRealUsers) {
+    return { skipped: true, blocked: true, candidates: 0, jobs: 0 };
+  }
   if (current.adminSettings?.updatedBy === SEED_MARKER && !options?.force) {
     return {
       skipped: true,

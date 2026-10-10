@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { AdminMatchFilter, AdminMatchRow } from "@/application/admin-matches-browse";
 import { AdminDataScopeToggle } from "@/components/admin/AdminDataScopeToggle";
+import { AdminMatchEntitySelect } from "@/components/admin/AdminMatchEntitySelect";
 import { MatchExplainDrawer } from "@/components/admin/MatchExplainDrawer";
 
 const FILTER_LABELS: Record<AdminMatchFilter, string> = {
@@ -35,6 +36,7 @@ export function AdminMatchesBrowser(props: {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [explainId, setExplainId] = useState<string | null>(null);
+  const [scopeTick, setScopeTick] = useState(0);
 
   const queryString = useMemo(() => {
     const p = new URLSearchParams();
@@ -79,7 +81,12 @@ export function AdminMatchesBrowser(props: {
   return (
     <div className="space-y-3" data-testid="admin-matches-browser">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <AdminDataScopeToggle onChange={() => void load()} />
+        <AdminDataScopeToggle
+          onChange={() => {
+            setScopeTick((n) => n + 1);
+            void load();
+          }}
+        />
         <p className="text-xs text-[var(--muted)]">{total} התאמות</p>
       </div>
 
@@ -114,21 +121,23 @@ export function AdminMatchesBrowser(props: {
             setPage(1);
           }}
         />
-        <input
-          className="rounded-lg border border-[var(--stroke)] px-2.5 py-2 text-sm"
-          placeholder="מזהה משרה (לסף)"
+        <AdminMatchEntitySelect
+          key={`job-${scopeTick}`}
+          kind="job"
+          placeholder="בחירת משרה (לסף / סינון)"
           value={jobId}
-          onChange={(e) => {
-            setJobId(e.target.value);
+          onChange={(id) => {
+            setJobId(id);
             setPage(1);
           }}
         />
-        <input
-          className="rounded-lg border border-[var(--stroke)] px-2.5 py-2 text-sm"
-          placeholder="מזהה מועמד (לסף)"
+        <AdminMatchEntitySelect
+          key={`cand-${scopeTick}`}
+          kind="candidate"
+          placeholder="בחירת מועמד/ת (לסף / סינון)"
           value={candidateId}
-          onChange={(e) => {
-            setCandidateId(e.target.value);
+          onChange={(id) => {
+            setCandidateId(id);
             setPage(1);
           }}
         />

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useAdminCache } from "@/components/admin/AdminCacheProvider";
 import { useTranslation } from "@/components/LocaleProvider";
+import { AppVersionBadge } from "@/components/AppVersion";
 
 type AdminNavKey =
   | "dashboard"
@@ -249,6 +250,7 @@ export function AdminNavMobileBar() {
               </button>
             </li>
           </ul>
+          <AppVersionBadge />
         </div>
       ) : null}
     </>

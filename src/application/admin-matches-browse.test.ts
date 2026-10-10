@@ -5,6 +5,7 @@ import {
   parseSyntheticPairMatchId,
   syntheticPairMatchId,
 } from "./admin-matches-browse";
+import { rebuildMatches } from "@/application/rebuild-matches";
 import { createSeedStore } from "@/infrastructure/db/memory-store";
 
 describe("admin-matches-browse", () => {
@@ -13,15 +14,28 @@ describe("admin-matches-browse", () => {
     assert.deepEqual(parseSyntheticPairMatchId(id), { jobId: "j1", candidateId: "c9" });
   });
 
-  it("lists queued matches from store", () => {
+  it("lists queued matches from store (includes demo-seed pairs)", () => {
     const store = createSeedStore();
-    const queued = store.matches.filter((m) => m.status === "queued");
+    const now = new Date().toISOString();
+    store.matches = [
+      {
+        id: "pair__demo-job__demo-employee",
+        jobOwnerId: "demo-employer",
+        jobId: "demo-employer",
+        candidateId: "demo-employee",
+        score: 0.72,
+        reason: "בדיקה · hybrid",
+        status: "queued",
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
     const { total } = listAdminMatches({
       store,
       filter: "queued",
       page: 1,
       pageSize: 50,
     });
-    assert.equal(total, queued.length);
+    assert.equal(total, 1);
   });
 });
