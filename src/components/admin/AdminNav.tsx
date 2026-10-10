@@ -9,6 +9,7 @@ const LINKS: { href: string; label: string; match?: (path: string) => boolean }[
   { href: "/admin/candidates", label: "מועמדים" },
   { href: "/admin/employers", label: "מעסיקים" },
   { href: "/admin/labeling", label: "תיוג התאמות" },
+  { href: "/admin/sandbox-report", label: "דוח הרצה" },
   { href: "/admin/monitoring", label: "ניטור" },
   { href: "/admin/preview/employee", label: "תצוגת מועמד" },
   { href: "/admin/preview/employer", label: "תצוגת מעסיק" },

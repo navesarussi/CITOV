@@ -224,6 +224,26 @@ export async function routeLatencyStats(sinceHours = 24): Promise<
   }));
 }
 
+export async function latestSandboxRunReport(): Promise<Record<string, unknown> | null> {
+  if (shouldUseMemoryEvents()) {
+    const hit = memoryEvents.find((e) => e.kind === "sandbox_run_report");
+    return hit?.meta as Record<string, unknown> | null;
+  }
+  await ensureSchema();
+  const pool = await getPool();
+  const r = await pool.query<{ meta: unknown; created_at: Date }>(
+    `select meta, created_at from app_events
+     where kind = 'sandbox_run_report'
+     order by created_at desc limit 1`,
+  );
+  const row = r.rows[0];
+  if (!row) return null;
+  return {
+    ...(row.meta as Record<string, unknown>),
+    recordedAt: row.created_at.toISOString(),
+  };
+}
+
 export async function latestE2eRun(): Promise<Record<string, unknown> | null> {
   if (shouldUseMemoryEvents()) {
     const hit = memoryEvents.find((e) => e.kind === "e2e_run");

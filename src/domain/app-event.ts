@@ -6,7 +6,8 @@ export type AppEventKind =
   | "ai_budget"
   | "slow_request"
   | "e2e_run"
-  | "match_rebuild";
+  | "match_rebuild"
+  | "sandbox_run_report";
 
 export type AppEventSeverity = "info" | "warn" | "critical";
 
