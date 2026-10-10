@@ -1,4 +1,7 @@
-/** Map raw cosine similarity to a 0–1 fit scale using a high floor (Gemini cosines cluster ~0.77–1). */
+/**
+ * Map raw cosine similarity to a 0–1 fit scale using a high floor (Gemini cosines cluster ~0.77–1).
+ * DEFAULT_COSINE_FLOOR (0.75) is tuned on holdout — override via MATCHING_COSINE_FLOOR.
+ */
 export function calibrateCosineSimilarity(cosine: number, floor: number): number {
   const lo = Math.max(0, Math.min(0.99, floor));
   if (cosine <= lo) return 0;

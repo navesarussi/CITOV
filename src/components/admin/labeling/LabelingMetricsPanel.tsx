@@ -1,6 +1,6 @@
 "use client";
 
-import type { DisagreementRow } from "@/application/admin-labeling-metrics";
+import type { DisagreementRow, LlmJudgeDashboardMetrics } from "@/application/admin-labeling-metrics";
 import { useTranslation } from "@/components/LocaleProvider";
 import type { Messages } from "@/i18n";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +25,7 @@ export type LabelingMetricsView = {
     goodMissed: number;
     badQueued: number;
   }[];
+  llmJudge?: LlmJudgeDashboardMetrics;
 };
 
 function matcherTitle(id: string, legacy: string, smart: string): string {
@@ -110,6 +111,46 @@ export function LabelingMetricsPanel(props: {
         <p className="rounded-xl bg-[var(--chip)] px-3 py-2 text-sm text-[var(--muted)]">
           {m.message ?? fmt(t.adminLabeling.minLabelsNeeded, { n: m.minRequired ?? 3 })}
         </p>
+      ) : null}
+
+      {(m.llmJudge?.total ?? 0) > 0 ? (
+        <div className="rounded-2xl border border-[var(--stroke)] bg-white/90 p-4">
+          <h3 className="text-sm font-semibold text-[var(--hero)]">{t.adminLabeling.llmJudgeTitle}</h3>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--muted)]">{t.adminLabeling.llmJudgeHint}</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <KpiTile
+              label={t.adminLabeling.llmJudgeAgreementAb}
+              tip={t.adminLabeling.llmJudgeAgreementAbTip}
+              value={`${((m.llmJudge!.judgeAgreementRate ?? 0) * 100).toFixed(0)}%`}
+              sub={fmt(t.adminLabeling.llmJudgePairsSub, { n: m.llmJudge!.total })}
+            />
+            <KpiTile
+              label={t.adminLabeling.llmJudgeAutoSkip}
+              tip={t.adminLabeling.llmJudgeAutoSkipTip}
+              value={String(m.llmJudge!.autoSkipped)}
+            />
+            <KpiTile
+              label={t.adminLabeling.llmJudgeOwnerQueue}
+              tip={t.adminLabeling.llmJudgeOwnerQueueTip}
+              value={String(m.llmJudge!.needsOwner)}
+              sub={fmt(t.adminLabeling.llmJudgeDisagreementsSub, { n: m.llmJudge!.total - m.llmJudge!.autoSkipped })}
+            />
+            <KpiTile
+              label={t.adminLabeling.llmJudgeHumanAudit}
+              tip={t.adminLabeling.llmJudgeHumanAuditTip}
+              value={
+                m.llmJudge!.humanAuditAgreementRate != null
+                  ? `${(m.llmJudge!.humanAuditAgreementRate * 100).toFixed(0)}%`
+                  : "—"
+              }
+              sub={
+                m.llmJudge!.humanAuditCompared > 0
+                  ? fmt(t.adminLabeling.llmJudgeHumanAuditSub, { n: m.llmJudge!.humanAuditCompared })
+                  : t.adminLabeling.llmJudgeHumanAuditPending
+              }
+            />
+          </div>
+        </div>
       ) : null}
 
       {m.ready && m.matchers?.length ? (

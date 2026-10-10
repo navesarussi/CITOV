@@ -415,6 +415,21 @@ export const he: Messages = {
       "החלת הסף משנה רק את סף כניסה לתור (match_queue_threshold): זוגות עם ציון היברידי מעל הסף ייכנסו לתור, מתחת — לא. אפשר לשנות שוב בכל עת. כרגע: {current}. מוצע: {suggested}.",
     applyThresholdReversible:
       "שינוי reversible — לא מוחק תיוגים; רק משנה מי נכנס לתור לפי הציון ההיברידי.",
+    llmJudgeTitle: "שופטי LLM (סandbox)",
+    llmJudgeHint:
+      "שופט A מתייג; שופט B עצמאי עם ביקורת. קבלה אוטומטית רק בהסכמה וביטחון גבוה; מחלוקות ודגימת ביקורת לתור הבעלים.",
+    llmJudgeAgreementAb: "הסכמה A↔B",
+    llmJudgeAgreementAbTip: "אחוז הזוגות שבהם שני השופטים בחרו אותה תווית",
+    llmJudgePairsSub: "{n} זוגות נשפטו",
+    llmJudgeAutoSkip: "דילוג אוטומטי",
+    llmJudgeAutoSkipTip: "הסכמה + ביטחון גבוה + ללא סתירה למנוע — לא נכנס לתור תיוג",
+    llmJudgeOwnerQueue: "תור בעלים",
+    llmJudgeOwnerQueueTip: "מחלוקה בין שופטים, ביטחון נמוך, סף, או סתירה למנוע",
+    llmJudgeDisagreementsSub: "{n} נדרשים החלטה",
+    llmJudgeHumanAudit: "ביקורת אדם (דגימה)",
+    llmJudgeHumanAuditTip: "השוואת תיוג אדם לשופט A על ~10% מהזוגות שדולגו",
+    llmJudgeHumanAuditSub: "{n} זוגות עם תיוג אדם",
+    llmJudgeHumanAuditPending: "תייגו דגימות ביקורת כדי למדוד הסכמה",
     applyThresholdConfirm:
       "להחליף סף תור מ-{current} ל-{suggested}?\n\nהשפעה על {count} זוגות שתויגו (היברידי):\n• בתור היום: {queuedBefore}\n• בתור אחרי: {queuedAfter}\n• הסכמה עם התיוג שלך: {agreementBefore}% → {agreementAfter}%",
     scoreTitle: "פירוט הציון לזוג הזה",

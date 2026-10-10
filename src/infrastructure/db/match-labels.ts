@@ -20,6 +20,10 @@ const HUMAN_LABEL_SOURCES: MatchLabelSource[] = [
   "test-run",
 ];
 
+export function isHumanMatchLabelSource(source: MatchLabelSource): boolean {
+  return HUMAN_LABEL_SOURCES.includes(source);
+}
+
 export type MatchLabelRow = {
   id: string;
   jobId: string;
@@ -122,8 +126,6 @@ export async function countMatchLabels(): Promise<number> {
 
 export async function labeledPairKeys(humanOnly = true): Promise<Set<string>> {
   const rows = await listMatchLabels(10_000);
-  const filtered = humanOnly
-    ? rows.filter((r) => HUMAN_LABEL_SOURCES.includes(r.source))
-    : rows;
+  const filtered = humanOnly ? rows.filter((r) => isHumanMatchLabelSource(r.source)) : rows;
   return new Set(filtered.map((r) => `${r.jobId}:${r.candidateId}`));
 }

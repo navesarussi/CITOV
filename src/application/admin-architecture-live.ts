@@ -1,12 +1,19 @@
+/**
+ * Live counters for the admin architecture explorer — AI usage, matching config, eval snapshot.
+ */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ArchitectureNodeId } from "@/domain/admin-architecture-content";
 import { DEFAULT_COSINE_FLOOR } from "@/domain/matching-calibration";
 import { DEFAULT_HYBRID_WEIGHTS } from "@/domain/semantic-matching";
 import { readHybridWeights, readQueueThreshold } from "@/application/matching-config";
 import { buildMonitoringDashboard } from "@/application/monitoring-dashboard";
+import { buildLlmJudgeDashboardMetrics } from "@/application/llm-judge-metrics";
 import { latestSandboxRunReport } from "@/infrastructure/db/app-events";
 import { listAiUsageRows } from "@/infrastructure/db/ai-usage";
 import { readStore } from "@/infrastructure/store";
+
+export type ArchitectureNodeStat = { labelHe: string; value: string };
 
 export type ArchitectureLiveStats = {
   ai: {
@@ -29,6 +36,8 @@ export type ArchitectureLiveStats = {
   };
   sandboxReportLink: string;
   hasSandboxReport: boolean;
+  nodeStats: Partial<Record<ArchitectureNodeId, ArchitectureNodeStat[]>>;
+  llmJudge: Awaited<ReturnType<typeof buildLlmJudgeDashboardMetrics>>;
 };
 
 function loadEvalSnapshot(): ArchitectureLiveStats["eval"] {
@@ -69,6 +78,34 @@ export async function buildArchitectureLiveStats(): Promise<ArchitectureLiveStat
   const monitoring = await buildMonitoringDashboard();
   const aiErrors = monitoring.issues.filter((i) => i.issueStatus === "open").length;
   const sandbox = await latestSandboxRunReport();
+  const llmJudge = await buildLlmJudgeDashboardMetrics();
+  const jobCount = store.employers.reduce((n, e) => n + e.jobs.length, 0);
+  const testQueued = store.matches.filter((m) => m.isTest && m.status === "queued").length;
+  const testTotal = store.matches.filter((m) => m.isTest).length;
+
+  const nodeStats: ArchitectureLiveStats["nodeStats"] = {
+    browser: [{ labelHe: "מסלולים", value: "מועמד · מעסיק · מנהל" }],
+    postgres: [
+      { labelHe: "מועמדים", value: String(store.employees.length) },
+      { labelHe: "משרות", value: String(jobCount) },
+      { labelHe: "זוגות בדיקה", value: String(testTotal) },
+    ],
+    gemini: [
+      { labelHe: "קריאות (7 ימים)", value: String(usage.length) },
+      {
+        labelHe: "זמן תגובה ממוצע",
+        value: avgLatencyMs != null ? `${avgLatencyMs} מילישניות` : "—",
+      },
+    ],
+    matching: [
+      { labelHe: "סף תור", value: threshold.toFixed(2) },
+      { labelHe: "בתור (בדיקה)", value: String(testQueued) },
+    ],
+    monitoring: [{ labelHe: "אירועים פתוחים", value: String(aiErrors) }],
+    embeddings: [{ labelHe: "מקטעים", value: "תפקיד · כישורים · פרופיל" }],
+    cron: [{ labelHe: "שחזור", value: "תור degraded" }],
+    api: [{ labelHe: "הרשאות", value: "לכל בקשה" }],
+  };
 
   return {
     ai: {
@@ -86,5 +123,7 @@ export async function buildArchitectureLiveStats(): Promise<ArchitectureLiveStat
     eval: loadEvalSnapshot(),
     sandboxReportLink: "/admin/sandbox-report",
     hasSandboxReport: Boolean(sandbox),
+    nodeStats,
+    llmJudge,
   };
 }

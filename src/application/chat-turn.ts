@@ -1,3 +1,6 @@
+/**
+ * One chat turn: stream assistant reply, structured card patch, embeddings trigger, and AI usage logging.
+ */
 import { randomUUID } from "crypto";
 import { NotFoundError } from "@/domain/errors";
 import { defaultGeminiModelId } from "@/infrastructure/ai/gemini-client";
