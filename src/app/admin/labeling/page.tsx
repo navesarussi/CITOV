@@ -7,6 +7,7 @@ import {
   type LabelingMetricsView,
 } from "@/components/admin/labeling/LabelingMetricsPanel";
 import { LabelingPairView } from "@/components/admin/LabelingPairView";
+import { AdminDataScopeToggle } from "@/components/admin/AdminDataScopeToggle";
 import { AdminShell } from "@/components/AdminShell";
 import { useTranslation } from "@/components/LocaleProvider";
 import { Button } from "@/components/ui/Button";
@@ -180,6 +181,9 @@ export default function AdminLabelingPage() {
   return (
     <AdminShell title={t.adminLabeling.pageTitle} subtitle={t.adminLabeling.pageSubtitle}>
       <div className="space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <AdminDataScopeToggle onChange={() => void refresh()} />
+        </div>
         {metrics ? (
           <LabelingMetricsPanel
             metrics={metrics}

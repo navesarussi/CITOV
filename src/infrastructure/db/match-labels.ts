@@ -3,7 +3,7 @@ import type { RelevanceLabel } from "@/domain/matching-eval/types";
 import { ensureSchema } from "./schema";
 import { getPool } from "./pool";
 
-export type MatchLabelSource = "admin" | "employer_action" | "import" | "crowd";
+export type MatchLabelSource = "admin" | "employer_action" | "import" | "crowd" | "test-run";
 
 export type MatchLabelRow = {
   id: string;

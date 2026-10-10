@@ -1,7 +1,9 @@
 "use client";
 
 import type { LabelingPair } from "@/application/admin-labeling";
+import { MatchExplainButton, MatchExplainDrawer } from "@/components/admin/MatchExplainDrawer";
 import { LabelingScoreBreakdown } from "@/components/admin/labeling/LabelingScoreBreakdown";
+import { useState } from "react";
 import { useTranslation } from "@/components/LocaleProvider";
 import { hebrewDisplayCandidateCard, hebrewDisplayJobCard } from "@/domain/hebrew-display";
 import type { LabelFieldRow } from "@/domain/labeling-field-map";
@@ -42,6 +44,7 @@ function CardBlock(props: {
 export function LabelingPairView(props: { pair: LabelingPair }) {
   const { t } = useTranslation();
   const { pair } = props;
+  const [explainId, setExplainId] = useState<string | null>(null);
   const jobView = hebrewDisplayJobCard(pair.job);
   const candidateView = hebrewDisplayCandidateCard(pair.candidate);
 
@@ -53,6 +56,10 @@ export function LabelingPairView(props: { pair: LabelingPair }) {
         jobId={pair.jobId}
         candidateId={pair.candidateId}
       />
+      {pair.matchId ? (
+        <MatchExplainButton matchId={pair.matchId} onOpen={setExplainId} />
+      ) : null}
+      <MatchExplainDrawer matchId={explainId} onClose={() => setExplainId(null)} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <CardBlock

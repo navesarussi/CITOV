@@ -7,9 +7,13 @@ create table if not exists app_users (
   email text,
   image text,
   google_id text,
-  created_at timestamptz not null default now()
+  is_test boolean not null default false,
+  dataset_id text,
+  created_at timestamptz not null default now(),
+  check ((is_test = false and dataset_id is null) or (is_test = true and dataset_id is not null))
 );
 create index if not exists app_users_email_idx on app_users (email);
+create index if not exists app_users_test_idx on app_users (is_test, dataset_id);
 create index if not exists app_users_google_id_idx on app_users (google_id);
 
 create table if not exists employee_profiles (
@@ -67,10 +71,14 @@ create table if not exists matches (
   score double precision not null,
   reason text not null,
   score_breakdown jsonb,
+  is_test boolean not null default false,
+  dataset_id text,
   status text not null check (status in ('queued', 'approved', 'rejected')),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  check ((is_test = false and dataset_id is null) or (is_test = true and dataset_id is not null))
 );
+create index if not exists matches_test_idx on matches (is_test, dataset_id);
 create index if not exists matches_job_owner_idx on matches (job_owner_id);
 create index if not exists matches_candidate_idx on matches (candidate_id);
 

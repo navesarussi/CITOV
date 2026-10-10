@@ -19,6 +19,7 @@ import {
   setCachedAdminSettings,
   setCachedFieldQuestions,
 } from "./store-cache";
+import { filterProductionStore } from "./store-scope";
 
 function mapUser(u: Record<string, unknown>): User {
   return {
@@ -29,6 +30,8 @@ function mapUser(u: Record<string, unknown>): User {
     image: (u.image as string | null) ?? undefined,
     googleId: (u.google_id as string | null) ?? undefined,
     createdAt: new Date(u.created_at as string | Date).toISOString(),
+    isTest: Boolean(u.is_test),
+    datasetId: (u.dataset_id as string | null) ?? undefined,
   };
 }
 
@@ -84,6 +87,9 @@ function mapMatch(m: Record<string, unknown>): Match {
     candidateId: String(m.candidate_id),
     score: Number(m.score),
     reason: String(m.reason),
+    scoreBreakdown: (m.score_breakdown as Match["scoreBreakdown"]) ?? undefined,
+    isTest: Boolean(m.is_test),
+    datasetId: (m.dataset_id as string | null) ?? undefined,
     status: m.status as Match["status"],
     createdAt: new Date(m.created_at as string | Date).toISOString(),
     updatedAt: new Date(m.updated_at as string | Date).toISOString(),
@@ -200,12 +206,14 @@ export async function readMatchingStore(): Promise<StoreData> {
     pool.query(`select user_id, card, jobs, active_job_id from employer_profiles`),
     pool.query(`select * from matches`),
   ]);
-  return emptyStore({
-    users: users.rows.map((u) => mapUser(u)),
-    employees: employees.rows.map((e) => mapEmployee(e, false)),
-    employers: employers.rows.map((e) => mapEmployer(e)),
-    matches: matches.rows.map((m) => mapMatch(m)),
-  });
+  return filterProductionStore(
+    emptyStore({
+      users: users.rows.map((u) => mapUser(u)),
+      employees: employees.rows.map((e) => mapEmployee(e, false)),
+      employers: employers.rows.map((e) => mapEmployer(e)),
+      matches: matches.rows.map((m) => mapMatch(m)),
+    }),
+  );
 }
 
 /** Approved jobs for a candidate — only related employer rows. */
@@ -225,7 +233,7 @@ export async function readOpportunityStore(candidateId: string): Promise<StoreDa
   await ensureSchema();
   const pool = await getPool();
   const matchesRes = await pool.query(
-    `select * from matches where candidate_id = $1 and status = 'approved'`,
+    `select * from matches where candidate_id = $1 and status = 'approved' and coalesce(is_test, false) = false`,
     [candidateId],
   );
   const matches = matchesRes.rows.map((m) => mapMatch(m));
@@ -271,6 +279,7 @@ export async function readCandidateQueueStore(
     ? await pool.query(
         `select * from matches
          where job_owner_id = $1 and status = 'queued'
+           and coalesce(is_test, false) = false
            and coalesce(job_id, job_owner_id) = $2
          order by score desc`,
         [employerId, jobId],
@@ -278,6 +287,7 @@ export async function readCandidateQueueStore(
     : await pool.query(
         `select * from matches
          where job_owner_id = $1 and status = 'queued'
+           and coalesce(is_test, false) = false
          order by score desc`,
         [employerId],
       );

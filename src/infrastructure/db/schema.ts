@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "012_match_score_breakdown";
+const MIGRATION_VERSION = "013_test_sandbox";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -29,6 +29,22 @@ alter table employer_profiles add column if not exists active_job_id text;
 alter table matches add column if not exists job_id text;
 update matches set job_id = job_owner_id where job_id is null;
 alter table matches add column if not exists score_breakdown jsonb;
+
+alter table app_users add column if not exists is_test boolean not null default false;
+alter table app_users add column if not exists dataset_id text;
+alter table matches add column if not exists is_test boolean not null default false;
+alter table matches add column if not exists dataset_id text;
+
+alter table app_users drop constraint if exists app_users_test_dataset_chk;
+alter table app_users add constraint app_users_test_dataset_chk
+  check ((is_test = false and dataset_id is null) or (is_test = true and dataset_id is not null));
+
+alter table matches drop constraint if exists matches_test_dataset_chk;
+alter table matches add constraint matches_test_dataset_chk
+  check ((is_test = false and dataset_id is null) or (is_test = true and dataset_id is not null));
+
+create index if not exists app_users_test_idx on app_users (is_test, dataset_id);
+create index if not exists matches_test_idx on matches (is_test, dataset_id);
 
 alter table chat_messages add column if not exists conversation_context text;
 alter table chat_messages add column if not exists job_id text;
@@ -118,7 +134,7 @@ create unique index if not exists match_labels_unique_admin
 alter table match_labels add column if not exists labeler_role text;
 alter table match_labels drop constraint if exists match_labels_source_check;
 alter table match_labels add constraint match_labels_source_check
-  check (source in ('admin', 'employer_action', 'import', 'crowd'));
+  check (source in ('admin', 'employer_action', 'import', 'crowd', 'test-run'));
 
 create table if not exists app_events (
   id text primary key,

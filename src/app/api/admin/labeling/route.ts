@@ -6,6 +6,10 @@ import { assertAdmin } from "@/infrastructure/admin-guard";
 import { mergeEvalFixtureIntoIndex } from "@/application/eval-embedding-index";
 import { loadMatchingEmbeddingIndex } from "@/infrastructure/db/card-embeddings";
 import { upsertMatchLabel } from "@/infrastructure/db/match-labels";
+import { nextTestRunLabelingPairs } from "@/application/test-sandbox/labeling-queue";
+import { parseAdminDataScope } from "@/infrastructure/admin-data-scope";
+import { filterStoreByScope } from "@/infrastructure/db/store-scope";
+import { readNormalizedStore } from "@/infrastructure/db/normalized-store";
 import { readMatchingStore, readStore, writeStore } from "@/infrastructure/store";
 import { upsertAdminSettings } from "@/infrastructure/db/normalized-store";
 import { ok, fail } from "@/infrastructure/http";
@@ -18,18 +22,23 @@ async function GETHandler(req: Request) {
   try {
     const gate = await assertAdmin();
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
-    const store = await readMatchingStore();
+    const scope = parseAdminDataScope(req);
+    const raw = scope === "test" ? await readNormalizedStore() : await readMatchingStore();
+    const store = filterStoreByScope(raw, scope);
     const index = mergeEvalFixtureIntoIndex(await loadMatchingEmbeddingIndex(store));
     const url = new URL(req.url);
     const jobId = url.searchParams.get("jobId")?.trim();
     const candidateId = url.searchParams.get("candidateId")?.trim();
     const metrics = await extendedLiveMetrics(store, index);
     if (jobId && candidateId) {
-      const pair = getLabelingPair(store, jobId, candidateId, index, "review");
-      return ok({ pair, metrics });
+      const pair = getLabelingPair(store, jobId, candidateId, index, scope === "test" ? "test-run" : "review");
+      return ok({ pair, metrics, dataScope: scope });
     }
-    const pairs = await nextLabelingPairs(store, index, 1);
-    return ok({ pair: pairs[0] ?? null, metrics });
+    const pairs =
+      scope === "test"
+        ? await nextTestRunLabelingPairs(store, index, 1)
+        : await nextLabelingPairs(store, index, 1);
+    return ok({ pair: pairs[0] ?? null, metrics, dataScope: scope });
   } catch (e) {
     return fail(e, undefined, { route: ROUTE });
   }
@@ -85,7 +94,9 @@ async function POSTHandler(req: Request) {
     if (!body.jobId || !body.candidateId || !body.label) {
       return ok({ error: "חסרים jobId / candidateId / label" }, { status: 400 });
     }
-    const store = await readMatchingStore();
+    const scope = parseAdminDataScope(req);
+    const raw = scope === "test" ? await readNormalizedStore() : await readMatchingStore();
+    const store = filterStoreByScope(raw, scope);
     const index = mergeEvalFixtureIntoIndex(await loadMatchingEmbeddingIndex(store));
     const scores = scoresForPair(store, body.jobId, body.candidateId, index);
     await upsertMatchLabel({
@@ -93,15 +104,18 @@ async function POSTHandler(req: Request) {
       candidateId: body.candidateId,
       label: body.label,
       note: body.note,
-      source: "admin",
+      source: scope === "test" ? "test-run" : "admin",
       labelerUserId: gate.email ?? "admin",
       ruleScore: scores.ruleScore,
       hybridScore: scores.hybridScore,
       matcherVersion: scores.matcherVersion,
     });
     const metrics = await extendedLiveMetrics(store, index);
-    const next = await nextLabelingPairs(store, index, 1);
-    return ok({ ok: true, metrics, pair: next[0] ?? null });
+    const next =
+      scope === "test"
+        ? await nextTestRunLabelingPairs(store, index, 1)
+        : await nextLabelingPairs(store, index, 1);
+    return ok({ ok: true, metrics, pair: next[0] ?? null, dataScope: scope });
   } catch (e) {
     return fail(e, undefined, { route: ROUTE, userEmail: undefined });
   }

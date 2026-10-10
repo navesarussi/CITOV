@@ -31,7 +31,8 @@ export async function writeMatches(matches: Match[]): Promise<void> {
  * path can stay on an actor slice without corrupting the global match set.
  */
 export async function rebuildAndWriteMatches(): Promise<void> {
-  const snap = await readMatchingStore();
+  const { filterProductionStore } = await import("./db/store-scope");
+  const snap = filterProductionStore(await readMatchingStore());
   const { loadMatchingEmbeddingIndex } = await import("./db/card-embeddings");
   const index = await loadMatchingEmbeddingIndex(snap);
   const { rebuildMatches } = await import("@/application/rebuild-matches");
