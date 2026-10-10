@@ -12,7 +12,7 @@ import {
   persistEmployeeProfile,
   persistEmployeeTurn,
 } from "@/infrastructure/db/scoped-store";
-import { scheduleMatchRebuild } from "@/infrastructure/db/match-scheduler";
+import { flushScheduledMatchRebuild } from "@/infrastructure/db/match-scheduler";
 import { ok, fail } from "@/infrastructure/http";
 import { parseLocale } from "@/infrastructure/locale";
 
@@ -108,9 +108,9 @@ export async function POST(req: Request) {
     }
 
     const nextEmp = store.employees.find((e) => e.userId === userId)!;
-    after(() => {
+    after(async () => {
       scheduleCandidateEmbeddingRefresh(userId, nextEmp.card);
-      scheduleMatchRebuild();
+      await flushScheduledMatchRebuild();
     });
     return ok({
       ok: true,

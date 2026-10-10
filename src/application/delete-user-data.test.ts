@@ -9,7 +9,11 @@ describe("deleteUserAccountData (memory store)", () => {
     const prevDb = process.env.DATABASE_URL;
     try {
       process.env.DATABASE_URL = "";
+<<<<<<< HEAD
       writeMemoryStore(createSeedStore());
+=======
+    writeMemoryStore(createSeedStore());
+>>>>>>> 195af6a (Resilience: awaited after(), degraded queue floor, M1-M4 hardening)
     await assert.rejects(
       () => deleteUserAccountData("demo-employee"),
       (e: unknown) => e instanceof NotFoundError,

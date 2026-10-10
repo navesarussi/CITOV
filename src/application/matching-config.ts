@@ -24,3 +24,9 @@ export function readQueueThreshold(settings?: AdminSettings | null): number {
   const raw = Number(process.env.MATCHING_QUEUE_THRESHOLD ?? 0.6);
   return Number.isFinite(raw) ? raw : 0.6;
 }
+
+/** When hybrid/semantic degrades to rule-only, require at least this score to enter the queue. */
+export function readDegradedRuleQueueFloor(): number {
+  const raw = Number(process.env.MATCH_DEGRADED_RULE_QUEUE_FLOOR ?? 0.38);
+  return Number.isFinite(raw) ? Math.max(0, Math.min(1, raw)) : 0.38;
+}

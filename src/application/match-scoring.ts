@@ -9,7 +9,12 @@ import type { SegmentVectors } from "@/domain/semantic-matching";
 import type { HybridWeights } from "@/domain/semantic-matching";
 import type { AdminSettings, CandidateCard, JobCard } from "@/domain/types";
 import { buildMatchScoreBreakdown } from "./match-score-detail";
-import { readHybridWeights, readMatchingMode, readQueueThreshold } from "./matching-config";
+import {
+  readDegradedRuleQueueFloor,
+  readHybridWeights,
+  readMatchingMode,
+  readQueueThreshold,
+} from "./matching-config";
 
 export type MatchEmbeddingIndex = {
   candidate: Map<string, SegmentVectors>;
@@ -56,6 +61,7 @@ export function scoreCandidateForJob(params: {
     reason += " · semantic";
   }
   const threshold = params.queueThreshold ?? readQueueThreshold(params.adminSettings ?? undefined);
+  const queueMin = degraded ? Math.max(threshold, readDegradedRuleQueueFloor()) : threshold;
   const scoreBreakdown = buildMatchScoreBreakdown({
     candidate: params.candidate,
     job: params.job,
@@ -63,19 +69,19 @@ export function scoreCandidateForJob(params: {
     adminSettings: params.adminSettings,
     mode,
     hybridWeights,
-    queueThreshold: threshold,
+    queueThreshold: queueMin,
   });
   return {
     score,
     reason,
-    queued: score >= threshold,
+    queued: score >= queueMin,
     degraded,
     scoreBreakdown: {
       ...scoreBreakdown,
       effectiveMode,
       degraded,
-      threshold,
-      queued: score >= threshold,
+      threshold: queueMin,
+      queued: score >= queueMin,
     },
   };
 }

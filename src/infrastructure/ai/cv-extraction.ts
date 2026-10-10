@@ -9,6 +9,7 @@ import {
 } from "./gemini-client";
 import type { CandidateCard } from "@/domain/types";
 import { compactCard } from "@/domain/chat-context";
+import { CV_INFERENCE_FIELD_KEYS } from "@/domain/cv-inference-field-keys";
 import { gateExtractedFields } from "@/domain/extraction-evidence";
 import { isExtractTextUsable, sanitizeCvPatch } from "@/domain/cv-sanitize";
 import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
@@ -154,6 +155,7 @@ export async function runCvExtraction(params: {
       extractedFields: passA.object.extractedFields,
       fieldConfidence: passA.object.fieldConfidence,
       workHistory: passA.object.workHistory,
+      allowedFieldKeys: CV_INFERENCE_FIELD_KEYS,
     });
 
     const sanitized = sanitizeCvPatch({

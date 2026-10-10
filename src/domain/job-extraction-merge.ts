@@ -1,4 +1,5 @@
 import type { JobCard, JobImportMeta, JobSlot, PendingInference } from "./types";
+import { JOB_INFERENCE_FIELD_KEYS } from "./cv-inference-field-keys";
 import { gateExtractedFields, type ExtractedField } from "./extraction-evidence";
 import { applyJobPatch } from "@/application/chat-turn";
 import type { JobPatch } from "@/infrastructure/ai/schemas";
@@ -18,6 +19,7 @@ export function mergeGatedJobExtraction(
     sourceText: payload.sourceText,
     patch: payload.patch,
     extractedFields: payload.extractedFields,
+    allowedFieldKeys: JOB_INFERENCE_FIELD_KEYS,
   });
   const card = applyJobPatch(slot.card, gated.acceptedPatch as JobPatch);
   const importMeta: JobImportMeta = {

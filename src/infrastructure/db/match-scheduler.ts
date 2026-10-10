@@ -23,6 +23,15 @@ export function scheduleMatchRebuild(): void {
   }, Number.isFinite(DEBOUNCE_MS) ? Math.max(250, DEBOUNCE_MS) : 1500);
 }
 
+/** Run any pending debounced rebuild now — for `after()` handlers that must await completion. */
+export async function flushScheduledMatchRebuild(): Promise<void> {
+  if (global.__shidukhMatchRebuildTimer) {
+    clearTimeout(global.__shidukhMatchRebuildTimer);
+    global.__shidukhMatchRebuildTimer = undefined;
+  }
+  await runMatchRebuild();
+}
+
 async function runMatchRebuild(): Promise<void> {
   if (global.__shidukhMatchRebuildRunning) {
     await global.__shidukhMatchRebuildRunning;
