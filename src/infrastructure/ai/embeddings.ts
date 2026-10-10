@@ -2,7 +2,9 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { embedMany } from "ai";
 import type { EmbeddingSegment } from "@/domain/card-embedding-text";
 import { isSegmentNonempty } from "@/domain/card-embedding-text";
+import { logAiUsageSafe } from "@/infrastructure/db/ai-usage";
 import { callGeminiWithRetry, getGeminiApiKeys, hasGeminiKey } from "./gemini-client";
+import { extractGeminiUsage } from "./usage-extract";
 
 export const DEFAULT_EMBEDDING_MODEL =
   process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-001";
@@ -39,13 +41,14 @@ export function pseudoEmbedText(text: string, dimensions = EMBEDDING_DIMENSIONS)
 
 export async function embedTexts(
   texts: string[],
-  opts?: { modelId?: string; generator?: EmbeddingGeneratorKind },
+  opts?: { modelId?: string; generator?: EmbeddingGeneratorKind; userId?: string },
 ): Promise<{ vectors: number[][]; generator: EmbeddingGeneratorKind; model: string }> {
   const modelId = opts?.modelId ?? DEFAULT_EMBEDDING_MODEL;
   const forcePseudo = opts?.generator === "pseudo-local-v1";
   if (!forcePseudo && hasGeminiKey()) {
     const google = googleEmbedProvider();
-    const { embeddings } = await callGeminiWithRetry(() =>
+    const started = Date.now();
+    const result = await callGeminiWithRetry(() =>
       embedMany({
         model: google.embedding(modelId),
         values: texts,
@@ -57,8 +60,19 @@ export async function embedTexts(
         },
       }),
     );
+    const promptTokens = result.usage?.tokens ?? texts.join("").length / 4;
+    logAiUsageSafe({
+      type: "embedding",
+      usage: extractGeminiUsage({
+        inputTokens: Math.round(promptTokens),
+        outputTokens: 0,
+      }),
+      userId: opts?.userId,
+      model: modelId,
+      latencyMs: Date.now() - started,
+    });
     return {
-      vectors: embeddings.map((e) => [...e]),
+      vectors: result.embeddings.map((e) => [...e]),
       generator: "gemini",
       model: modelId,
     };
@@ -72,7 +86,7 @@ export async function embedTexts(
 
 export async function embedSegmentTexts(
   segments: Record<EmbeddingSegment, string>,
-  opts?: { modelId?: string; generator?: EmbeddingGeneratorKind },
+  opts?: { modelId?: string; generator?: EmbeddingGeneratorKind; userId?: string },
 ): Promise<Partial<Record<EmbeddingSegment, number[]>>> {
   const order: EmbeddingSegment[] = ["role", "skills", "profile"];
   const active = order.filter((k) => isSegmentNonempty(segments[k]));

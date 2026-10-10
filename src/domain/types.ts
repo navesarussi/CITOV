@@ -356,6 +356,9 @@ export type AiUsageRecord = {
   thinkingTokens?: number;
   estimatedCostUsd: number;
   createdAt: string;
+  userId?: string;
+  model?: string;
+  latencyMs?: number;
 };
 
 export type StoreData = {

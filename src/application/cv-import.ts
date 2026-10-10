@@ -187,9 +187,12 @@ export async function analyzeCandidateCv(
   if (extracted.usage) {
     usageRecord = createAiUsageRecord({
       id: randomUUID(),
-      type: "cv_import",
+      type: "cv_extraction",
       promptTokens: extracted.usage.promptTokens,
       completionTokens: extracted.usage.completionTokens,
+      cachedPromptTokens: extracted.usage.cachedPromptTokens,
+      thinkingTokens: extracted.usage.thinkingTokens,
+      userId,
       createdAt: new Date().toISOString(),
     });
     next = {

@@ -161,7 +161,7 @@ export function streamEmployeeReply(params: {
   openReliabilityNotes?: string;
   locale?: "he" | "en";
   accountHolderFirstName?: string;
-}): { textStream: AsyncIterable<string> } {
+}): { textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } {
   const { system, messages } = buildEmployeeConversation({
     template: params.systemPrompt,
     message: params.message,
@@ -180,7 +180,10 @@ export function streamEmployeeReply(params: {
     system: system + REPLY_ONLY_NOTE,
     messages,
   });
-  return { textStream: result.textStream };
+  const usage = Promise.resolve(result.usage)
+    .then((u) => extractUsage(u))
+    .catch(() => undefined);
+  return { textStream: result.textStream, usage };
 }
 
 export function streamEmployerReply(params: {
@@ -188,7 +191,7 @@ export function streamEmployerReply(params: {
   card: JobCard;
   chat: ChatMessage[];
   systemPrompt: string;
-}): { textStream: AsyncIterable<string> } {
+}): { textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } {
   const { system, messages } = buildEmployerConversation({
     template: params.systemPrompt,
     message: params.message,
@@ -201,7 +204,10 @@ export function streamEmployerReply(params: {
     system: system + REPLY_ONLY_NOTE,
     messages,
   });
-  return { textStream: result.textStream };
+  const usage = Promise.resolve(result.usage)
+    .then((u) => extractUsage(u))
+    .catch(() => undefined);
+  return { textStream: result.textStream, usage };
 }
 
 export async function runCvWelcomeReply(params: {

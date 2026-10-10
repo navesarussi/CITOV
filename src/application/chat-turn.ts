@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { NotFoundError } from "@/domain/errors";
-import { createAiUsageRecord } from "@/domain/admin";
+import { defaultGeminiModelId } from "@/infrastructure/ai/gemini-client";
+import { buildAiUsageRecord } from "@/infrastructure/db/ai-usage";
 import {
   getActiveJob,
   normalizeEmployerRecord,
@@ -189,20 +190,25 @@ function makeMessage(role: "user" | "assistant", content: string): ChatMessage {
   };
 }
 
-function buildUsageRecord(
+function collectUsageRecords(
+  userId: string,
   type: AiUsageRecord["type"],
-  usage?: AiTokenUsage,
-): AiUsageRecord | undefined {
-  if (!usage) return undefined;
-  return createAiUsageRecord({
-    id: randomUUID(),
-    type,
-    promptTokens: usage.promptTokens,
-    completionTokens: usage.completionTokens,
-    cachedPromptTokens: usage.cachedPromptTokens,
-    thinkingTokens: usage.thinkingTokens,
-    createdAt: new Date().toISOString(),
-  });
+  usages: (AiTokenUsage | undefined)[],
+  latencyMs?: number,
+): AiUsageRecord[] {
+  const model = defaultGeminiModelId();
+  const out: AiUsageRecord[] = [];
+  for (const usage of usages) {
+    const rec = buildAiUsageRecord({
+      type,
+      usage,
+      userId,
+      model,
+      latencyMs,
+    });
+    if (rec) out.push(rec);
+  }
+  return out;
 }
 
 export type ChatTurnResult = {
@@ -217,6 +223,7 @@ export type ChatTurnResult = {
   newMessages: ChatMessage[];
   newFieldAnswers: FieldAnswer[];
   usageRecord?: AiUsageRecord;
+  usageRecords?: AiUsageRecord[];
   cv?: CandidateCvProfile;
 };
 
@@ -283,6 +290,7 @@ export function applyEmployeeTurn(params: {
   candidatePatch?: CandidatePatch;
   fieldAnswers?: { questionId: string; answer: string }[];
   usage?: AiTokenUsage;
+  replyUsage?: AiTokenUsage;
   provider: string;
   aiDegraded?: boolean;
 }): ChatTurnResult {
@@ -364,12 +372,16 @@ export function applyEmployeeTurn(params: {
   }
 
   const newMessages = [makeMessage("user", message), makeMessage("assistant", reply)];
-  const usageRecord = buildUsageRecord("employee_intake", params.usage);
+  const usageRecords = collectUsageRecords(userId, "employee_intake", [
+    params.usage,
+    params.replyUsage,
+  ]);
+  const usageRecord = usageRecords[0];
   const next: StoreData = {
     ...store,
     fieldAnswers: answers,
-    aiUsage: usageRecord
-      ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
+    aiUsage: usageRecords.length
+      ? [...(store.aiUsage ?? []), ...usageRecords].slice(-400)
       : store.aiUsage,
     employees: store.employees.map((e) => {
       if (e.userId !== userId) return e;
@@ -397,6 +409,7 @@ export function applyEmployeeTurn(params: {
     newMessages,
     newFieldAnswers,
     usageRecord,
+    usageRecords,
     cv: empNext.cv,
   };
 }
@@ -415,11 +428,12 @@ export function appendAssistantReply(params: {
   if (!emp) throw new NotFoundError("Employee");
 
   const assistantMsg = makeMessage("assistant", reply);
-  const usageRecord = buildUsageRecord("employee_intake", params.usage);
+  const usageRecords = collectUsageRecords(userId, "employee_intake", [params.usage]);
+  const usageRecord = usageRecords[0];
   const next: StoreData = {
     ...store,
-    aiUsage: usageRecord
-      ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
+    aiUsage: usageRecords.length
+      ? [...(store.aiUsage ?? []), ...usageRecords].slice(-400)
       : store.aiUsage,
     employees: store.employees.map((e) => {
       if (e.userId !== userId) return e;
@@ -452,6 +466,7 @@ export function applyEmployerTurn(params: {
   reply: string;
   jobPatch?: JobPatch;
   usage?: AiTokenUsage;
+  replyUsage?: AiTokenUsage;
   provider: string;
   aiDegraded?: boolean;
   jobId?: string;
@@ -469,12 +484,16 @@ export function applyEmployerTurn(params: {
   const chat = [...active.chat, ...newMessages];
   const updated = updateJobSlot(employer, active.id, { card, chat });
   const mirrored = withActiveJob(updated, active.id);
-  const usageRecord = buildUsageRecord("employer_intake", params.usage);
+  const usageRecords = collectUsageRecords(userId, "employer_intake", [
+    params.usage,
+    params.replyUsage,
+  ]);
+  const usageRecord = usageRecords[0];
 
   const next: StoreData = {
     ...store,
-    aiUsage: usageRecord
-      ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
+    aiUsage: usageRecords.length
+      ? [...(store.aiUsage ?? []), ...usageRecords].slice(-400)
       : store.aiUsage,
     employers: store.employers.map((e) => (e.userId === userId ? mirrored : e)),
   };
@@ -490,6 +509,7 @@ export function applyEmployerTurn(params: {
     newMessages,
     newFieldAnswers: [],
     usageRecord,
+    usageRecords,
   };
 }
 

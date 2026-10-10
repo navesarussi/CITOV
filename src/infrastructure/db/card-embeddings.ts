@@ -141,6 +141,7 @@ export async function refreshCandidateEmbeddings(
   const vectors = await embedSegmentTexts(texts, {
     modelId: model,
     generator: opts?.generator,
+    userId,
   });
   const payload: Partial<
     Record<EmbeddingSegment, { hash: string; text: string; vector: number[] }>
@@ -179,6 +180,7 @@ export async function refreshJobEmbeddings(
   const vectors = await embedSegmentTexts(texts, {
     modelId: model,
     generator: opts?.generator,
+    userId: employerId,
   });
   const payload: Partial<
     Record<EmbeddingSegment, { hash: string; text: string; vector: number[] }>

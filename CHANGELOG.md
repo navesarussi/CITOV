@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2 — 2025-10-10
+
+- Fix AI usage logging: persist CV analyze usage, chat reply stream + patch (2 rows/turn), embeddings.
+- Admin AI cost panel: today/7d/month, by feature/model/user, trend chart, budget bar, last 50 calls, auto-refresh.
+- Dashboard reads `ai_usage` from Postgres (not stale in-memory snapshot).
+
 ## 0.3.1 — 2025-10-10
 
 - Candidate / admin preview: prominent CV dropzone + button when chat is locked; side-by-side profile + chat on desktop.
