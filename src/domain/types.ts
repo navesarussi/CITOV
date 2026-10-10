@@ -147,6 +147,9 @@ export type User = {
   image?: string;
   googleId?: string;
   createdAt: string;
+  /** Synthetic sandbox rows for match-quality eval — never shown to real users. */
+  isTest?: boolean;
+  datasetId?: string | null;
 };
 
 export type EvidenceSource = "cv" | "chat" | "user";
@@ -274,6 +277,9 @@ export function emptyCvProfile(): CandidateCvProfile {
 
 export type JobImportMeta = {
   pendingConfirmations: PendingInference[];
+  sourceUrl?: string;
+  fetchedAt?: string;
+  testSandbox?: boolean;
 };
 
 export type JobSlot = {
@@ -324,6 +330,8 @@ export type Match = {
   score: number;
   reason: string;
   scoreBreakdown?: MatchScoreBreakdown;
+  isTest?: boolean;
+  datasetId?: string | null;
   status: MatchStatus;
   createdAt: string;
   updatedAt: string;

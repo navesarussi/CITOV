@@ -1,8 +1,7 @@
 import { storeEngagementStats } from "@/domain/admin-engagement";
 import { estimateCacheSavingsUsd, estimateCostUsd, GEMINI_PRICING } from "@/domain/ai-pricing";
 import type { AiUsageRecord, AiUsageType, StoreData } from "./types";
-
-const DEMO_USER_IDS = new Set(["demo-employee", "demo-employer"]);
+import { isNonProductionUserId } from "./test-sandbox";
 
 export { GEMINI_PRICING };
 /** @deprecated use estimateCostUsd */
@@ -53,11 +52,7 @@ export type AdminStats = {
 };
 
 export function isDemoUserId(userId: string): boolean {
-  return (
-    DEMO_USER_IDS.has(userId) ||
-    userId.startsWith("seed-") ||
-    userId.startsWith("e2e-")
-  );
+  return isNonProductionUserId(userId);
 }
 
 export function estimateAiCostUsd(

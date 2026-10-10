@@ -125,6 +125,8 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
       image: u.image ?? undefined,
       googleId: u.google_id ?? undefined,
       createdAt: new Date(u.created_at).toISOString(),
+      isTest: Boolean(u.is_test),
+      datasetId: u.dataset_id ?? undefined,
     })),
     employees: employees.rows.map((e) => ({
       userId: e.user_id,
@@ -164,6 +166,8 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
       score: m.score,
       reason: m.reason,
       scoreBreakdown: m.score_breakdown ?? undefined,
+      isTest: Boolean(m.is_test),
+      datasetId: m.dataset_id ?? undefined,
       status: m.status,
       createdAt: new Date(m.created_at).toISOString(),
       updatedAt: new Date(m.updated_at).toISOString(),
@@ -200,14 +204,16 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
 
 async function upsertUser(client: PoolClient, user: User): Promise<void> {
   await client.query(
-    `insert into app_users (id, name, role, email, image, google_id, created_at)
-     values ($1, $2, $3, $4, $5, $6, $7)
+    `insert into app_users (id, name, role, email, image, google_id, created_at, is_test, dataset_id)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
      on conflict (id) do update set
        name = excluded.name,
        role = excluded.role,
        email = excluded.email,
        image = excluded.image,
-       google_id = excluded.google_id`,
+       google_id = excluded.google_id,
+       is_test = excluded.is_test,
+       dataset_id = excluded.dataset_id`,
     [
       user.id,
       user.name,
@@ -216,6 +222,8 @@ async function upsertUser(client: PoolClient, user: User): Promise<void> {
       user.image ?? null,
       user.googleId ?? null,
       user.createdAt,
+      Boolean(user.isTest),
+      user.datasetId ?? null,
     ],
   );
 }
@@ -228,6 +236,8 @@ const MATCH_COLUMNS = [
   "score",
   "reason",
   "score_breakdown",
+  "is_test",
+  "dataset_id",
   "status",
   "created_at",
   "updated_at",
@@ -242,6 +252,8 @@ function matchRow(m: Match): unknown[] {
     m.score,
     m.reason,
     m.scoreBreakdown ? JSON.stringify(m.scoreBreakdown) : null,
+    Boolean(m.isTest),
+    m.datasetId ?? null,
     m.status,
     m.createdAt,
     m.updatedAt,

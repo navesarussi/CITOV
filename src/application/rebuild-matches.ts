@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { isDemoUserId } from "@/domain/admin";
+import { isSandboxUserId } from "@/domain/test-sandbox";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { Match, StoreData } from "@/domain/types";
 import { scoreCandidateForJob, type MatchEmbeddingIndex } from "./match-scoring";
@@ -14,7 +15,9 @@ export type MatchRebuildStats = {
 export function rebuildMatches(
   store: StoreData,
   embeddingIndex?: MatchEmbeddingIndex,
+  opts?: { sandboxOnly?: boolean },
 ): { matches: Match[]; stats: MatchRebuildStats } {
+  const sandboxOnly = opts?.sandboxOnly ?? false;
   const started = Date.now();
   const kept = store.matches.filter((m) => m.status !== "queued");
   const keptKeys = new Set(kept.map((m) => `${m.jobId ?? m.jobOwnerId}:${m.candidateId}`));
@@ -28,12 +31,14 @@ export function rebuildMatches(
   let degradedToRule = 0;
 
   for (const rawEmployer of store.employers) {
-    if (isDemoUserId(rawEmployer.userId)) continue;
+    const sandboxEmp = isSandboxUserId(rawEmployer.userId);
+    if (sandboxOnly ? !sandboxEmp : isDemoUserId(rawEmployer.userId)) continue;
     const employer = normalizeEmployerRecord(rawEmployer);
     for (const job of employer.jobs) {
       if (!job.card.title && !job.card.field) continue;
       for (const employee of store.employees) {
-        if (isDemoUserId(employee.userId)) continue;
+        const sandboxCand = isSandboxUserId(employee.userId);
+        if (sandboxOnly ? !sandboxCand : isDemoUserId(employee.userId)) continue;
         if (!employee.card.desiredRole && !employee.card.field) continue;
         const key = `${job.id}:${employee.userId}`;
         if (keptKeys.has(key)) continue;

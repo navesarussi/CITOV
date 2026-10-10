@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.6 — 2025-10-10
+
+- Test-data sandbox: `is_test` + `dataset_id` on users/matches, production store filters, `sandbox-*` IDs.
+- Generator (~150 jobs / ~150 synthetic candidates), `npm run seed:test-sandbox`, sandbox-only matching with score breakdown.
+- Admin labeling: **נתוני בדיקה** toggle, `test-run` labels with uncertainty-prioritized queue; frozen holdout pairs for eval.
+
 ## 0.3.5 — 2025-10-10
 
 - Persist structured `score_breakdown` on queued matches (rule components, semantic segments, hybrid gates, flexibility, engine config).

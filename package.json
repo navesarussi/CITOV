@@ -1,6 +1,6 @@
 {
   "name": "shidukh-poc",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
@@ -16,6 +16,7 @@
     "eval:import-labels": "tsx scripts/eval-import-labels.ts",
     "eval:embed-fixtures": "tsx scripts/eval-embed-fixtures.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:test-sandbox": "tsx scripts/seed-test-sandbox.ts",
     "test:cv-live": "tsx --test src/infrastructure/ai/cv-extraction.live.test.ts",
     "set-gemini-env": "node scripts/set-vercel-gemini-env.mjs"
   },
