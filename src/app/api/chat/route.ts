@@ -265,9 +265,9 @@ async function runEmployeeStream(
     new Promise<Awaited<ReturnType<typeof extractEmployeePatch>>>((_, reject) =>
       setTimeout(() => reject(new Error("gemini_timeout")), timeoutMs),
     ),
-  ]).catch(() => ({
+  ]).catch((): Awaited<ReturnType<typeof extractEmployeePatch>> => ({
     candidatePatch: {},
-    fieldAnswers: [] as { questionId: string; answer: string }[],
+    fieldAnswers: [],
   }));
 
   let replyText = "";
@@ -360,7 +360,7 @@ async function runEmployerStream(
     new Promise<Awaited<ReturnType<typeof extractEmployerPatch>>>((_, reject) =>
       setTimeout(() => reject(new Error("gemini_timeout")), timeoutMs),
     ),
-  ]).catch(() => ({ jobPatch: {} as Awaited<ReturnType<typeof extractEmployerPatch>>["jobPatch"] }));
+  ]).catch((): Awaited<ReturnType<typeof extractEmployerPatch>> => ({ jobPatch: {} }));
 
   let replyText = "";
   let provider: "gemini" | "heuristic" = "gemini";
