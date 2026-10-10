@@ -1,3 +1,5 @@
+import type { MatchScoreBreakdown } from "./match-score-breakdown";
+
 export type Role = "employee" | "employer";
 
 export type ChatMessage = {
@@ -321,6 +323,7 @@ export type Match = {
   candidateId: string;
   score: number;
   reason: string;
+  scoreBreakdown?: MatchScoreBreakdown;
   status: MatchStatus;
   createdAt: string;
   updatedAt: string;

@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "011_prompt_versions";
+const MIGRATION_VERSION = "012_match_score_breakdown";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -28,6 +28,7 @@ alter table employer_profiles add column if not exists jobs jsonb not null defau
 alter table employer_profiles add column if not exists active_job_id text;
 alter table matches add column if not exists job_id text;
 update matches set job_id = job_owner_id where job_id is null;
+alter table matches add column if not exists score_breakdown jsonb;
 
 alter table chat_messages add column if not exists conversation_context text;
 alter table chat_messages add column if not exists job_id text;

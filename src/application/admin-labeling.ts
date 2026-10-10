@@ -27,6 +27,7 @@ export type LabelingPair = {
   pairId: string;
   jobId: string;
   candidateId: string;
+  matchId: string | null;
   bucket: string;
   employerName: string;
   job: JobCard;
@@ -109,10 +110,14 @@ function buildRichPair(
     vectors,
     adminSettings: store.adminSettings,
   });
+  const matchRow = store.matches.find(
+    (m) => m.jobId === jobId && m.candidateId === candidateId,
+  );
   return {
     pairId: `${jobId}__${candidateId}`,
     jobId,
     candidateId,
+    matchId: matchRow?.id ?? null,
     bucket,
     employerName: resolved.employerName,
     job: resolved.job,

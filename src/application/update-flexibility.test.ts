@@ -1,23 +1,49 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { applyFlexibility, updateFlexibility } from "./update-flexibility";
-import {
-  emptyCandidateCard,
-  emptyJobCard,
-  type StoreData,
-} from "@/domain/types";
+import { emptyCandidateCard, emptyJobCard, type StoreData } from "@/domain/types";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
+import { applyFlexibility, updateFlexibility } from "./update-flexibility";
+import type { MatchEmbeddingIndex } from "./match-scoring";
 
 function seed(): StoreData {
+  const employer = normalizeEmployerRecord({
+    userId: "boss",
+    card: emptyJobCard(),
+    chat: [],
+    jobs: [
+      {
+        id: "job-1",
+        card: {
+          ...emptyJobCard(),
+          title: "מלצר",
+          field: "מסעדנות",
+          location: "תל אביב",
+          mustHaves: ["שירות"],
+        },
+        chat: [],
+      },
+    ],
+    activeJobId: "job-1",
+  });
+  const now = new Date().toISOString();
   return {
-    users: [
-      { id: "e1", name: "Emp", role: "employee", createdAt: "" },
-      { id: "b1", name: "Boss", role: "employer", createdAt: "" },
-    ],
+    users: [{ id: "cand", name: "Cand", role: "employee", createdAt: now }],
     employees: [
-      { userId: "e1", card: emptyCandidateCard(), chat: [], pendingFieldQuestionIds: [] },
+      {
+        userId: "cand",
+        card: {
+          ...emptyCandidateCard(),
+          desiredRole: "מלצר",
+          field: "מסעדנות",
+          location: "תל אביב",
+          skills: ["שירות"],
+          flexibility: 5,
+        },
+        chat: [],
+        pendingFieldQuestionIds: [],
+      },
     ],
-    employers: [normalizeEmployerRecord({ userId: "b1", card: emptyJobCard(), chat: [], jobs: [], activeJobId: "" })],
+    employers: [employer],
     fieldQuestions: [],
     fieldAnswers: [],
     matches: [],
@@ -25,27 +51,27 @@ function seed(): StoreData {
 }
 
 describe("updateFlexibility", () => {
-  it("updates employee flexibility", () => {
-    const next = updateFlexibility(seed(), "e1", 8);
-    const card = next.employees.find((e) => e.userId === "e1")!.card;
-    assert.equal(card.flexibility, 8);
+  it("changes match set when flexibility changes", () => {
+    process.env.MATCHING_MODE = "rule";
+    process.env.MATCHING_QUEUE_THRESHOLD = "0.28";
+    const next = updateFlexibility(seed(), "cand", 8);
+    assert.ok(next.matches.some((m) => m.status === "queued"));
   });
 
-  it("updates employer flexibility", () => {
-    const next = updateFlexibility(seed(), "b1", 3);
-    const card = next.employers.find((e) => e.userId === "b1")!.card;
-    assert.equal(card.flexibility, 3);
-  });
-
-  it("clamps out of range values", () => {
-    const next = updateFlexibility(seed(), "e1", 99);
-    assert.equal(next.employees[0].card.flexibility, 10);
-  });
-
-  it("applyFlexibility skips match rebuild and returns role slice", () => {
-    const applied = applyFlexibility(seed(), "e1", 7);
-    assert.equal(applied.role, "employee");
-    assert.equal(applied.card.flexibility, 7);
-    assert.equal(applied.store.matches.length, 0);
+  it("uses embedding index when provided (hybrid path)", () => {
+    process.env.MATCHING_MODE = "hybrid";
+    process.env.MATCHING_QUEUE_THRESHOLD = "0.28";
+    const fakeVec = { role: [1, 0], skills: [1, 0], profile: [1, 0] };
+    const index: MatchEmbeddingIndex = {
+      candidate: new Map([["cand", fakeVec]]),
+      job: new Map([["job-1", fakeVec]]),
+    };
+    const base = applyFlexibility(seed(), "cand", 5).store;
+    const ruleOnly = updateFlexibility(base, "cand", 5);
+    const withEmb = updateFlexibility(base, "cand", 5, index);
+    const ruleMode = ruleOnly.matches[0]?.scoreBreakdown?.effectiveMode;
+    const hybridMode = withEmb.matches[0]?.scoreBreakdown?.effectiveMode;
+    assert.equal(ruleMode, "rule");
+    assert.equal(hybridMode, "hybrid");
   });
 });

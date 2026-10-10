@@ -61,8 +61,9 @@ describe("rebuildMatches multi-job", () => {
       matches: [],
     };
 
-    const matches = rebuildMatches(store);
+    const { matches } = rebuildMatches(store);
     const queued = matches.filter((m) => m.status === "queued");
+    assert.ok(queued[0]?.scoreBreakdown?.engineVersion);
     assert.ok(queued.some((m) => m.jobId === "job-a"));
     assert.ok(queued.some((m) => m.jobId === "job-b"));
   });

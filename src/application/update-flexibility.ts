@@ -5,7 +5,8 @@ import {
   withActiveJob,
 } from "@/domain/employer-jobs";
 import type { CandidateCard, JobCard, JobSlot, StoreData } from "@/domain/types";
-import { refreshStoreMatches } from "@/application/employer-actions";
+import { refreshStoreMatchesWithEmbeddings } from "@/application/employer-actions";
+import type { MatchEmbeddingIndex } from "@/application/match-scoring";
 
 function clampFlexibility(value: number): number {
   return Math.max(1, Math.min(10, Math.round(value)));
@@ -63,10 +64,13 @@ export function applyFlexibility(
   };
 }
 
+/** Prefer `applyFlexibility` + deferred `scheduleMatchRebuild()` on API paths. */
 export function updateFlexibility(
   store: StoreData,
   userId: string,
   value: number,
+  embeddingIndex?: MatchEmbeddingIndex,
 ): StoreData {
-  return refreshStoreMatches(applyFlexibility(store, userId, value).store);
+  const applied = applyFlexibility(store, userId, value);
+  return refreshStoreMatchesWithEmbeddings(applied.store, embeddingIndex);
 }

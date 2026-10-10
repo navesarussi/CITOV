@@ -34,10 +34,16 @@ export async function rebuildAndWriteMatches(): Promise<void> {
   const snap = await readMatchingStore();
   const { loadMatchingEmbeddingIndex } = await import("./db/card-embeddings");
   const index = await loadMatchingEmbeddingIndex(snap);
-  const { refreshStoreMatchesWithEmbeddings } = await import(
-    "@/application/employer-actions"
-  );
-  await writeMatches(refreshStoreMatchesWithEmbeddings(snap, index).matches);
+  const { rebuildMatches } = await import("@/application/rebuild-matches");
+  const { recordAppEventSafe } = await import("./db/app-events");
+  const { matches, stats } = rebuildMatches(snap, index);
+  await writeMatches(matches);
+  recordAppEventSafe({
+    kind: "match_rebuild",
+    severity: "info",
+    message: `Match rebuild: ${stats.newlyQueued} queued / ${stats.pairsConsidered} pairs (${stats.degradedToRule} rule fallback)`,
+    meta: stats,
+  });
 }
 
 export async function updateStore(
