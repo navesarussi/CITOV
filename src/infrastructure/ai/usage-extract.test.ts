@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { extractGeminiUsage } from "./usage-extract";
+import { extractGeminiUsage, mergeAiTokenUsage } from "./usage-extract";
 
 describe("extractGeminiUsage", () => {
   it("reads cacheReadTokens from inputTokenDetails", () => {
@@ -25,5 +25,16 @@ describe("extractGeminiUsage", () => {
   it("returns undefined for empty usage", () => {
     assert.equal(extractGeminiUsage(undefined), undefined);
     assert.equal(extractGeminiUsage({ promptTokens: 0, completionTokens: 0 }), undefined);
+  });
+
+  it("mergeAiTokenUsage sums thinking and cached tokens", () => {
+    const merged = mergeAiTokenUsage(
+      { promptTokens: 100, completionTokens: 10, thinkingTokens: 5, cachedPromptTokens: 20 },
+      { promptTokens: 50, completionTokens: 5, thinkingTokens: 3, cachedPromptTokens: 10 },
+    );
+    assert.equal(merged?.promptTokens, 150);
+    assert.equal(merged?.completionTokens, 15);
+    assert.equal(merged?.thinkingTokens, 8);
+    assert.equal(merged?.cachedPromptTokens, 30);
   });
 });

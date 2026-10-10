@@ -162,8 +162,12 @@ export async function runSandboxLlmJudgeChunk(params: {
   }
 
   let batchCostUsd = 0;
-  for (const u of usage) {
-    const rec = buildAiUsageRecord({ type: "llm_judge", usage: u, model: process.env.GEMINI_MODEL });
+  for (const entry of usage) {
+    const rec = buildAiUsageRecord({
+      type: "llm_judge",
+      usage: entry.usage,
+      model: entry.model,
+    });
     if (!rec) continue;
     batchCostUsd += rec.estimatedCostUsd;
     await insertAiUsageRecord(rec);
