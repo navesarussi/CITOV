@@ -30,10 +30,7 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
   const rootRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
-  const [hasLocalSession, setHasLocalSession] = useState(false);
-  useEffect(() => {
-    setHasLocalSession(Boolean(readStoredUser()));
-  }, [pathname, open]);
+  const hasLocalSession = typeof window !== "undefined" && Boolean(readStoredUser());
   const showSignOut = Boolean(oauthSession?.user || signedIn || hasLocalSession);
 
   useEffect(() => {

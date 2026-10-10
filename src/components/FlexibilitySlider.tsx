@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { InlineInfoHint } from "@/components/InlineInfoHint";
 import { useTranslation } from "@/components/LocaleProvider";
 
@@ -10,14 +10,17 @@ export function FlexibilitySlider(props: {
   onChange: (value: number) => void;
 }) {
   const { t } = useTranslation();
-  const [local, setLocal] = useState(clamp(props.value));
+  const propValue = clamp(props.value);
+  const [local, setLocal] = useState(propValue);
+  const [prevPropValue, setPrevPropValue] = useState(propValue);
   const [saving, setSaving] = useState(false);
   const pending = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setLocal(clamp(props.value));
-  }, [props.value]);
+  if (propValue !== prevPropValue) {
+    setPrevPropValue(propValue);
+    setLocal(propValue);
+  }
 
   function scheduleSave(next: number) {
     pending.current = next;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { Button } from "@/components/ui/Button";
 import type { PromptDefinition } from "@/domain/prompt-registry";
 
@@ -149,11 +150,11 @@ export function AdminPromptStudio() {
     }
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!selectedId) {
       setDetail(null);
       setDraft("");

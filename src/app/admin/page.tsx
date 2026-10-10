@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminAiUsagePanel } from "@/components/admin/AdminAiUsagePanel";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/components/LocaleProvider";
 
 type AdminStats = {
   employers: number;
@@ -97,17 +99,17 @@ export default function AdminPage() {
     }
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (status === "loading") return;
-    if (status === "unauthenticated") {
-      setError("נדרשת התחברות עם Google");
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- dashboard fetch on auth ready
+    if (status === "unauthenticated") return;
     void load();
   }, [status, load]);
 
-  if (!data && !error && status === "loading") {
+  const authError =
+    status === "unauthenticated" ? "נדרשת התחברות עם Google" : null;
+  const displayError = error ?? authError;
+
+  if (!data && !displayError && status === "loading") {
     return (
       <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
         <main className="text-center">
@@ -121,13 +123,13 @@ export default function AdminPage() {
     );
   }
 
-  if (error && !data) {
-    const needsSignIn = status === "unauthenticated" || error.includes("התחברות");
+  if (displayError && !data) {
+    const needsSignIn = status === "unauthenticated" || displayError.includes("התחברות");
     return (
       <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
         <main className="panel max-w-lg rounded-[var(--panel-radius)] p-8 text-center">
           <SettingsMenu />
-          <p className="text-[var(--muted)]">{error}</p>
+          <p className="text-[var(--muted)]">{displayError}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             {needsSignIn ? (
               <Button

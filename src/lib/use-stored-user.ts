@@ -1,18 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Role } from "@/domain/types";
 import { readStoredUser } from "@/lib/client-session";
 
-export function useStoredUser(role: Role) {
-  const [user, setUser] = useState<{ id: string; name: string; role: Role } | null>(null);
-  const [ready, setReady] = useState(false);
+function pickStoredUser(role: Role) {
+  const stored = readStoredUser();
+  return stored?.role === role ? stored : null;
+}
 
-  useEffect(() => {
-    const stored = readStoredUser();
-    setUser(stored?.role === role ? stored : null);
-    setReady(true);
-  }, [role]);
+export function useStoredUser(role: Role) {
+  const [user, setUser] = useState(() => pickStoredUser(role));
+  const [prevRole, setPrevRole] = useState(role);
+  if (role !== prevRole) {
+    setPrevRole(role);
+    setUser(pickStoredUser(role));
+  }
+  const ready = typeof window !== "undefined";
 
   return { user, ready };
 }

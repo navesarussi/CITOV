@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FlexibilitySlider } from "@/components/FlexibilitySlider";
 import { useTranslation } from "@/components/LocaleProvider";
 import { candidateMiniCardLines } from "@/domain/candidate-mini-card";
@@ -21,11 +21,13 @@ export function CandidateProfileStrip(props: {
   const { t, fmt } = useTranslation();
   const card = props.card ?? emptyCandidateCard();
   const [open, setOpen] = useState(false);
-  const [flex, setFlex] = useState(clampFlex(card.flexibility));
-
-  useEffect(() => {
-    setFlex(clampFlex(card.flexibility));
-  }, [card.flexibility]);
+  const flexFromCard = clampFlex(card.flexibility);
+  const [flex, setFlex] = useState(flexFromCard);
+  const [prevFlexFromCard, setPrevFlexFromCard] = useState(flexFromCard);
+  if (flexFromCard !== prevFlexFromCard) {
+    setPrevFlexFromCard(flexFromCard);
+    setFlex(flexFromCard);
+  }
 
   const labels = t.cardFields.candidate as Record<string, string>;
   const knowledge = knowledgePercent(candidateRows(card, labels));

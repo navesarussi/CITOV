@@ -13,7 +13,7 @@ describe("ai-budget", () => {
       const usage: AiUsageRecord[] = [
         {
           id: "u1",
-          type: "chat",
+          type: "employee_intake",
           promptTokens: 1,
           completionTokens: 1,
           totalTokens: 2,

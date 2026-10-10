@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { setNodeEnv } from "@/test/env-helpers";
 import {
   readActorStore,
   readCandidateQueueStore,
@@ -75,7 +76,7 @@ function seed(): StoreData {
 
 describe("slice-store (memory)", () => {
   it("readActorStore isolates other users' chats", async () => {
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     delete process.env.DATABASE_URL;
     resetMemoryStore();
     writeMemoryStore(seed());
@@ -89,7 +90,7 @@ describe("slice-store (memory)", () => {
   });
 
   it("readMatchingStore drops chats but keeps cards for rebuild", async () => {
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     delete process.env.DATABASE_URL;
     resetMemoryStore();
     writeMemoryStore(seed());
@@ -101,7 +102,7 @@ describe("slice-store (memory)", () => {
   });
 
   it("opportunity and candidate queue slices filter by status", async () => {
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     delete process.env.DATABASE_URL;
     resetMemoryStore();
     writeMemoryStore(seed());

@@ -105,11 +105,15 @@ export function useAdminFetch<T>(
     if (!enabled) return;
     const cached = getCached<T>(key, maxAge);
     if (cached) {
-      setData(cached);
-      setLoading(false);
+      queueMicrotask(() => {
+        setData(cached);
+        setLoading(false);
+      });
       return;
     }
-    void refresh();
+    queueMicrotask(() => {
+      void refresh();
+    });
   }, [enabled, getCached, key, maxAge, refresh]);
 
   return { data, loading, error, refresh };

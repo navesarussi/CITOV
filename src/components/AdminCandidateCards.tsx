@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { FullCandidateCard } from "@/components/FullCandidateCard";
 import { Button } from "@/components/ui/Button";
 import type { CandidateCard } from "@/domain/types";
@@ -38,7 +39,7 @@ export function AdminCandidateCards() {
     }
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 

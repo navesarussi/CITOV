@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { MonitoringDashboard } from "@/application/monitoring-dashboard";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 import { useAdminCache } from "@/components/admin/AdminCacheProvider";
+import { useTranslation } from "@/components/LocaleProvider";
 
 export default function AdminMonitoringPage() {
+  const { t } = useTranslation();
   const cache = useAdminCache();
   const [data, setData] = useState<MonitoringDashboard | null>(
     () => cache.getCached<MonitoringDashboard>("/api/admin/monitoring", 30_000),
@@ -30,7 +33,7 @@ export default function AdminMonitoringPage() {
     }
   }, [cache]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!data) void load();
   }, [data, load]);
 
@@ -47,7 +50,7 @@ export default function AdminMonitoringPage() {
   const b = data?.aiBudget;
 
   return (
-    <AdminShell title="ניטור ואזהרות" subtitle="שגיאות, ביצועים, תקציב AI ובדיקות E2E">
+    <AdminShell title={t.adminPages.monitoringTitle} subtitle={t.adminPages.monitoringSubtitle}>
       {error ? (
         <p className="mb-3 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">{error}</p>
       ) : null}

@@ -1,6 +1,8 @@
 "use client";
 
 import type { LabelingPair } from "@/application/admin-labeling";
+import { LlmJudgeComparePanel } from "@/components/admin/labeling/LlmJudgeComparePanel";
+import type { SandboxLlmJudgmentRow } from "@/infrastructure/db/sandbox-llm-judgments";
 import { MatchExplainButton, MatchExplainDrawer } from "@/components/admin/MatchExplainDrawer";
 import { LabelingScoreBreakdown } from "@/components/admin/labeling/LabelingScoreBreakdown";
 import { useState } from "react";
@@ -41,7 +43,9 @@ function CardBlock(props: {
   );
 }
 
-export function LabelingPairView(props: { pair: LabelingPair }) {
+export function LabelingPairView(props: {
+  pair: LabelingPair & { llmJudge?: SandboxLlmJudgmentRow | null };
+}) {
   const { t } = useTranslation();
   const { pair } = props;
   const [explainId, setExplainId] = useState<string | null>(null);
@@ -56,6 +60,7 @@ export function LabelingPairView(props: { pair: LabelingPair }) {
         jobId={pair.jobId}
         candidateId={pair.candidateId}
       />
+      {pair.bucket === "test-run" ? <LlmJudgeComparePanel judge={pair.llmJudge} /> : null}
       {pair.matchId ? (
         <MatchExplainButton matchId={pair.matchId} onOpen={setExplainId} />
       ) : null}

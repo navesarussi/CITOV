@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { setNodeEnv } from "@/test/env-helpers";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import {
   clearMemoryDocumentBlobs,
@@ -12,7 +13,7 @@ describe("cv-storage memory fallback", () => {
 
   beforeEach(() => {
     clearMemoryDocumentBlobs();
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     delete process.env.DATABASE_URL;
   });
 
@@ -20,7 +21,7 @@ describe("cv-storage memory fallback", () => {
     clearMemoryDocumentBlobs();
     if (prevDb) process.env.DATABASE_URL = prevDb;
     else delete process.env.DATABASE_URL;
-    process.env.NODE_ENV = prevEnv;
+    setNodeEnv(prevEnv ?? "test");
   });
 
   it("saves and reads blobs without DATABASE_URL", async () => {

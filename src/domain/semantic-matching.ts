@@ -221,7 +221,7 @@ export function computeHybridBaseFitDetailed(
   const rule = computeBaseFit(candidate, job);
   const sem = computeSemanticMatchBase(candidate, job, candidateVec, jobVec, opts);
   const wSum = weights.semantic + weights.rule;
-  let preGateBlend = wSum <= 0 ? rule : (weights.semantic * sem + weights.rule * rule) / wSum;
+  const preGateBlend = wSum <= 0 ? rule : (weights.semantic * sem + weights.rule * rule) / wSum;
   const { roleCalibrated } = computeCalibratedSemanticFit(candidateVec, jobVec, {
     ...opts,
     candidateTexts: opts.candidateTexts,

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminChatLog } from "@/components/admin/AdminChatLog";
 import { AdminMatchList } from "@/components/admin/AdminMatchList";
 import { AdminFieldGrid } from "@/components/admin/AdminFieldGrid";
@@ -54,7 +55,7 @@ export default function AdminCandidateDetailPage() {
     }
   }, [id]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 

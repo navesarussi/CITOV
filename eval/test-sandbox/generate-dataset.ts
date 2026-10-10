@@ -96,26 +96,37 @@ export function buildSandboxStore(opts: SandboxGenerateOptions = {}): StoreData 
     );
   }
 
+  const jobSlots = employers.flatMap((e) => e.jobs);
   const employees = [];
   for (let i = 1; i <= candTarget; i++) {
     const userId = `sandbox-cand-${String(i).padStart(3, "0")}`;
-    users.push(sandboxUser(userId, `Synthetic ${i}`, "employee"));
-    const edge = i % 7;
+    users.push(sandboxUser(userId, `מועמד בדיקה ${i}`, "employee"));
+    const slot = jobSlots[(i - 1) % jobSlots.length]!;
+    const job = slot.card;
+    const variant = i % 3;
     const card = {
       ...emptyCandidateCard(),
-      desiredRole: edge === 0 ? "Senior Architect" : edge === 1 ? "מלצר" : "נציג מכירות",
-      field: edge === 2 ? "טכנולוגיה" : edge === 3 ? "מסעדנות" : "מכירות",
-      location: LOCATIONS[i % LOCATIONS.length]!,
-      skills: edge === 4 ? [] : edge === 5 ? ["React", "Python", "שירות"] : ["שירות", "Excel"],
-      languages: edge === 6 ? ["עברית"] : ["עברית", "English"],
+      field: job.field ?? "כללי",
+      location: variant === 2 ? LOCATIONS[(i + 2) % LOCATIONS.length]! : (job.location ?? LOCATIONS[i % LOCATIONS.length]!),
+      languages: job.requiredLanguages?.length ? [...job.requiredLanguages] : ["עברית"],
       hebrewLevel: "שוטף",
-      englishLevel: edge === 6 ? "בסיסי" : "שוטף",
-      flexibility: 1 + (i % 10),
-      summary: `פרופיל סינתטי #${i} — ללא נתונים אמיתיים.`,
+      englishLevel: job.requiredLanguages?.includes("English") ? "שוטף" : "בסיסי",
+      flexibility: job.flexibility ?? 4,
+      summary: `פרופיל סינתטי #${i} — מכוון למשרה ${job.title ?? slot.id}.`,
     };
-    if (edge === 0) {
-      card.desiredRole = "Waiter";
-      card.field = "hospitality";
+    if (variant === 0) {
+      card.desiredRole = job.title ?? "תפקיד תואם";
+      card.skills = [...(job.mustHaves ?? []), ...(job.toolsRequired ? [job.toolsRequired] : [])].slice(0, 6);
+    } else if (variant === 1) {
+      card.desiredRole = job.title ?? "תפקיד קרוב";
+      card.skills = (job.mustHaves ?? []).slice(0, 1);
+      card.experienceYears = 1;
+      card.experienceLevel = "junior";
+    } else {
+      card.desiredRole =
+        job.field === "טכנולוגיה" ? "מלצר" : job.field === "מסעדנות" ? "מפתח/ת תוכנה" : "נהג/ת";
+      card.field = job.field === "טכנולוגיה" ? "מסעדנות" : "טכנולוגיה";
+      card.skills = ["שירות"];
     }
     employees.push({
       userId,

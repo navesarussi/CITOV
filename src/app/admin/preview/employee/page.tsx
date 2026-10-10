@@ -2,12 +2,14 @@
 
 import { AdminShell } from "@/components/AdminShell";
 import { EmployeeWorkspaceView } from "@/components/workspace/EmployeeWorkspaceView";
+import { useTranslation } from "@/components/LocaleProvider";
 
 export default function AdminPreviewEmployeePage() {
+  const { t } = useTranslation();
   return (
     <AdminShell
-      title="תצוגת מועמד"
-      subtitle="החוויה המלאה שלך כמועמד — קו״ח, צ'אט, כרטיס והזדמנויות (נתונים אמיתיים)"
+      title={t.adminPages.previewEmployeeTitle}
+      subtitle={t.adminPages.previewEmployeeSubtitle}
     >
       <EmployeeWorkspaceView layout="embedded" />
     </AdminShell>

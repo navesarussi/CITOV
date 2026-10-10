@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "014_degraded_turns";
+const MIGRATION_VERSION = "015_sandbox_llm_judgments";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -147,7 +147,33 @@ create unique index if not exists match_labels_unique_admin
 alter table match_labels add column if not exists labeler_role text;
 alter table match_labels drop constraint if exists match_labels_source_check;
 alter table match_labels add constraint match_labels_source_check
-  check (source in ('admin', 'employer_action', 'import', 'crowd', 'test-run'));
+  check (source in (
+    'admin', 'employer_action', 'import', 'crowd', 'test-run',
+    'llm-judge-a', 'llm-judge-b'
+  ));
+
+create table if not exists sandbox_llm_judgments (
+  job_id text not null,
+  candidate_id text not null,
+  judge_a_label text not null check (judge_a_label in ('good', 'acceptable', 'bad')),
+  judge_a_reason text not null,
+  judge_a_confidence double precision not null,
+  judge_b_label text not null check (judge_b_label in ('good', 'acceptable', 'bad')),
+  judge_b_reason text not null,
+  judge_b_critique text not null,
+  judge_b_confidence double precision not null,
+  judges_agree boolean not null,
+  auto_skipped boolean not null,
+  audit_sample boolean not null,
+  needs_owner boolean not null,
+  engine_score double precision not null,
+  rule_score double precision not null,
+  hybrid_score double precision not null,
+  engine_queued boolean not null,
+  updated_at timestamptz not null default now(),
+  primary key (job_id, candidate_id)
+);
+create index if not exists sandbox_llm_judgments_owner_idx on sandbox_llm_judgments (needs_owner, audit_sample);
 
 create table if not exists app_events (
   id text primary key,

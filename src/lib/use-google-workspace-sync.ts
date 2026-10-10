@@ -1,7 +1,8 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { Role } from "@/domain/types";
 import { readStoredUser, syncStoredUserWithGoogleSession } from "@/lib/client-session";
 
@@ -26,7 +27,7 @@ export function useGoogleWorkspaceSync(role: Role): {
     setSyncAttempt((n) => n + 1);
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (status === "loading") return;
 
     if (status !== "authenticated") {

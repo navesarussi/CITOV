@@ -60,14 +60,19 @@ export function FileImport(props: {
     if (status !== "analyzing") {
       return;
     }
-    setAnalysisProgress(0);
-    const start = Date.now();
-    const id = window.setInterval(() => {
-      const elapsed = Date.now() - start;
-      const next = Math.min(94, Math.round(94 * (1 - Math.exp(-elapsed / 5500))));
-      setAnalysisProgress(next);
-    }, 80);
-    return () => window.clearInterval(id);
+    let intervalId: number | undefined;
+    queueMicrotask(() => {
+      setAnalysisProgress(0);
+      const start = Date.now();
+      intervalId = window.setInterval(() => {
+        const elapsed = Date.now() - start;
+        const next = Math.min(94, Math.round(94 * (1 - Math.exp(-elapsed / 5500))));
+        setAnalysisProgress(next);
+      }, 80);
+    });
+    return () => {
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+    };
   }, [status]);
 
   function bindInputRef(node: HTMLInputElement | null) {

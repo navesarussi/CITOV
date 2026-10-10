@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 
@@ -51,7 +52,7 @@ export default function AdminEmployerDetailPage() {
     }
   }, [id]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 
@@ -114,7 +115,7 @@ export default function AdminEmployerDetailPage() {
                         <span>{j.userMessageCount} הודעות</span>
                         <span>גמישות {j.flexibility}/10</span>
                         <span>
-                          מאצ'ים {j.matchCounts.queued}/{j.matchCounts.approved}/{j.matchCounts.rejected}
+                          מאצ&apos;ים {j.matchCounts.queued}/{j.matchCounts.approved}/{j.matchCounts.rejected}
                         </span>
                       </span>
                     </div>

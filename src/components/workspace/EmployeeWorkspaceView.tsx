@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { CandidateProfileBar } from "@/components/CandidateProfileBar";
 import { EmployeeChatLayout } from "@/components/EmployeeChatLayout";
 import { type ChatTurnPayload } from "@/components/ChatPanel";
@@ -24,7 +25,13 @@ export function EmployeeWorkspaceView(props: { layout: "page" | "embedded" }) {
   const [tab, setTab] = useState<Tab>("chat");
   const { user: sessionUser, ready: sessionReady, syncError, retrySync } =
     useGoogleWorkspaceSync("employee");
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userIdOverride, setUserIdOverride] = useState<string | null>(null);
+  const [prevSessionUserId, setPrevSessionUserId] = useState(sessionUser?.id);
+  if (sessionUser?.id !== prevSessionUserId) {
+    setPrevSessionUserId(sessionUser?.id);
+    setUserIdOverride(null);
+  }
+  const userId = userIdOverride ?? sessionUser?.id ?? null;
   const name = sessionUser?.name ?? "";
   const [me, setMe] = useState<{
     card: unknown;
@@ -56,7 +63,7 @@ export function EmployeeWorkspaceView(props: { layout: "page" | "embedded" }) {
       if (meFetch.status === 409) {
         const synced = await syncStoredUserWithGoogleSession("employee");
         if (synced?.id && synced.id !== id) {
-          setUserId(synced.id);
+          setUserIdOverride(synced.id);
           return;
         }
       }
@@ -66,11 +73,7 @@ export function EmployeeWorkspaceView(props: { layout: "page" | "embedded" }) {
     [locale, refreshLists],
   );
 
-  useEffect(() => {
-    setUserId(sessionUser?.id ?? null);
-  }, [sessionUser?.id]);
-
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!userId) return;
     void refresh(userId);
   }, [refresh, userId]);
