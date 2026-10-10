@@ -3,6 +3,12 @@ import { ok, fail } from "@/infrastructure/http";
 import { assertActor } from "@/infrastructure/auth-guard";
 import { hasGeminiKey } from "@/infrastructure/ai/schemas";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
+import {
+  ensureProfilePack,
+  getIdentityStaging,
+  listCandidateProfiles,
+} from "@/domain/candidate-profiles";
+import { firstNameFromFullName } from "@/domain/person-name";
 
 export async function GET(req: Request) {
   try {
@@ -16,12 +22,15 @@ export async function GET(req: Request) {
     const user = store.users.find((u) => u.id === userId);
     if (!user) return ok({ error: "משתמש לא נמצא" }, { status: 404 });
     if (user.role === "employee") {
-      const emp = store.employees.find((e) => e.userId === userId);
+      const raw = store.employees.find((e) => e.userId === userId);
+      const accountLabel = firstNameFromFullName(user.name ?? "") ?? "אני";
+      const emp = raw ? ensureProfilePack(raw, accountLabel) : undefined;
       const pending = store.fieldQuestions.filter((q) =>
         emp?.pendingFieldQuestionIds.includes(q.id),
       );
       const cvDocs = emp?.cv?.documents ?? [];
       const latestCv = cvDocs[cvDocs.length - 1];
+      const profiles = emp ? listCandidateProfiles(emp) : [];
       return ok({
         user,
         card: emp?.card,
@@ -30,6 +39,13 @@ export async function GET(req: Request) {
         hasCv: employeeHasCv(emp?.cv),
         cvFileName: latestCv?.fileName ?? null,
         cvExtractionStatus: latestCv?.extractionStatus ?? null,
+        candidateProfiles: profiles.map((p) => ({
+          id: p.id,
+          label: p.label,
+          kind: p.kind,
+        })),
+        activeProfileId: emp?.cv?.profilePack?.activeProfileId ?? "self",
+        identityStaging: emp ? Boolean(getIdentityStaging(emp)) : false,
         aiMode: hasGeminiKey() ? "gemini" : "heuristic",
         // FR-CV-09: never expose reliability / pendingInferences to candidates
       });

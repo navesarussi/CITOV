@@ -47,6 +47,8 @@ export async function runEmployeeIntake(params: {
   pendingConflicts?: string;
   pendingInferences?: string;
   openReliabilityNotes?: string;
+  locale?: "he" | "en";
+  accountHolderFirstName?: string;
 }): Promise<IntakeResult> {
   if (!hasGeminiKey()) {
     return heuristicEmployeeIntake(
@@ -67,6 +69,8 @@ export async function runEmployeeIntake(params: {
       pendingConflicts: params.pendingConflicts,
       pendingInferences: params.pendingInferences,
       openReliabilityNotes: params.openReliabilityNotes,
+      locale: params.locale,
+      accountHolderFirstName: params.accountHolderFirstName,
     });
 
     const { object, usage } = await callGeminiWithRetry(() =>
@@ -165,6 +169,10 @@ export function streamEmployeeReply(params: {
   pendingQuestions: FieldQuestion[];
   systemPrompt: string;
   pendingConflicts?: string;
+  pendingInferences?: string;
+  openReliabilityNotes?: string;
+  locale?: "he" | "en";
+  accountHolderFirstName?: string;
 }): { textStream: AsyncIterable<string> } {
   const { system, messages } = buildEmployeeConversation({
     template: params.systemPrompt,
@@ -173,6 +181,10 @@ export function streamEmployeeReply(params: {
     chat: params.chat,
     pendingQuestions: params.pendingQuestions,
     pendingConflicts: params.pendingConflicts,
+    pendingInferences: params.pendingInferences,
+    openReliabilityNotes: params.openReliabilityNotes,
+    locale: params.locale,
+    accountHolderFirstName: params.accountHolderFirstName,
   });
   const result = streamText({
     model: getGeminiModel(),
@@ -215,12 +227,14 @@ export async function runCvWelcomeReply(params: {
   openReliabilityNotes?: string;
   isCvUpdate: boolean;
   locale: "he" | "en";
-  candidateName?: string;
+  accountHolderFirstName?: string;
+  candidateSubjectFirstName?: string;
 }): Promise<{ reply: string; provider: string; usage?: AiTokenUsage; degraded?: boolean }> {
   const welcomeNote = cvWelcomeSystemNote({
     isCvUpdate: params.isCvUpdate,
     locale: params.locale,
-    candidateName: params.candidateName,
+    accountHolderFirstName: params.accountHolderFirstName,
+    candidateSubjectFirstName: params.candidateSubjectFirstName,
   });
   const systemPrompt = params.systemPrompt + welcomeNote;
 
@@ -232,7 +246,8 @@ export async function runCvWelcomeReply(params: {
         pendingQuestions: params.pendingQuestions,
         isCvUpdate: params.isCvUpdate,
         locale: params.locale,
-        candidateName: params.candidateName,
+        candidateSubjectFirstName: params.candidateSubjectFirstName,
+        accountHolderFirstName: params.accountHolderFirstName,
       }),
       provider: "heuristic",
     };
@@ -248,6 +263,8 @@ export async function runCvWelcomeReply(params: {
       pendingConflicts: params.pendingConflicts,
       pendingInferences: params.pendingInferences,
       openReliabilityNotes: params.openReliabilityNotes,
+      locale: params.locale,
+      accountHolderFirstName: params.accountHolderFirstName,
     });
     const { text, usage } = await callGeminiWithRetry(() =>
       generateText({
@@ -274,7 +291,8 @@ export async function runCvWelcomeReply(params: {
         pendingQuestions: params.pendingQuestions,
         isCvUpdate: params.isCvUpdate,
         locale: params.locale,
-        candidateName: params.candidateName,
+        candidateSubjectFirstName: params.candidateSubjectFirstName,
+        accountHolderFirstName: params.accountHolderFirstName,
       }),
       provider: "heuristic",
       degraded: true,
@@ -289,6 +307,10 @@ export async function extractEmployeePatch(params: {
   pendingQuestions: FieldQuestion[];
   systemPrompt: string;
   pendingConflicts?: string;
+  pendingInferences?: string;
+  openReliabilityNotes?: string;
+  locale?: "he" | "en";
+  accountHolderFirstName?: string;
 }): Promise<{
   candidatePatch: CandidatePatch;
   fieldAnswers: { questionId: string; answer: string }[];
@@ -302,6 +324,10 @@ export async function extractEmployeePatch(params: {
       chat: params.chat,
       pendingQuestions: params.pendingQuestions,
       pendingConflicts: params.pendingConflicts,
+      pendingInferences: params.pendingInferences,
+      openReliabilityNotes: params.openReliabilityNotes,
+      locale: params.locale,
+      accountHolderFirstName: params.accountHolderFirstName,
     });
     const { object, usage } = await callGeminiWithRetry(() =>
       generateObject({

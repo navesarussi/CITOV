@@ -201,6 +201,9 @@ export const he: Messages = {
     jobTitle: "העלאת תיאור משרה",
     jobHint: "PDF, DOCX או TXT — הסוכן קורא וממלא את כרטיס המשרה.",
   },
+  candidateProfiles: {
+    label: "פרופילי מועמדות",
+  },
   profile: {
     yourCard: "הפרופיל שלך",
     yourCardWithPercent: "הפרופיל שלך {percent}%",

@@ -106,6 +106,7 @@ export const cvInferenceSchema = z.object({
 
 /** Deep CV extraction payload (patch + structured histories + leftovers). */
 export const cvExtractionSchema = z.object({
+  subjectFullName: optStr,
   patch: candidatePatchSchema,
   workHistory: z.array(workHistoryEntrySchema).optional(),
   educationHistory: z.array(educationHistoryEntrySchema).optional(),

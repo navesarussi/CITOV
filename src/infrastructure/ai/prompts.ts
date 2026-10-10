@@ -12,6 +12,7 @@ import {
   nextMissingCandidateField,
   nextMissingJobField,
 } from "@/domain/card-progress";
+import { agentIdentitySystemBlock } from "@/domain/agent-identity";
 import {
   PROMPT_BUNDLE_VERSION,
   type AdminSettings,
@@ -107,17 +108,20 @@ function renderSystem(template: string, vars: Record<string, string>): string {
 export function cvWelcomeSystemNote(params: {
   isCvUpdate: boolean;
   locale: "he" | "en";
-  candidateName?: string;
+  /** Job seeker name from CV (who you address). */
+  candidateSubjectFirstName?: string;
+  accountHolderFirstName?: string;
 }): string {
-  const name = params.candidateName?.trim();
+  const subject = params.candidateSubjectFirstName?.trim();
+  const account = params.accountHolderFirstName?.trim();
   if (params.locale === "en") {
     return params.isCvUpdate
-      ? `\n\n[System: The candidate uploaded an updated CV. Open with "I received your updated CV", greet by name if known${name ? ` (${name})` : ""}, mention one strength from the card (role/experience), note you have a few questions to improve job matches, and end with one natural first question per your strategy. Warm, short, positive.]`
-      : `\n\n[System: The candidate uploaded a CV for the first time. Greet by name if known${name ? ` (${name})` : ""}, say you received their CV, mention one strength from the profile, note you have a few questions to improve matches, and end with one natural first question. Warm, short, positive.]`;
+      ? `\n\n[System: CV update event. You are CITOV's agent — never say "I am ${account ?? "the uploader"}". Address the candidate${subject ? ` as ${subject}` : ""}. Open with "I received your updated CV", one strength, one follow-up question.]`
+      : `\n\n[System: First CV upload. You are CITOV's agent — never use the uploader's name as your identity. Address the candidate${subject ? ` as ${subject}` : ""}. Say you received their CV, one strength, one question.]`;
   }
   return params.isCvUpdate
-    ? `\n\n[אירוע מערכת: המועמד/ת העלה/תה קורות חיים מעודכנים. פתח/י במשפט שמתחיל ב"קיבלתי את קורות החיים המעודכנים שלך", פנה/י בשם${name ? ` (${name})` : ""} אם ידוע, אזכור/י נקודת חוזק אחת מהכרטיס (תפקיד/ניסיון), ציין/י שיש כמה שאלות להעלאת סיכויי ההתאמה, וסיים/י בשאלה ראשונה טבעית לפי האסטרטגיה. טון חיובי, קצר, "קיבלתי — בוא/י נצא לדרך".]`
-    : `\n\n[אירוע מערכת: המועמד/ת העלה/תה קורות חיים לראשונה. פתח/י בברכה אישית${name ? ` (${name})` : ""}, אמור/י "קיבלתי את קורות החיים שלך", אזכור/י נקודת חוזק מהפרופיל, ציין/י שיש כמה שאלות להעלאת סיכויי ההתאמה, וסיים/י בשאלה ראשונה טבעית. טון חיובי וקצר.]`;
+    ? `\n\n[אירוע: קו"ח מעודכנים. את/ה סוכן/ת CITOV — אל תגיד/י "אני ${account ?? "…"}"${account ? ` (זה שם בעל/ת החשבון ${account}, לא שלך)` : ""}. פנה/י למועמד/ת${subject ? ` בשם ${subject}` : ""}. "קיבלתי את קורות החיים המעודכנים שלך", חוזק אחד, שאלה אחת.]`
+    : `\n\n[אירוע: קו"ח ראשון. את/ה סוכן/ת CITOV — לעולם אל תציג/י את עצמך בשם ${account ?? "בעל/ת החשבון"}. פנה/י למועמד/ת${subject ? ` בשם ${subject}` : ""}. "קיבלתי את קורות החיים שלך", חוזק, שאלה.]`;
 }
 
 export function buildEmployeeConversation(params: {
@@ -129,6 +133,8 @@ export function buildEmployeeConversation(params: {
   pendingConflicts?: string;
   pendingInferences?: string;
   openReliabilityNotes?: string;
+  locale?: "he" | "en";
+  accountHolderFirstName?: string;
 }): BuiltConversation {
   const pending = params.pendingQuestions
     .map((q) => `- [${q.id}] ${q.question}`)
@@ -161,7 +167,11 @@ export function buildEmployeeConversation(params: {
       }) +
       conflictBlock +
       inferenceBlock +
-      notesBlock,
+      notesBlock +
+      agentIdentitySystemBlock(params.locale ?? "he") +
+      (params.accountHolderFirstName
+        ? `\n\n[הקשר: בעל/ת החשבון המחובר/ת: ${params.accountHolderFirstName}. זה לא שמך ולא בהכרח שם המועמד/ת.]`
+        : ""),
     messages: toModelMessages(params.chat, params.message),
   };
 }

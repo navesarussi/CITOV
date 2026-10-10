@@ -32,6 +32,8 @@ import {
   heuristicEmployerIntake,
 } from "@/infrastructure/ai/heuristic";
 import { normalizeAssistantReplyText } from "@/domain/chat-reply";
+import { firstNameFromFullName } from "@/domain/person-name";
+import { parseLocale } from "@/infrastructure/locale";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -126,13 +128,26 @@ export async function POST(req: Request) {
 
     const message = body.message.trim();
     const aiMode = hasGeminiKey() ? "gemini" : "heuristic";
+    const locale = parseLocale(
+      new URL(req.url).searchParams.get("locale") ??
+        (body as { locale?: string }).locale ??
+        null,
+    );
+    const accountHolderFirstName = firstNameFromFullName(user.name ?? "");
 
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
           const result =
             role === "employee"
-              ? await runEmployeeStream(controller, store, userId, message)
+              ? await runEmployeeStream(
+                  controller,
+                  store,
+                  userId,
+                  message,
+                  locale,
+                  accountHolderFirstName,
+                )
               : await runEmployerStream(controller, store, userId, message, body.jobId);
 
           await persistTurn(role, userId, result);
@@ -184,6 +199,8 @@ async function runEmployeeStream(
   store: StoreData,
   userId: string,
   message: string,
+  locale: "he" | "en",
+  accountHolderFirstName?: string,
 ): Promise<ChatTurnResult> {
   const prep = prepareEmployeeTurn(store, userId);
 
@@ -208,6 +225,10 @@ async function runEmployeeStream(
     pendingQuestions: prep.pendingQuestions,
     systemPrompt: prep.systemPrompt,
     pendingConflicts: prep.pendingConflicts,
+    pendingInferences: prep.pendingInferences,
+    openReliabilityNotes: prep.openReliabilityNotes,
+    locale,
+    accountHolderFirstName,
   });
 
   let replyText = "";
@@ -221,6 +242,10 @@ async function runEmployeeStream(
       pendingQuestions: prep.pendingQuestions,
       systemPrompt: prep.systemPrompt,
       pendingConflicts: prep.pendingConflicts,
+      pendingInferences: prep.pendingInferences,
+      openReliabilityNotes: prep.openReliabilityNotes,
+      locale,
+      accountHolderFirstName,
     });
     for await (const delta of textStream) {
       if (!delta) continue;

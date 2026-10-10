@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { CandidateProfileBar } from "@/components/CandidateProfileBar";
 import { EmployeeChatLayout } from "@/components/EmployeeChatLayout";
 import { type ChatTurnPayload } from "@/components/ChatPanel";
 import { SettingsMenu } from "@/components/SettingsMenu";
@@ -28,9 +29,12 @@ export default function EmployeePage() {
     hasCv?: boolean;
     cvFileName?: string | null;
     cvExtractionStatus?: "pending" | "ok" | "partial" | "failed" | null;
+    candidateProfiles?: { id: string; label: string; kind: "self" | "other" }[];
+    activeProfileId?: string;
     error?: string;
   } | null>(null);
   const [jobs, setJobs] = useState([]);
+  const [profileBusy, setProfileBusy] = useState(false);
 
   const refreshLists = useCallback(
     async (id: string) => {
@@ -64,6 +68,43 @@ export default function EmployeePage() {
     }
   }, [sessionReady, userId, router]);
 
+  async function selectProfile(profileId: string) {
+    if (!userId || profileBusy || profileId === me?.activeProfileId) return;
+    setProfileBusy(true);
+    const previous = me;
+    try {
+      const res = await fetch("/api/employee/profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action: "select", profileId }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        card?: unknown;
+        chat?: NonNullable<typeof me>["chat"];
+        profiles?: NonNullable<typeof me>["candidateProfiles"];
+        activeProfileId?: string;
+      };
+      if (data.error || !data.card) {
+        setMe(previous);
+        return;
+      }
+      setMe((prev) =>
+        prev
+          ? {
+              ...prev,
+              card: data.card,
+              chat: data.chat ?? [],
+              candidateProfiles: data.profiles ?? prev.candidateProfiles,
+              activeProfileId: data.activeProfileId ?? profileId,
+            }
+          : prev,
+      );
+    } finally {
+      setProfileBusy(false);
+    }
+  }
+
   function onTurn(payload: ChatTurnPayload) {
     setMe((prev) =>
       prev
@@ -83,7 +124,7 @@ export default function EmployeePage() {
             hasCv: payload.hasCv,
           },
     );
-    if (userId) void refreshLists(userId);
+    if (userId) void refresh(userId);
   }
 
   if (!sessionReady || !userId) {
@@ -123,24 +164,34 @@ export default function EmployeePage() {
       ) : null}
 
       {tab === "chat" ? (
-        <EmployeeChatLayout
-          userId={userId}
-          locale={locale}
-          chat={me?.chat ?? []}
-          card={(me?.card as CandidateCard | null) ?? null}
-          hasCv={hasCv}
-          cvPending={me?.cvExtractionStatus === "pending"}
-          placeholder={t.employee.chatPlaceholder}
-          onTurn={onTurn}
-          onCvDone={() => void refresh(userId)}
-          onFlexibilityChange={(value) => {
-            setMe((prev) =>
-              prev
-                ? { ...prev, card: { ...(prev.card as object), flexibility: value } }
-                : prev,
-            );
-          }}
-        />
+        <>
+          <CandidateProfileBar
+            label={t.candidateProfiles.label}
+            profiles={me?.candidateProfiles ?? []}
+            activeProfileId={me?.activeProfileId ?? null}
+            busy={profileBusy}
+            onSelect={(id) => void selectProfile(id)}
+          />
+          <EmployeeChatLayout
+            key={`${userId}-${me?.activeProfileId ?? "self"}`}
+            userId={userId}
+            locale={locale}
+            chat={me?.chat ?? []}
+            card={(me?.card as CandidateCard | null) ?? null}
+            hasCv={hasCv}
+            cvPending={me?.cvExtractionStatus === "pending"}
+            placeholder={t.employee.chatPlaceholder}
+            onTurn={onTurn}
+            onCvDone={() => void refresh(userId)}
+            onFlexibilityChange={(value) => {
+              setMe((prev) =>
+                prev
+                  ? { ...prev, card: { ...(prev.card as object), flexibility: value } }
+                  : prev,
+              );
+            }}
+          />
+        </>
       ) : (
         <div className="workspace-stack enter-delay tab-fade">
           <OpportunityList jobs={jobs} />
