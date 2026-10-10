@@ -1,15 +1,15 @@
 "use client";
 
-import { AdminSandboxEmployer } from "@/components/admin/AdminSandboxEmployer";
 import { AdminShell } from "@/components/AdminShell";
+import { EmployerWorkspaceView } from "@/components/workspace/EmployerWorkspaceView";
 
 export default function AdminPreviewEmployerPage() {
   return (
     <AdminShell
-      title="תצוגת מעסיק (מנהל)"
-      subtitle="ארגז חול — חברה, משרות, צ'אט וכרטיס משרה"
+      title="תצוגת מעסיק"
+      subtitle="החוויה המלאה שלך כמעסיק — חברה, משרות, צ'אט, התאמות ואישור/דחייה (נתונים אמיתיים)"
     >
-      <AdminSandboxEmployer />
+      <EmployerWorkspaceView layout="embedded" />
     </AdminShell>
   );
 }

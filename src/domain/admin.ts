@@ -1,4 +1,3 @@
-import { isAdminSandboxUserId } from "@/domain/admin-sandbox";
 import { storeEngagementStats } from "@/domain/admin-engagement";
 import { estimateCacheSavingsUsd, estimateCostUsd, GEMINI_PRICING } from "@/domain/ai-pricing";
 import type { AiUsageRecord, AiUsageType, StoreData } from "./types";
@@ -54,7 +53,7 @@ export type AdminStats = {
 };
 
 export function isDemoUserId(userId: string): boolean {
-  return DEMO_USER_IDS.has(userId) || userId.startsWith("seed-") || isAdminSandboxUserId(userId);
+  return DEMO_USER_IDS.has(userId) || userId.startsWith("seed-");
 }
 
 export function estimateAiCostUsd(

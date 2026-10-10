@@ -15,7 +15,10 @@ export default function AdminGuidelinesPage() {
         <ul className="list-disc space-y-2 ps-5">
           <li>עריכת פרומפts בזמן אמת — בדשבורד הראשי (מסך עבודה).</li>
           <li>תיוג התאמות — מינימום 3 תיוגים לפני מטריקות; סף מוצע הוא נקודת פתיחה בלבד.</li>
-          <li>ארגז חול מועמד/מעסיק — פרופילי <code>admin-sandbox-*</code>, לא נספרים בסטטיסטיקות.</li>
+          <li>
+            תצוגת מועמד/מעסיק — אותה חוויה כמו משתמש רגיל תחת חשבון Google של המנהל; נתונים אמיתיים
+            ונספרים במטריקות.
+          </li>
           <li>תיוג קהל — מסומן <code>source=crowd</code>, נפרד מתיוג מנהל.</li>
         </ul>
         <Link href="/admin" className="text-[var(--accent)] hover:underline">
