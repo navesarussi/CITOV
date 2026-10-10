@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.13 — 2025-10-10
+
+- Admin mobile: fixed bottom tab bar (דשבורד, תיוג, ניטור, ארכיטקטורה, עוד); removed תפריט מנהל sheet and header hamburger on small screens.
+- Compact mobile density (headers, architecture stepper, panels).
+- Mobile-first labeling: one pair, collapsible cards, thumb actions + skip; holdout queue with frozen LLM-judge suggestions (`holdout-v1.judgments.json`).
+- Playwright: tab navigation tests at 375/390/414.
+
 ## 0.4.9.1 — 2025-10-10
 
 - Fix CHANGELOG merge conflict markers on main; CI fails if conflict markers are committed.

@@ -95,11 +95,11 @@ function MobileStepper(props: { selectedId: string | null; onSelect: (id: string
             <button
               type="button"
               onClick={() => props.onSelect(node.id)}
-              className={`flex w-full min-h-12 items-start gap-3 rounded-2xl border p-3 text-right transition ${
+              className={`flex w-full min-h-10 items-start gap-2 rounded-xl border p-2.5 text-right transition ${
                 active ? "border-[var(--accent)] shadow-md" : "border-[var(--stroke)] bg-white/90"
               }`}
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--chip)] text-xs font-bold">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--chip)] text-[10px] font-bold">
                 {i + 1}
               </span>
               <span className="min-w-0 flex-1">
@@ -152,11 +152,11 @@ export function EndToEndJourneyMap() {
   const nodeMap = useMemo(() => new Map(JOURNEY_NODES.map((n) => [n.id, n])), []);
 
   return (
-    <section className="rounded-3xl border border-[var(--stroke)] bg-gradient-to-b from-white to-[var(--accent)]/5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <section className="rounded-2xl border border-[var(--stroke)] bg-gradient-to-b from-white to-[var(--accent)]/5 p-3 sm:rounded-3xl sm:p-6">
+      <header className="flex flex-wrap items-end justify-between gap-2 sm:gap-3">
         <div>
-          <h3 className="text-xl font-bold text-[var(--hero)]">מסע מוצר מקצה לקצה</h3>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
+          <h3 className="text-base font-bold text-[var(--hero)] sm:text-xl">מסע מוצר מקצה לקצה</h3>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-[var(--muted)] sm:text-sm">
             מהתחברות Google ועד כיול מחדש — כולל צדדי ניטור, תקציב, חוסן ופרטיות. לחצו על תיבה לפרטים.
             גררו לתזוזה; +/- להגדלה. במובייל: רשימת שלבים אנכית.
           </p>

@@ -22,6 +22,8 @@ import { scoreCandidateForJob, type MatchEmbeddingIndex } from "./match-scoring"
 import { labeledPairKeys, listMatchLabels } from "@/infrastructure/db/match-labels";
 import { resolveLabelingPair } from "./labeling-pair-resolve";
 import { explainMatchPair, type MatchPairExplanation } from "./match-pair-explain";
+import { holdoutJudgmentByPair } from "../../eval/matching/load-holdout-judgments";
+import type { LlmJudgePairRecord } from "@/domain/llm-judge";
 
 export type LabelingPair = {
   pairId: string;
@@ -35,6 +37,7 @@ export type LabelingPair = {
   company: CompanyCard;
   fieldRows: LabelFieldRow[];
   scores: MatchPairExplanation;
+  llmJudge?: LlmJudgePairRecord | null;
 };
 
 function holdoutRowsFromFile(): {
@@ -113,6 +116,8 @@ function buildRichPair(
   const matchRow = store.matches.find(
     (m) => m.jobId === jobId && m.candidateId === candidateId,
   );
+  const llmJudge =
+    bucket === "holdout" ? holdoutJudgmentByPair(jobId, candidateId) : undefined;
   return {
     pairId: `${jobId}__${candidateId}`,
     jobId,
@@ -125,6 +130,24 @@ function buildRichPair(
     company: resolved.company,
     fieldRows: jobCandidateFieldRows(resolved.job, resolved.candidate),
     scores,
+    llmJudge,
+  };
+}
+
+export function holdoutLabelingProgress(labeled: Set<string>): {
+  holdoutTotal: number;
+  holdoutLabeled: number;
+  holdoutRemaining: number;
+} {
+  const rows = holdoutRowsFromFile();
+  let holdoutLabeled = 0;
+  for (const row of rows) {
+    if (labeled.has(`${row.job_id}:${row.candidate_id}`)) holdoutLabeled += 1;
+  }
+  return {
+    holdoutTotal: rows.length,
+    holdoutLabeled,
+    holdoutRemaining: Math.max(0, rows.length - holdoutLabeled),
   };
 }
 
@@ -132,6 +155,7 @@ export async function nextLabelingPairs(
   store: StoreData,
   index: MatchEmbeddingIndex | undefined,
   limit = 1,
+  excludeKeys: Set<string> = new Set(),
 ): Promise<LabelingPair[]> {
   const labeled = await labeledPairKeys();
   const out: LabelingPair[] = [];
@@ -139,7 +163,7 @@ export async function nextLabelingPairs(
   for (const row of holdoutRowsFromFile()) {
     if (out.length >= limit) break;
     const key = `${row.job_id}:${row.candidate_id}`;
-    if (labeled.has(key)) continue;
+    if (labeled.has(key) || excludeKeys.has(key)) continue;
     const rich = buildRichPair(store, row.job_id, row.candidate_id, "holdout", index);
     if (rich) {
       out.push(rich);
@@ -154,7 +178,7 @@ export async function nextLabelingPairs(
   for (const job of jobs) {
     for (const cand of candidates) {
       const key = `${job.id}:${cand.id}`;
-      if (labeled.has(key)) continue;
+      if (labeled.has(key) || excludeKeys.has(key)) continue;
       const rule = scoreMatch(cand.card, job.card);
       const hybrid = scoreCandidateForJob({
         candidate: cand.card,

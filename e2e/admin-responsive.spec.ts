@@ -4,6 +4,7 @@ import { syncE2eAdminAuth } from "./helpers";
 
 const WIDTHS = [
   { name: "375", width: 375, height: 812 },
+  { name: "390", width: 390, height: 844 },
   { name: "414", width: 414, height: 896 },
 ] as const;
 
@@ -40,8 +41,7 @@ test.describe("Admin portal mobile layout", () => {
         });
         expect(overflow).toBeLessThanOrEqual(2);
 
-        const navBtn = page.getByRole("button", { name: /תפריט מנהל/i });
-        await expect(navBtn).toBeVisible();
+        await expect(page.getByTestId("admin-tab-dashboard")).toBeVisible();
 
         await page.screenshot({
           path: path.join("e2e", "screenshots", `admin-${route.slug}-${vp.name}.png`),
@@ -49,5 +49,30 @@ test.describe("Admin portal mobile layout", () => {
         });
       });
     }
+  }
+
+  for (const vp of WIDTHS) {
+    test(`bottom tab navigation @ ${vp.width}px`, async ({ page, request }) => {
+      await syncE2eAdminAuth(page, request);
+      await page.setViewportSize({ width: vp.width, height: vp.height });
+      await page.goto("/admin");
+      await expect(page).toHaveURL(/\/admin\/?$/);
+
+      await page.getByTestId("admin-tab-labeling").click();
+      await expect(page).toHaveURL(/\/admin\/labeling/);
+
+      await page.getByTestId("admin-tab-monitoring").click();
+      await expect(page).toHaveURL(/\/admin\/monitoring/);
+
+      await page.getByTestId("admin-tab-architecture").click();
+      await expect(page).toHaveURL(/\/admin\/architecture/);
+
+      await page.getByTestId("admin-tab-dashboard").click();
+      await expect(page).toHaveURL(/\/admin\/?$/);
+
+      await page.getByTestId("admin-tab-more").click();
+      await page.getByTestId("admin-more-candidates").click();
+      await expect(page).toHaveURL(/\/admin\/candidates/);
+    });
   }
 });

@@ -7,6 +7,7 @@ import {
   LabelingMetricsPanel,
   type LabelingMetricsView,
 } from "@/components/admin/labeling/LabelingMetricsPanel";
+import { LabelingMobileView } from "@/components/admin/labeling/LabelingMobileView";
 import { LabelingPairView } from "@/components/admin/LabelingPairView";
 import { AdminDataScopeToggle } from "@/components/admin/AdminDataScopeToggle";
 import { AdminShell } from "@/components/AdminShell";
@@ -15,11 +16,22 @@ import { Button } from "@/components/ui/Button";
 import type { RelevanceLabel } from "@/domain/matching-eval/types";
 
 const LABELING_STORAGE_KEY = "citov_admin_labeling_note";
+const SKIP_STORAGE_KEY = "citov_admin_labeling_skip";
+
+function readSkipKeys(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(sessionStorage.getItem(SKIP_STORAGE_KEY) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+}
 
 export default function AdminLabelingPage() {
   const { t, fmt } = useTranslation();
   const [pair, setPair] = useState<LabelingPair | null>(null);
   const [metrics, setMetrics] = useState<LabelingMetricsView | null>(null);
+  const [skipKeys, setSkipKeys] = useState<string[]>(() => readSkipKeys());
   const [note, setNote] = useState(() => {
     if (typeof window === "undefined") return "";
     return sessionStorage.getItem(LABELING_STORAGE_KEY) ?? "";
@@ -33,21 +45,30 @@ export default function AdminLabelingPage() {
     setMetrics(data.metrics ?? null);
   }, []);
 
+  const fetchNext = useCallback(
+    async (exclude: string[]) => {
+      const qs = new URLSearchParams();
+      if (exclude.length) qs.set("exclude", exclude.join(","));
+      const res = await fetch(`/api/admin/labeling?${qs.toString()}`);
+      const data = (await res.json()) as { error?: string; pair?: LabelingPair | null; metrics?: LabelingMetricsView };
+      if (!res.ok || data.error) throw new Error(data.error ?? "failed");
+      loadFromResponse(data);
+    },
+    [loadFromResponse],
+  );
+
   const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/labeling");
-      const data = (await res.json()) as { error?: string; pair?: LabelingPair | null; metrics?: LabelingMetricsView };
-      if (!res.ok || data.error) throw new Error(data.error ?? "failed");
-      loadFromResponse(data);
+      await fetchNext(skipKeys);
       setNote("");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [loadFromResponse]);
+  }, [fetchNext, skipKeys]);
 
   const openPair = useCallback(
     async (jobId: string, candidateId: string) => {
@@ -76,6 +97,10 @@ export default function AdminLabelingPage() {
   useEffect(() => {
     sessionStorage.setItem(LABELING_STORAGE_KEY, note);
   }, [note]);
+
+  useEffect(() => {
+    sessionStorage.setItem(SKIP_STORAGE_KEY, JSON.stringify(skipKeys));
+  }, [skipKeys]);
 
   const submit = useCallback(
     async (label: RelevanceLabel) => {
@@ -109,6 +134,18 @@ export default function AdminLabelingPage() {
     },
     [pair, submitting, note, loadFromResponse],
   );
+
+  const skipPair = useCallback(() => {
+    if (!pair || submitting) return;
+    const key = `${pair.jobId}:${pair.candidateId}`;
+    const nextSkip = [...skipKeys, key];
+    setSkipKeys(nextSkip);
+    setSubmitting(true);
+    setError("");
+    void fetchNext(nextSkip)
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setSubmitting(false));
+  }, [pair, submitting, skipKeys, fetchNext]);
 
   useEffect(() => {
     if (!pair || submitting) return;
@@ -179,19 +216,32 @@ export default function AdminLabelingPage() {
     }
   }
 
+  const holdout = metrics?.holdout;
+
   return (
-    <AdminShell title={t.adminLabeling.pageTitle} subtitle={t.adminLabeling.pageSubtitle}>
-      <div className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <AdminShell
+      title={t.adminLabeling.pageTitle}
+      subtitle={t.adminLabeling.pageSubtitle}
+      mobileBottomInset={pair ? "labeling" : undefined}
+    >
+      <div className="space-y-4 sm:space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <AdminDataScopeToggle onChange={() => void refresh()} />
+          {holdout && holdout.holdoutTotal > 0 ? (
+            <p className="text-xs text-[var(--muted)] md:hidden">
+              holdout: {holdout.holdoutLabeled}/{holdout.holdoutTotal}
+            </p>
+          ) : null}
         </div>
         {metrics ? (
-          <LabelingMetricsPanel
-            metrics={metrics}
-            submitting={submitting}
-            onApplyThreshold={() => void applySuggestedThreshold()}
-            onOpenPair={(jobId, candidateId) => void openPair(jobId, candidateId)}
-          />
+          <div className="hidden md:block">
+            <LabelingMetricsPanel
+              metrics={metrics}
+              submitting={submitting}
+              onApplyThreshold={() => void applySuggestedThreshold()}
+              onOpenPair={(jobId, candidateId) => void openPair(jobId, candidateId)}
+            />
+          </div>
         ) : null}
 
         {error ? (
@@ -203,11 +253,23 @@ export default function AdminLabelingPage() {
         ) : !pair ? (
           <p className="text-sm text-[var(--muted)]">{t.adminLabeling.noPairs}</p>
         ) : (
-          <LabelingPairView pair={pair} />
+          <>
+            <LabelingMobileView
+              pair={pair}
+              holdoutLabeled={holdout?.holdoutLabeled}
+              holdoutTotal={holdout?.holdoutTotal}
+              submitting={submitting}
+              onSubmit={(label) => void submit(label)}
+              onSkip={skipPair}
+            />
+            <div className="hidden md:block">
+              <LabelingPairView pair={pair} />
+            </div>
+          </>
         )}
 
         {pair ? (
-          <section className="panel sticky bottom-0 z-10 space-y-3 rounded-[var(--panel-radius)] border border-[var(--stroke)] bg-[var(--surface)]/95 p-4 backdrop-blur sm:static sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+          <section className="panel sticky bottom-0 z-10 hidden space-y-3 rounded-[var(--panel-radius)] border border-[var(--stroke)] bg-[var(--surface)]/95 p-4 backdrop-blur md:static md:block md:bg-transparent md:p-0 md:backdrop-blur-none">
             <textarea
               className="w-full rounded-xl border border-[var(--stroke)] p-3 text-sm"
               rows={3}
