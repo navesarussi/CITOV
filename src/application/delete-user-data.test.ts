@@ -4,13 +4,15 @@ import { deleteUserAccountData } from "./delete-user-data";
 import { readMemoryStore, writeMemoryStore, createSeedStore } from "@/infrastructure/db/memory-store";
 import { NotFoundError } from "@/domain/errors";
 
+const mutableEnv = process.env as Record<string, string | undefined>;
+
 describe("deleteUserAccountData (memory store)", () => {
   it("refuses demo and removes a custom user", async () => {
     const prevDb = process.env.DATABASE_URL;
     const prevNode = process.env.NODE_ENV;
     try {
-      process.env.NODE_ENV = "development";
-      delete process.env.DATABASE_URL;
+      mutableEnv.NODE_ENV = "development";
+      delete mutableEnv.DATABASE_URL;
       writeMemoryStore(createSeedStore());
       await assert.rejects(
         () => deleteUserAccountData("demo-employee"),
@@ -46,10 +48,10 @@ describe("deleteUserAccountData (memory store)", () => {
       assert.ok(!after.users.some((u) => u.id === customId));
       assert.ok(!after.employees.some((e) => e.userId === customId));
     } finally {
-      if (prevDb === undefined) delete process.env.DATABASE_URL;
-      else process.env.DATABASE_URL = prevDb;
-      if (prevNode === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = prevNode;
+      if (prevDb === undefined) delete mutableEnv.DATABASE_URL;
+      else mutableEnv.DATABASE_URL = prevDb;
+      if (prevNode === undefined) delete mutableEnv.NODE_ENV;
+      else mutableEnv.NODE_ENV = prevNode;
     }
   });
 });

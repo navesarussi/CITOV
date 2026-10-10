@@ -1,3 +1,7 @@
+import {
+  canonicalizeSkillList,
+  skillFamiliesFromSkills,
+} from "./skills-taxonomy";
 import type { CandidateCard, JobCard, MatchCanonical } from "./types";
 
 export type { MatchCanonical };
@@ -112,11 +116,15 @@ export function inferMatchCanonicalFromText(card: {
   if (title) out.title = canonicalizeRoleToken(title);
   if (field) out.field = canonicalizeFieldToken(field);
   if (location) out.location = canonicalizeLocationToken(location);
-  if (card.skills?.length) out.skills = card.skills.map((s) => canonicalizeRoleToken(s));
+  if (card.skills?.length) {
+    out.skills = canonicalizeSkillList(card.skills);
+    const families = skillFamiliesFromSkills(card.skills);
+    if (families.length) out.skillFamilies = families;
+  }
   if (card.languages?.length) {
     out.languages = card.languages.map((s) => canonicalizeLanguageToken(s));
   }
-  if (card.mustHaves?.length) out.mustHaves = card.mustHaves.map((s) => canonicalizeRoleToken(s));
+  if (card.mustHaves?.length) out.mustHaves = canonicalizeSkillList(card.mustHaves);
   return out;
 }
 
@@ -153,10 +161,11 @@ export function candidateForMatching(card: CandidateCard): CandidateCard {
 }
 
 export function enrichCandidateForRuleMatch(card: CandidateCard): CandidateCard {
+  const skills = [...card.skills, ...(card.techStack ?? [])];
   const inferred = inferMatchCanonicalFromText({
     desiredRole: card.desiredRole,
     field: card.field,
-    skills: card.skills,
+    skills,
     languages: card.languages,
     location: card.location,
   });

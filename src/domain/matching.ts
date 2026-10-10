@@ -3,6 +3,12 @@
  * gates and hybrid blending; cross-language titles need semantic-matching.ts.
  */
 import { enrichCandidateForRuleMatch, enrichJobForRuleMatch } from "./match-canonical";
+import { skillTokensForOverlap } from "./skills-taxonomy";
+import {
+  detectPairDomain,
+  ruleWeightsForDomain,
+  type RuleComponentWeights,
+} from "./work-domain";
 import type { CandidateCard, JobCard } from "./types";
 
 function normalize(value: string): string {
@@ -14,6 +20,14 @@ export function overlap(a: string[], b: string[]): number {
   const setB = new Set(b.map(normalize));
   const hits = a.filter((item) => setB.has(normalize(item))).length;
   return hits / Math.max(a.length, b.length);
+}
+
+function skillsOverlap(candidateSkills: string[], jobSkills: string[]): number {
+  if (candidateSkills.length === 0 || jobSkills.length === 0) return 0;
+  const setB = new Set(skillTokensForOverlap(jobSkills));
+  const tokensA = skillTokensForOverlap(candidateSkills);
+  const hits = tokensA.filter((t) => setB.has(t)).length;
+  return hits / Math.max(tokensA.length, setB.size);
 }
 
 export function textScore(a: string, b: string): number {
@@ -28,11 +42,19 @@ export function textScore(a: string, b: string): number {
   return hits === 0 ? 0 : hits / Math.max(tokensA.length, tokensB.size);
 }
 
-export function computeRuleComponents(candidate: CandidateCard, job: JobCard) {
+export function computeRuleComponents(
+  candidate: CandidateCard,
+  job: JobCard,
+  weights: RuleComponentWeights = ruleWeightsForDomain(detectPairDomain(candidate, job)),
+) {
+  const candSkills = [
+    ...candidate.skills,
+    ...(candidate.techStack ?? []),
+  ];
   const role = textScore(candidate.desiredRole, job.title);
   const field = textScore(candidate.field, job.field);
   const location = textScore(candidate.location, job.location);
-  const skills = overlap(candidate.skills, [...job.mustHaves, ...job.niceToHaves]);
+  const skills = skillsOverlap(candSkills, [...job.mustHaves, ...job.niceToHaves]);
   const soft = overlap(candidate.softSkills, job.niceToHaves);
   const languages = overlap(candidate.languages, job.requiredLanguages);
   const personality = textScore(candidate.personality, job.personalityFit);
@@ -51,16 +73,16 @@ export function computeRuleComponents(candidate: CandidateCard, job: JobCard) {
         );
 
   const raw =
-    role * 0.24 +
-    field * 0.18 +
-    location * 0.14 +
-    skills * 0.14 +
-    soft * 0.04 +
-    languages * 0.05 +
-    personality * 0.08 +
-    culture * 0.04 +
-    salary * 0.05 -
-    mustPenalty * 0.1;
+    role * weights.role +
+    field * weights.field +
+    location * weights.location +
+    skills * weights.skills +
+    soft * weights.soft +
+    languages * weights.languages +
+    personality * weights.personality +
+    culture * weights.culture +
+    salary * weights.salary -
+    mustPenalty * weights.mustPenalty;
 
   const baseFit = Math.max(0, Math.min(1, raw));
   return {

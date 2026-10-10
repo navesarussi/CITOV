@@ -2,18 +2,24 @@ import {
   inferMatchCanonicalFromText,
   mergeMatchCanonical,
 } from "../../src/domain/match-canonical";
+import { canonicalizeSkillList } from "../../src/domain/skills-taxonomy";
 import type { CandidateCard, JobCard } from "../../src/domain/types";
 import { emptyCandidateCard, emptyJobCard } from "../../src/domain/types";
 import type { EvalCandidate, EvalJob, EvalLabel, MatchingEvalDataset } from "../../src/domain/matching-eval/types";
 
 function enrichCandidateCard(card: CandidateCard): CandidateCard {
+  const skills = canonicalizeSkillList([
+    ...card.skills,
+    ...(card.techStack ?? []),
+  ]);
   return mergeMatchCanonical(
-    card,
+    { ...card, skills: skills.length ? skills : card.skills },
     inferMatchCanonicalFromText({
       desiredRole: card.desiredRole,
       field: card.field,
-      skills: card.skills,
+      skills: skills.length ? skills : card.skills,
       languages: card.languages,
+      location: card.location,
     }) ?? {},
   );
 }

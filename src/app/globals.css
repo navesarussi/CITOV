@@ -1,54 +1,5 @@
 @import "tailwindcss";
-
-:root {
-  --bg-deep: #0a1628;
-  --bg: #dceaf7;
-  --bg-soft: #c5daf0;
-  --surface: #f8fbfe;
-  --surface-elevated: #ffffff;
-  --surface-glass: rgba(248, 251, 254, 0.82);
-  --ink: #0f1f3d;
-  --muted: #5a6d87;
-  --stroke: rgba(16, 42, 80, 0.1);
-  --stroke-strong: rgba(16, 42, 80, 0.18);
-  --accent: #3b82f6;
-  --accent-strong: #2563eb;
-  --accent-soft: rgba(59, 130, 246, 0.12);
-  --bubble: #e8f2fc;
-  --chip: rgba(59, 130, 246, 0.08);
-  --warn: #8a4b12;
-  --warn-bg: #fff4e8;
-  --hero: #102a50;
-  --sky: #7dd3fc;
-  --gold: #f59e0b;
-  --brand-gradient: linear-gradient(135deg, #102a50 0%, #3b82f6 55%, #7dd3fc 100%);
-  --brand-gradient-soft: linear-gradient(
-    135deg,
-    rgba(16, 42, 80, 0.06) 0%,
-    rgba(59, 130, 246, 0.1) 55%,
-    rgba(125, 211, 252, 0.12) 100%
-  );
-  --shadow: 0 24px 60px rgba(16, 42, 80, 0.12);
-  --shadow-soft: 0 8px 24px rgba(16, 42, 80, 0.06);
-  --shadow-md: 0 16px 40px rgba(16, 42, 80, 0.1);
-  --shadow-glow: 0 0 48px rgba(59, 130, 246, 0.14);
-  --panel-radius: 1.25rem;
-  --control-radius: 0.75rem;
-  --radius-full: 9999px;
-  --space-section: clamp(2rem, 5vw, 4rem);
-  --space-stack: clamp(1rem, 2.5vw, 1.5rem);
-  --header-height: 4.25rem;
-  --content-max: 72rem;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --duration-fast: 160ms;
-  --duration-normal: 240ms;
-}
-
-@theme inline {
-  --color-background: var(--bg);
-  --color-foreground: var(--ink);
-  --font-sans: var(--font-heebo);
-}
+@import "../theme/tailwind-theme.css";
 
 body {
   background: var(--bg);

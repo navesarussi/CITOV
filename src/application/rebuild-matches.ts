@@ -1,6 +1,5 @@
-import { isDemoUserId } from "@/domain/admin";
 import { stableMatchId } from "@/domain/match-id";
-import { isSandboxUserId } from "@/domain/test-sandbox";
+import { isSandboxUserId, skipUserInProductionMatchRebuild } from "@/domain/test-sandbox";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { Match, StoreData } from "@/domain/types";
 import { scoreCandidateForJob, type MatchEmbeddingIndex } from "./match-scoring";
@@ -32,13 +31,15 @@ export function rebuildMatches(
 
   for (const rawEmployer of store.employers) {
     const sandboxEmp = isSandboxUserId(rawEmployer.userId);
-    if (sandboxOnly ? !sandboxEmp : isDemoUserId(rawEmployer.userId)) continue;
+    if (sandboxOnly ? !sandboxEmp : skipUserInProductionMatchRebuild(rawEmployer.userId)) continue;
     const employer = normalizeEmployerRecord(rawEmployer);
     for (const job of employer.jobs) {
       if (!job.card.title && !job.card.field) continue;
       for (const employee of store.employees) {
         const sandboxCand = isSandboxUserId(employee.userId);
-        if (sandboxOnly ? !sandboxCand : isDemoUserId(employee.userId)) continue;
+        if (sandboxOnly ? !sandboxCand : skipUserInProductionMatchRebuild(employee.userId)) {
+          continue;
+        }
         if (!employee.card.desiredRole && !employee.card.field) continue;
         const key = `${job.id}:${employee.userId}`;
         if (keptKeys.has(key)) continue;

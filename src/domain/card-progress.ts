@@ -1,5 +1,6 @@
 import { cardValue, formatCardValue, mergeCardRows } from "@/domain/card-extras";
 import { CANDIDATE_FIELD_META, JOB_FIELD_META } from "@/domain/card-fields";
+import { detectWorkDomain, DOMAIN_CANDIDATE_FIELD_KEYS } from "@/domain/work-domain";
 import type { CandidateCard, JobCard } from "@/domain/types";
 
 function isEmpty(value: unknown): boolean {
@@ -32,8 +33,20 @@ export function jobRows(card: JobCard, labels: Record<string, string> = {}) {
   return mergeCardRows(core, card.extras);
 }
 
+function candidateMetaForCard(card: CandidateCard) {
+  const domain = detectWorkDomain(card);
+  const keys = DOMAIN_CANDIDATE_FIELD_KEYS[domain];
+  if (!keys?.length) return CANDIDATE_FIELD_META;
+  const order = new Map(keys.map((k, i) => [k, i]));
+  return [...CANDIDATE_FIELD_META].sort((a, b) => {
+    const ia = order.get(a.key) ?? 999;
+    const ib = order.get(b.key) ?? 999;
+    return ia - ib || a.priority - b.priority;
+  });
+}
+
 export function nextMissingCandidateField(card: CandidateCard) {
-  const sorted = [...CANDIDATE_FIELD_META].sort((a, b) => a.priority - b.priority);
+  const sorted = candidateMetaForCard(card);
   for (const m of sorted) {
     if (m.key === "summary" || m.key === "flexibility" || m.key === "narrative") {
       continue;

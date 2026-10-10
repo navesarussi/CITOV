@@ -14,6 +14,8 @@ import {
 } from "./matching-calibration";
 import { combineFlexibility, computeBaseFit, textScore } from "./matching";
 import { cosineSimilarity } from "./vector-similarity";
+import { canonicalizeSkillToken, skillTokensForOverlap } from "./skills-taxonomy";
+import { detectPairDomain, segmentWeightsForDomain } from "./work-domain";
 import type { CandidateCard, JobCard } from "./types";
 
 export type SegmentVectors = Partial<Record<EmbeddingSegment, number[]>>;
@@ -104,15 +106,16 @@ function normToken(s: string): string {
 }
 
 function poolTokens(candidate: CandidateCard): string[] {
-  return candidate.skills
-    .concat(candidate.languages, candidate.softSkills, candidate.licenses)
-    .concat([candidate.desiredRole, candidate.hebrewLevel, candidate.englishLevel])
-    .map(normToken)
-    .filter(Boolean);
+  return skillTokensForOverlap(
+    candidate.skills
+      .concat(candidate.techStack ?? [])
+      .concat(candidate.languages, candidate.softSkills, candidate.licenses)
+      .concat([candidate.desiredRole, candidate.hebrewLevel, candidate.englishLevel]),
+  );
 }
 
 function mustHaveHit(candidate: CandidateCard, must: string): boolean {
-  const m = normToken(must);
+  const m = normToken(canonicalizeSkillToken(must));
   if (!m) return true;
   const pool = poolTokens(candidate);
   if (pool.some((p) => p === m || p.includes(m) || m.includes(p))) return true;
@@ -304,8 +307,10 @@ export function buildSemanticOptions(
   candidate: CandidateCard,
   job: JobCard,
 ): SemanticFitOptions {
+  const domain = detectPairDomain(candidate, job);
   return {
     cosineFloor: readCosineFloor(),
+    weights: segmentWeightsForDomain(domain),
     candidateTexts: candidateEmbeddingTexts(candidate),
     jobTexts: jobEmbeddingTexts(job),
   };

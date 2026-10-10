@@ -16,8 +16,11 @@ export type MatchCanonical = {
   field?: string;
   location?: string;
   skills?: string[];
+  skillFamilies?: string[];
   languages?: string[];
   mustHaves?: string[];
+  seniority?: string;
+  industryDomain?: string;
 };
 
 export type CandidateCard = {
@@ -69,6 +72,14 @@ export type CandidateCard = {
   industryExperience: string;
   portfolioUrl: string;
   linkedinUrl: string;
+  githubUrl: string;
+  /** junior | mid | senior | lead */
+  seniority: string;
+  techStack: string[];
+  /** cyber, fintech, ai, saas, … */
+  industryDomain: string;
+  securityClearance: string;
+  yearsByTech: Record<string, number>;
   referencesAvailable: string;
   /** Free-form narrative / stories from conversation */
   narrative: string;
@@ -107,6 +118,10 @@ export type JobCard = {
   requiredEducation: string;
   minExperienceYears: string;
   seniorityLevel: string;
+  industryDomain: string;
+  securityClearanceRequired: string;
+  /** When true, salary band mismatch blocks queue (see match-hard-filters). */
+  salaryBandHardFilter?: boolean;
   toolsRequired: string;
   personalityFit: string;
   teamCulture: string;
@@ -351,6 +366,8 @@ export type AdminSettings = {
   promptBundleVersion?: string;
   /** Optional production queue threshold (overrides env when set). */
   matchQueueThreshold?: number;
+  /** Default salary hard-filter for jobs that opt in via flag. */
+  salaryBandHardFilterDefault?: boolean;
 };
 
 export type AiUsageType =
@@ -443,6 +460,12 @@ export function emptyCandidateCard(): CandidateCard {
     industryExperience: "",
     portfolioUrl: "",
     linkedinUrl: "",
+    githubUrl: "",
+    seniority: "",
+    techStack: [],
+    industryDomain: "",
+    securityClearance: "",
+    yearsByTech: {},
     referencesAvailable: "",
     narrative: "",
     workHistory: [],
@@ -477,6 +500,8 @@ export function emptyJobCard(): JobCard {
     requiredEducation: "",
     minExperienceYears: "",
     seniorityLevel: "",
+    industryDomain: "",
+    securityClearanceRequired: "",
     toolsRequired: "",
     personalityFit: "",
     teamCulture: "",

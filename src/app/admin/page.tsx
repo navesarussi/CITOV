@@ -10,7 +10,8 @@ import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
 import { aiUsageTypeLabelHe } from "@/application/ai-usage-labels";
 import { SettingsMenu } from "@/components/SettingsMenu";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/ui/Button";
+import { Card } from "@/ui/Card";
 import { useTranslation } from "@/components/LocaleProvider";
 
 type AdminStats = {
@@ -221,7 +222,7 @@ export default function AdminPage() {
     >
       {seedMsg ? <p className="mb-3 text-sm text-[var(--muted)]">{seedMsg}</p> : null}
 
-      <section className="enter-delay grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="enter-delay grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <AdminStatCard label="מעסיקים" value={stats.employers} />
         <AdminStatCard label="מועמדים" value={stats.candidates} />
         <AdminStatCard
@@ -273,7 +274,7 @@ export default function AdminPage() {
         <AdminAiUsagePanel />
       </div>
 
-      <section className="enter-delay mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="enter-delay mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-4 lg:grid-cols-4">
         <AdminStatCard
           label="ממוצע ידע רלוונטי — מועמדים"
           value={`${Math.round(stats.engagement.avgCandidateKnowledgePercent)}%`}
@@ -292,8 +293,8 @@ export default function AdminPage() {
         />
       </section>
 
-      <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
-        <h2 className="text-sm font-semibold text-[var(--muted)]">פרומפטים והנחיות סוכן</h2>
+      <Card as="section" className="enter-delay-2 mt-3 sm:mt-4">
+        <h2 className="text-[var(--text-xs)] font-semibold text-[var(--muted)] sm:text-sm">פרומפטים והנחיות סוכן</h2>
         <p className="mt-2 text-sm text-[var(--ink)]">
           עריכת כל פרומפטי המערכת — שיחה, חילוץ קו״ח, התאמה ותרגום — עם גרסאות ותצוגה מקדימה.
         </p>
@@ -303,20 +304,20 @@ export default function AdminPage() {
         >
           מעבר לעורך הפרומפטים
         </Link>
-      </section>
+      </Card>
 
-      <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
-        <h2 className="text-sm font-semibold text-[var(--muted)]">פירוט התאמות</h2>
-        <div className="mt-2 flex flex-wrap gap-4 text-sm">
+      <Card as="section" className="enter-delay-2 mt-3 sm:mt-4">
+        <h2 className="text-[var(--text-xs)] font-semibold text-[var(--muted)] sm:text-sm">פירוט התאמות</h2>
+        <div className="mt-2 flex flex-wrap gap-2 text-[10px] sm:gap-4 sm:text-sm">
           <span>בתור: {stats.matches.queued}</span>
           <span>אושרו: {stats.matches.approved}</span>
           <span>נדחו: {stats.matches.rejected}</span>
           <span>משתמשים רשומים: {stats.users}</span>
         </div>
-      </section>
+      </Card>
 
-      <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
-        <h2 className="text-sm font-semibold text-[var(--muted)]">אמינות מועמדים (פנימי)</h2>
+      <Card as="section" className="enter-delay-2 mt-3 sm:mt-4">
+        <h2 className="text-[var(--text-xs)] font-semibold text-[var(--muted)] sm:text-sm">אמינות מועמדים (פנימי)</h2>
         <div className="mt-2 flex flex-wrap gap-4 text-sm">
           <span>ממוצע: {stats.reliability?.averageScore ?? 100}</span>
           <span>סתירות פתוחות: {stats.reliability?.openNotes ?? 0}</span>
@@ -336,7 +337,7 @@ export default function AdminPage() {
         ) : (
           <p className="mt-2 text-xs text-[var(--muted)]">אין סתירות פתוחות כרגע.</p>
         )}
-      </section>
+      </Card>
 
       {error ? (
         <p className="mt-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">{error}</p>

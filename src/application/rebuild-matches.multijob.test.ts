@@ -28,7 +28,7 @@ describe("rebuildMatches multi-job", () => {
           id: "job-b",
           card: {
             ...emptyJobCard(),
-            title: "שף",
+            title: "מלצר/ית",
             field: "מסעדנות",
             location: "תל אביב",
             mustHaves: ["שירות"],

@@ -21,7 +21,11 @@ import { calibrateCosineSimilarity, readCosineFloor } from "@/domain/matching-ca
 import { cosineSimilarity } from "@/domain/vector-similarity";
 import type { AdminSettings, CandidateCard, JobCard } from "@/domain/types";
 import { DEFAULT_EMBEDDING_MODEL } from "@/infrastructure/ai/embeddings";
-import { readHybridWeights, readMatchingMode, readQueueThreshold } from "./matching-config";
+import {
+  readHybridWeightsForPair,
+  readMatchingMode,
+  readQueueThreshold,
+} from "./matching-config";
 
 function segmentRawCosines(cVec: SegmentVectors, jVec: SegmentVectors) {
   const raw = (seg: "role" | "skills" | "profile") => {
@@ -60,7 +64,9 @@ export function buildMatchScoreBreakdown(params: {
   finalScoreOverride?: number;
 }): MatchScoreBreakdown {
   const mode = params.mode ?? readMatchingMode();
-  const hybridWeights = params.hybridWeights ?? readHybridWeights();
+  const hybridWeights =
+    params.hybridWeights ??
+    readHybridWeightsForPair(params.candidate, params.job);
   const threshold = params.queueThreshold ?? readQueueThreshold(params.adminSettings ?? undefined);
   const floor = readCosineFloor();
   const ruleParts = computeRuleComponents(params.candidate, params.job);
