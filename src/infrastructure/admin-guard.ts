@@ -1,10 +1,10 @@
-import { auth } from "@/auth";
 import { isAdminEmail } from "@/infrastructure/admin-config";
 import {
   devSessionIsAdmin,
   getDevSession,
   isDevAuthEnabled,
 } from "@/infrastructure/dev-auth";
+import { resolveOAuthSessionEmail } from "@/infrastructure/session-email";
 
 export async function assertAdmin(): Promise<
   { ok: true; email: string } | { ok: false; status: number; error: string }
@@ -14,8 +14,7 @@ export async function assertAdmin(): Promise<
     return { ok: true, email: dev.email };
   }
 
-  const session = await auth();
-  const email = session?.user?.email;
+  const email = await resolveOAuthSessionEmail();
   if (!email) {
     return { ok: false, status: 401, error: "נדרשת התחברות עם Google" };
   }

@@ -1,4 +1,5 @@
 import type { Role } from "@/domain/types";
+import { shouldRefreshStoredUser } from "@/domain/workspace-session";
 
 export const USER_STORAGE_KEY = "shidukh_user";
 export const ROLE_DEFAULT_KEY = "shidukh_role_default";
@@ -101,6 +102,39 @@ export async function startRoleSession(role: Role): Promise<{
   writeStoredUser(data.user);
   writeRoleDefault(role);
   return data.user;
+}
+
+type SessionFlagsResponse = {
+  googleAuth?: boolean;
+  signedIn?: boolean;
+  workspaceUser?: { id: string; name: string; role: Role } | null;
+};
+
+/**
+ * Bind localStorage user id to the Google account on the server session.
+ * Safe to call after OAuth sign-in or when reopening the app with a live session.
+ */
+export async function syncStoredUserWithGoogleSession(
+  role: Role,
+): Promise<{ id: string; name: string; role: Role } | null> {
+  const res = await fetch("/api/session", { cache: "no-store" });
+  const data = (await res.json()) as SessionFlagsResponse;
+  if (!data.googleAuth || !data.signedIn) return null;
+  const stored = readStoredUser();
+  const workspace = data.workspaceUser;
+  if (
+    !shouldRefreshStoredUser({
+      googleAuth: true,
+      signedIn: true,
+      storedId: stored?.id,
+      workspaceId: workspace?.id,
+      role,
+      workspaceRole: workspace?.role,
+    })
+  ) {
+    return stored?.role === role ? stored : startRoleSession(role);
+  }
+  return startRoleSession(role);
 }
 
 export function adminHomePath(): string {

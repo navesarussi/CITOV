@@ -143,7 +143,8 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
     }
 
     const stored = readStoredUser();
-    if (stored?.role === role) {
+    // With Google auth, never enter workspace on localStorage alone — session may be expired (401/403 on APIs).
+    if (stored?.role === role && !flags.googleAuth) {
       autoStarted.current = true;
       router.replace(roleHomePath(role));
     }

@@ -12,7 +12,22 @@ import {
 import { getSessionFlags } from "@/lib/session-flags-server";
 
 export async function GET() {
-  return ok(await getSessionFlags());
+  const flags = await getSessionFlags();
+  if (!flags.signedIn || !flags.googleAuth) {
+    return ok(flags);
+  }
+  const session = await auth();
+  const email = session?.user?.email;
+  const googleId =
+    (session?.user as { googleId?: string } | undefined)?.googleId ?? session?.user?.id;
+  if (!email) return ok(flags);
+  const existing = await findUserByEmailOrGoogle(email, googleId);
+  return ok({
+    ...flags,
+    workspaceUser: existing
+      ? { id: existing.id, name: existing.name, role: existing.role }
+      : null,
+  });
 }
 
 export async function POST(req: Request) {
