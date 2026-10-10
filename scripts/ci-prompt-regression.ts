@@ -9,6 +9,7 @@ import { matchingEvalDataset } from "../eval/matching/dataset";
 import { createEvalMatcherDefinitions } from "../eval/matching/eval-matchers";
 import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
+import { checkChatPromptContactPolicy } from "../src/infrastructure/ai/prompt-contact-policy";
 
 type Thresholds = {
   extraction: {
@@ -83,13 +84,28 @@ function checkMatching(t: Thresholds["matching"], lines: string[]): boolean {
   );
 }
 
+function checkContactPromptPolicy(lines: string[]): boolean {
+  const violations = checkChatPromptContactPolicy();
+  lines.push("### מדיניות יצירת קשר (prompts)");
+  if (!violations.length) {
+    lines.push("- אין בקשות לטלפון/אימייל בפרומפטי employer/candidate");
+    return true;
+  }
+  for (const v of violations) {
+    lines.push(`- **${v.prompt}** — ${v.patternId}: \`${v.excerpt}\``);
+  }
+  return false;
+}
+
 function main(): void {
   const thresholds = loadThresholds();
   const lines: string[] = ["## בדיקת רגרסיה (prompts / matching)", ""];
+  const okContact = checkContactPromptPolicy(lines);
+  lines.push("");
   const okExtract = checkExtraction(thresholds.extraction, lines);
   lines.push("");
   const okMatch = checkMatching(thresholds.matching, lines);
-  const ok = okExtract && okMatch;
+  const ok = okContact && okExtract && okMatch;
   lines.push("");
   lines.push(ok ? "**✅ עבר**" : "**❌ נכשל — אל תפרסמו prompts בלי בדיקה ידנית**");
 

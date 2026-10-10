@@ -52,6 +52,11 @@ import { resolveLiveChatPrompts } from "@/application/admin-prompt-catalog";
 import { formatPendingJobConfirmationsForPrompt } from "@/domain/cv-merge";
 import { resolveJobImportConfirmationsFromPatch } from "@/domain/job-extraction-merge";
 import type { AiTokenUsage, CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
+import {
+  maybeAppendPlatformContactNotice,
+  sanitizeCandidatePatch,
+  sanitizeJobPatch,
+} from "@/domain/contact-info-sanitize";
 
 function isEmptyCardValue(v: unknown): boolean {
   if (v == null) return true;
@@ -90,8 +95,12 @@ function applyCandidatePatchSafely(
   cv: CandidateCvProfile | undefined,
   patch?: CandidatePatch,
   now = new Date().toISOString(),
-): { card: CandidateCard; cv: CandidateCvProfile | undefined } {
-  if (!patch) return { card, cv: cv ? ensureCv(cv) : cv };
+): { card: CandidateCard; cv: CandidateCvProfile | undefined; strippedContact: boolean } {
+  const sanitized = sanitizeCandidatePatch(patch as Record<string, unknown> | undefined);
+  patch = sanitized.value as CandidatePatch | undefined;
+  if (!patch) {
+    return { card, cv: cv ? ensureCv(cv) : cv, strippedContact: sanitized.strippedFromPatch };
+  }
   let nextCard = {
     ...card,
     workHistory: card.workHistory ?? [],
@@ -152,7 +161,7 @@ function applyCandidatePatchSafely(
     );
   }
 
-  return { card: nextCard, cv: nextCv };
+  return { card: nextCard, cv: nextCv, strippedContact: sanitized.strippedFromPatch };
 }
 
 function applyCandidatePatch(card: CandidateCard, patch?: CandidatePatch): CandidateCard {
@@ -160,6 +169,8 @@ function applyCandidatePatch(card: CandidateCard, patch?: CandidatePatch): Candi
 }
 
 function applyJobPatch(card: JobCard, patch?: JobPatch): JobCard {
+  const sanitized = sanitizeJobPatch(patch as Record<string, unknown> | undefined);
+  patch = sanitized.value as JobPatch | undefined;
   if (!patch) return card;
   let next: JobCard = {
     ...card,
@@ -333,11 +344,16 @@ export function applyEmployeeTurn(params: {
     reply = `${DEGRADED_NOTICE_HE}\n\n${reply}`;
   }
 
+  const sanitizedCandidatePatch = sanitizeCandidatePatch(
+    params.candidatePatch as Record<string, unknown> | undefined,
+  );
+  const candidatePatch = sanitizedCandidatePatch.value as CandidatePatch | undefined;
+
   // Resolve pre-existing conflicts / inferences before opening new ones
   let cv =
     resolvePendingInferencesFromPatch(
-      resolveConflictsFromPatch(emp.cv, params.candidatePatch ?? {}),
-      params.candidatePatch ?? {},
+      resolveConflictsFromPatch(emp.cv, candidatePatch ?? {}),
+      candidatePatch ?? {},
     ) ?? emp.cv;
 
   let card = { ...emp.card };
@@ -362,9 +378,15 @@ export function applyEmployeeTurn(params: {
     }
   }
 
-  const applied = applyCandidatePatchSafely(card, cv, params.candidatePatch);
+  const applied = applyCandidatePatchSafely(card, cv, candidatePatch);
   card = applied.card;
   cv = applied.cv;
+
+  reply = maybeAppendPlatformContactNotice(reply, {
+    userMessage: message,
+    strippedFromPatch:
+      sanitizedCandidatePatch.strippedFromPatch || applied.strippedContact,
+  });
 
   let answers = store.fieldAnswers;
   let pendingIds = emp.pendingFieldQuestionIds;
@@ -556,10 +578,18 @@ export function applyEmployerTurn(params: {
     reply = `${DEGRADED_NOTICE_HE}\n\n${reply}`;
   }
 
-  const card = applyJobPatch(active.card, params.jobPatch);
+  const sanitizedJob = sanitizeJobPatch(params.jobPatch as Record<string, unknown> | undefined);
+  const jobPatch = sanitizedJob.value as JobPatch | undefined;
+
+  reply = maybeAppendPlatformContactNotice(reply, {
+    userMessage: message,
+    strippedFromPatch: sanitizedJob.strippedFromPatch,
+  });
+
+  const card = applyJobPatch(active.card, jobPatch);
   const slotAfterConfirm = resolveJobImportConfirmationsFromPatch(
     { ...active, card },
-    params.jobPatch ?? {},
+    jobPatch ?? {},
   );
   const newMessages = [makeMessage("user", message), makeMessage("assistant", reply)];
   const chat = [...active.chat, ...newMessages];
