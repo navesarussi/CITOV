@@ -1,4 +1,4 @@
-import { scoreMatch, shouldQueueForEmployer } from "../matching";
+import { scoreMatch } from "../matching";
 import {
   gainForLabel,
   isRelevantLabel,
@@ -87,7 +87,10 @@ export function rankCandidatesForJob(
   scoreFn: MatcherDefinition["score"],
 ): { candidateId: string; score: number }[] {
   return candidates
-    .map((c) => ({ candidateId: c.id, score: scoreFn(c.card, job.card) }))
+    .map((c) => ({
+      candidateId: c.id,
+      score: scoreFn(c.card, job.card, { candidateId: c.id, jobId: job.id }),
+    }))
     .sort((a, b) => b.score - a.score);
 }
 
@@ -95,6 +98,7 @@ export function evaluateMatcherOnDataset(
   dataset: MatchingEvalDataset,
   matcher: MatcherDefinition,
   k = 5,
+  queueThreshold = QUEUE_THRESHOLD,
 ): MatcherEvalResult {
   const labels = labelMap(dataset.labels);
   const reasons = reasonMap(dataset.labels);
@@ -138,8 +142,10 @@ export function evaluateMatcherOnDataset(
       const key = `${job.id}:${c.id}`;
       const label = labels.get(key);
       if (!label) continue;
-      const score = ranked.find((r) => r.candidateId === c.id)?.score ?? matcher.score(c.card, job.card);
-      const queued = shouldQueueForEmployer(score);
+      const score =
+        ranked.find((r) => r.candidateId === c.id)?.score ??
+        matcher.score(c.card, job.card, { candidateId: c.id, jobId: job.id });
+      const queued = score >= queueThreshold;
       const base: LabeledPairCase = {
         jobId: job.id,
         jobTitle: job.card.title,
@@ -172,7 +178,7 @@ export function evaluateMatcherOnDataset(
     mrr: meanReciprocalRank(perJob.map((j) => j.reciprocalRank)),
     macroNdcgAtK: macro((j) => j.ndcgAt5),
     perJob,
-    threshold: QUEUE_THRESHOLD,
+    threshold: queueThreshold,
     confusion,
     worstJobs,
     failureCategories: summarizeFailureCategories(confusion),
@@ -241,5 +247,5 @@ function formatFailureExample(f: LabeledPairCase): string {
 export const defaultRuleBasedMatcher: MatcherDefinition = {
   id: "rule-based-v1",
   label: "Current rule-based matcher (word overlap)",
-  score: scoreMatch,
+  score: (candidate, job) => scoreMatch(candidate, job),
 };

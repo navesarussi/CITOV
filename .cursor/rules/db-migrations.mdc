@@ -1,0 +1,14 @@
+---
+description: Postgres schema changes for Supabase / local DATABASE_URL.
+alwaysApply: false
+---
+
+# DB migrations
+
+1. **Runtime bootstrap** — `src/infrastructure/db/schema.ts`: bump `MIGRATION_VERSION`, append to `ALTERS` string. Order matters: new columns before indexes on those columns (see `schema-order.test.ts`).
+2. **Canonical DDL** — mirror durable changes in `src/infrastructure/db/schema-sql.ts` and `supabase/migrations/00N_*.sql`.
+3. **Never** put indexes on columns that only exist in ALTERS inside `NORMALIZED_SCHEMA_SQL` — breaks existing DBs.
+4. **pgvector** — extension + `vector(n)` dimensions must match `EMBEDDING_DIMENSIONS` (default 768).
+5. Verify with `npm test`; optional `GET /api/health/db` after deploy.
+
+Memory dev mode (`NODE_ENV=development` without `DATABASE_URL`) skips Postgres; use `card-embeddings-memory.ts`.

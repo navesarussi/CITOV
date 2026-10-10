@@ -7,10 +7,9 @@ import {
 } from "../src/domain/matching-eval/evaluate";
 import type { MatcherDefinition } from "../src/domain/matching-eval/types";
 import { matchingEvalDataset } from "../eval/matching/dataset";
+import { createEvalMatcherDefinitions } from "../eval/matching/eval-matchers";
+import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
-
-/** Register additional matchers here for side-by-side comparison. */
-const MATCHERS: MatcherDefinition[] = [defaultRuleBasedMatcher];
 
 function formatPct(n: number): string {
   return `${(n * 100).toFixed(1)}%`;
@@ -42,47 +41,71 @@ function printFailures(r: MatcherEvalResult): void {
     console.log(`\n${cat.category} (${cat.count})`);
     for (const ex of cat.examples) console.log(`  • ${ex}`);
   }
-  console.log(`\n=== Worst jobs by nDCG@5 ===`);
-  for (const j of r.worstJobs) {
-    console.log(
-      `  ${j.jobId} ${j.jobTitle}: nDCG@5=${j.ndcgAt5.toFixed(3)} R@5=${formatPct(j.recallAt5)} P@5=${formatPct(j.precisionAt5)}`,
-    );
-  }
-  const topMissed = r.confusion.goodMissed.slice(0, 8);
-  if (topMissed.length) {
-    console.log(`\n=== Good matches below threshold (${r.threshold}) ===`);
-    for (const m of topMissed) {
-      console.log(
-        `  ${m.jobTitle} ↔ ${m.desiredRole} score=${formatPct(m.score)} ${m.reason ?? ""}`,
-      );
+}
+
+function sweepHybridThreshold(matcher: MatcherDefinition): void {
+  let best = { t: 0.28, score: -Infinity, result: null as MatcherEvalResult | null };
+  for (let t = 0.18; t <= 0.36; t += 0.01) {
+    const rounded = Math.round(t * 100) / 100;
+    const result = evaluateMatcherOnDataset(matchingEvalDataset, matcher, 5, rounded);
+    const objective =
+      result.macroNdcgAtK * 0.5 +
+      result.macroRecallAtK * 0.3 -
+      result.confusion.badQueued.length * 0.05 -
+      result.confusion.goodMissed.length * 0.08;
+    if (objective > best.score) {
+      best = { t: rounded, score: objective, result };
     }
   }
+  if (!best.result) return;
+  console.log(
+    `\n=== Hybrid threshold sweep (hybrid-v1) — best ≈ ${best.t} (objective ${best.score.toFixed(3)}) ===`,
+  );
+  console.log(
+    `  P@5=${formatPct(best.result.macroPrecisionAtK)} R@5=${formatPct(best.result.macroRecallAtK)} nDCG@5=${best.result.macroNdcgAtK.toFixed(3)} goodMissed=${best.result.confusion.goodMissed.length} badQueued=${best.result.confusion.badQueued.length}`,
+  );
+}
+
+function buildMatchers(): MatcherDefinition[] {
+  const list: MatcherDefinition[] = [defaultRuleBasedMatcher];
+  const fixture = loadEvalEmbeddingFixture();
+  if (fixture) {
+    console.log(
+      `Loaded embedding fixture: generator=${fixture.generator} model=${fixture.model} entities=${Object.keys(fixture.entities).length}`,
+    );
+    list.push(...createEvalMatcherDefinitions(fixture));
+  } else {
+    console.warn(
+      "No embedding fixture found — run npm run eval:embed-fixtures (semantic/hybrid skipped).",
+    );
+  }
+  return list;
 }
 
 function main(): void {
   validateMatchingDataset(matchingEvalDataset);
+  const MATCHERS = buildMatchers();
 
   const outDir = join(process.cwd(), "eval/matching/results");
   mkdirSync(outDir, { recursive: true });
 
   const allResults: MatcherEvalResult[] = MATCHERS.map((m) =>
-    evaluateMatcherOnDataset(matchingEvalDataset, m, 5),
+    evaluateMatcherOnDataset(matchingEvalDataset, m, 5, 0.28),
   );
 
   console.log(
-    `Matching eval — ${matchingEvalDataset.jobs.length} jobs, ${matchingEvalDataset.candidates.length} candidates, ${matchingEvalDataset.labels.length} labeled pairs\n`,
+    `\nMatching eval — ${matchingEvalDataset.jobs.length} jobs, ${matchingEvalDataset.candidates.length} candidates, ${matchingEvalDataset.labels.length} labeled pairs\n`,
   );
   printTable(allResults);
   for (const r of allResults) printFailures(r);
 
+  const hybrid = MATCHERS.find((m) => m.id === "hybrid-v1");
+  if (hybrid) sweepHybridThreshold(hybrid);
+
   const payload = {
     generatedAt: new Date().toISOString(),
     datasetVersion: matchingEvalDataset.version,
-    datasetCounts: {
-      jobs: matchingEvalDataset.jobs.length,
-      candidates: matchingEvalDataset.candidates.length,
-      labels: matchingEvalDataset.labels.length,
-    },
+    queueThreshold: 0.28,
     matchers: allResults,
   };
 

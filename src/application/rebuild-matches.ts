@@ -1,15 +1,12 @@
 import { randomUUID } from "crypto";
-import {
-  applyFlexibility,
-  combineFlexibility,
-  computeBaseFit,
-  explainMatch,
-  shouldQueueForEmployer,
-} from "@/domain/matching";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { Match, StoreData } from "@/domain/types";
+import { scoreCandidateForJob, type MatchEmbeddingIndex } from "./match-scoring";
 
-export function rebuildMatches(store: StoreData): Match[] {
+export function rebuildMatches(
+  store: StoreData,
+  embeddingIndex?: MatchEmbeddingIndex,
+): Match[] {
   const kept = store.matches.filter((m) => m.status !== "queued");
   const keptKeys = new Set(kept.map((m) => `${m.jobId ?? m.jobOwnerId}:${m.candidateId}`));
   const next: Match[] = kept.map((m) => ({
@@ -26,18 +23,22 @@ export function rebuildMatches(store: StoreData): Match[] {
         const key = `${job.id}:${employee.userId}`;
         if (keptKeys.has(key)) continue;
 
-        const base = computeBaseFit(employee.card, job.card);
-        const flex = combineFlexibility(employee.card.flexibility, job.card.flexibility);
-        const score = applyFlexibility(base, flex);
-        if (!shouldQueueForEmployer(score)) continue;
+        const scored = scoreCandidateForJob({
+          candidate: employee.card,
+          job: job.card,
+          candidateId: employee.userId,
+          jobId: job.id,
+          index: embeddingIndex,
+        });
+        if (!scored.queued) continue;
 
         next.push({
           id: randomUUID(),
           jobOwnerId: employer.userId,
           jobId: job.id,
           candidateId: employee.userId,
-          score,
-          reason: explainMatch(employee.card, job.card, score),
+          score: scored.score,
+          reason: scored.reason,
           status: "queued",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

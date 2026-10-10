@@ -30,7 +30,11 @@ export type MatchingEvalDataset = {
 };
 
 /** Pluggable scorer: higher = better fit (same scale as production queue score). */
-export type MatcherFn = (candidate: CandidateCard, job: JobCard) => number;
+export type MatcherFn = (
+  candidate: CandidateCard,
+  job: JobCard,
+  meta?: { candidateId: string; jobId: string },
+) => number;
 
 export type MatcherDefinition = {
   id: string;

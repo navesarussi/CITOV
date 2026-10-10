@@ -1,0 +1,16 @@
+---
+description: Adding or changing candidate/job card fields end-to-end.
+alwaysApply: false
+---
+
+# Adding a card field
+
+1. **SRS** — Map to `docs/SSOT/SRS.md` (FR-CARDS).
+2. **Types** — `src/domain/types.ts`: `CandidateCard` / `JobCard`, `empty*Card()`, normalizers.
+3. **AI patch** — `src/infrastructure/ai/schemas.ts`: `candidatePatchSchema` / `jobPatchSchema`.
+4. **Merge** — `src/application/chat-turn.ts` (`applyCandidatePatchSafely` / `applyJobPatch`); CV path in `domain/cv-merge.ts` if needed.
+5. **UI / API projections** — `domain/candidate-card-views.ts`, employer presentation rules (FR-CARD-VIEW-03).
+6. **Embeddings** — If the field is match-critical text, add it to the right segment in `src/domain/card-embedding-text.ts` (role / skills / profile). Location/salary usually stay rule-only.
+7. **Tests** — Domain or application test for merge behavior; run `npm test`.
+
+Do not add fields only to UI without schema + patch support.

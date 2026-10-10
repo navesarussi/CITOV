@@ -2,9 +2,27 @@ import { getPool } from "./pool";
 import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 
-const MIGRATION_VERSION = "004_cv_profile";
+const MIGRATION_VERSION = "005_card_embeddings";
 
 const ALTERS = `
+create extension if not exists vector;
+
+create table if not exists card_embedding_segments (
+  id text primary key,
+  owner_kind text not null check (owner_kind in ('candidate', 'job')),
+  owner_id text not null,
+  job_slot_id text,
+  segment text not null check (segment in ('role', 'skills', 'profile')),
+  model text not null,
+  content_hash text not null,
+  embedded_text text not null,
+  embedding vector(768) not null,
+  updated_at timestamptz not null default now(),
+  unique (owner_kind, owner_id, job_slot_id, segment, model)
+);
+create index if not exists card_embedding_segments_owner_idx
+  on card_embedding_segments (owner_kind, owner_id, job_slot_id);
+
 alter table employer_profiles add column if not exists jobs jsonb not null default '[]'::jsonb;
 alter table employer_profiles add column if not exists active_job_id text;
 alter table matches add column if not exists job_id text;

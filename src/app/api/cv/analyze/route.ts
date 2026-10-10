@@ -1,3 +1,5 @@
+import { after } from "next/server";
+import { scheduleCandidateEmbeddingRefresh } from "@/application/card-embedding-sync";
 import { analyzeCandidateCv } from "@/application/cv-import";
 import {
   appendEmployeeChat,
@@ -10,6 +12,7 @@ import {
   persistEmployeeProfile,
   persistEmployeeTurn,
 } from "@/infrastructure/db/scoped-store";
+import { scheduleMatchRebuild } from "@/infrastructure/db/match-scheduler";
 import { ok, fail } from "@/infrastructure/http";
 import { parseLocale } from "@/infrastructure/locale";
 
@@ -86,6 +89,10 @@ export async function POST(req: Request) {
     }
 
     const nextEmp = store.employees.find((e) => e.userId === userId)!;
+    after(() => {
+      scheduleCandidateEmbeddingRefresh(userId, nextEmp.card);
+      scheduleMatchRebuild();
+    });
     return ok({
       ok: true,
       phase: "analyzed",

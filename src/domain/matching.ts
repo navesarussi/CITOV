@@ -101,7 +101,14 @@ export function shouldQueueForEmployer(score: number): boolean {
 
 /** Production-equivalent match score (base fit + combined flexibility). */
 export function scoreMatch(candidate: CandidateCard, job: JobCard): number {
-  const base = computeBaseFit(candidate, job);
+  return scoreFromBase(computeBaseFit(candidate, job), candidate, job);
+}
+
+export function scoreFromBase(
+  base: number,
+  candidate: CandidateCard,
+  job: JobCard,
+): number {
   const flex = combineFlexibility(candidate.flexibility, job.flexibility);
   return applyFlexibility(base, flex);
 }
