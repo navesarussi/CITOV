@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { setNodeEnv } from "@/test/env-helpers";
 import {
   allowOpenAuth,
   hasGoogleAuth,
@@ -42,19 +43,19 @@ describe("auth-flags", () => {
   });
 
   it("defaults test login on outside production; off in production", () => {
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     assert.equal(isTestLoginEnabled(), true);
-    process.env.NODE_ENV = "production";
+    setNodeEnv("production");
     assert.equal(isTestLoginEnabled(), false);
     process.env.ALLOW_TEST_LOGIN = "true";
     assert.equal(isTestLoginEnabled(), true);
     process.env.ALLOW_TEST_LOGIN = "false";
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     assert.equal(isTestLoginEnabled(), false);
   });
 
   it("allows open auth only in development without google or test login", () => {
-    process.env.NODE_ENV = "development";
+    setNodeEnv("development");
     process.env.ALLOW_TEST_LOGIN = "false";
     assert.equal(allowOpenAuth(), true);
 

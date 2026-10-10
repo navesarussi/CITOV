@@ -359,7 +359,10 @@ export type AiUsageType =
   | "job_import"
   | "cv_extraction"
   | "embedding"
-  | "admin_intake";
+  | "admin_intake"
+  | "chat"
+  | "eval"
+  | "llm_judge";
 
 export type AiUsageRecord = {
   id: string;

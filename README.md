@@ -1,60 +1,74 @@
-# שידוך POC
+# CITOV — השמה חכמה דרך שיחה
 
-אתר POC לשידוך עובדים/מעסיקים **בלי חיפוש**.
+**English summary below.**
 
-## מה יש
+CITOV מחבר מועמדים למעסיקים בלי חיפוש: סוכן שיחה ממלא **כרטיס מועמד** / **כרטיס משרה**, **מנוע התאמות** מדרג זוגות, ומעסיקים מאשרים — המועמד רואה רק מה שאושר.
 
-- כניסה עם Google (Auth.js) + דמו בלי Google
-- צ׳אט AI מתוחכם לעובד ולמעסיק
-- כרטיסים מפורטים מראש (עשרות שדות) + **שדות דינמיים בזמן ריצה** (`extras`)
-- דירוג התאמות + גמישות 1–10
-- שמירה ב־Supabase Postgres (טבלאות מנורמלות + JSONB לכרטיסים)
-- מעסיק: מאשר / דוחה / שאלת תחום
-- עובד: רק משרות שאושרו עבורו
+## ארכיטקטורה (תמצית)
 
-## ארכיטקטורת בסיס הנתונים
+```mermaid
+flowchart LR
+  subgraph client [דפדפן]
+    UI[Next.js UI]
+  end
+  subgraph server [שרת]
+    API[API Routes]
+    Chat[סוכן שיחה]
+    CV[חילוץ קו״ח]
+    Match[מנוע התאמות]
+    Emb[ייצוג וקטורי]
+  end
+  DB[(Supabase Postgres)]
+  Gemini[Gemini]
+  UI --> API
+  API --> Chat
+  API --> CV
+  API --> Match
+  Chat --> Gemini
+  CV --> Gemini
+  Match --> Emb
+  Emb --> Gemini
+  API --> DB
+```
 
-**גישה היברידית** (מומלצת ל-POC):
+פירוט מלא: [docs/architecture.html](docs/architecture.html) · בפרודקשן: **פורטל מנהלים → ארכיטקטורה**.
 
-| שכבה | מה | למה |
-|------|-----|-----|
-| שדות ליבה | ~50 שדות מוגדרים ב-TypeScript | התאמות, UI, AI intake יציבים |
-| `extras` (JSONB) | שדות חדשים בזמן ריצה | שאלות מעסיק, פרטים ייחודיים לתפקיד |
-| `card_field_definitions` | רישום מטא-דאטה לשדות דינמיים | תוויות בעברית ב-UI בלי מיגרציה |
-| טבלאות מנורמלות | users, profiles, matches, chat… | שאילתות, אינדקסים, צמיחה |
+## מנוע התאמות
 
-מיגרציה אוטומטית מ-`app_store` (blob ישן) לטבלאות החדשות בפעם הראשונה.
+1. ציון קלאסי (כללים + שדות)  
+2. ייצוג וקטורי לפי מקטעים (תפקיד / כישורים / פרופיל)  
+3. שילוב היברידי + רצפת דמיון + שער דרישות חובה  
+4. **סף** לכניסה ל**תור** — ניתן ל**כיול** מתיוג מנהל  
 
-## הגדרת סביבה
+מדדים: `npm run eval:matching` · סף רגרסיה: `npm run ci:prompt-regression`.
+
+## בטיחות AI
+
+- זהות CV ≠ בעל חשבון ללא אישור  
+- חילוץ עם **ראיות** (golden eval)  
+- הרשאות per-user ב-API  
+- Gemini נופל → מצב מוגבל + שחזור Cron  
+
+## הרצה מקומית
 
 ```bash
 cp .env.example .env.local
-```
-
-ראו `.env.example` עבור:
-- `GOOGLE_GENERATIVE_AI_API_KEY` (אופציונלי)
-- `AUTH_SECRET` / `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
-- `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `DATABASE_URL` (Supabase Postgres connection string)
-
-Google OAuth redirect URIs:
-- Local: `http://localhost:3000/api/auth/callback/google`
-- Production: `https://YOUR-DOMAIN/api/auth/callback/google`
-
-## הרצה
-
-```bash
-npm install
+npm ci
 npm run dev
 ```
 
-## מיגרציות Supabase
+`DATABASE_URL` — Postgres (Supabase). `GOOGLE_GENERATIVE_AI_API_KEY` — שיחה וחילוץ.
 
-קובץ SQL: `supabase/migrations/001_normalized_schema.sql`  
-נרץ אוטומטית ב-startup דרך `ensureSchema()`. ניתן גם להריץ ידנית ב-SQL Editor.
+## סקריפטים
 
-## בדיקות
+| פקודה | תיאור |
+|--------|--------|
+| `npm run dev` | שרת פיתוח |
+| `npm test` | בדיקות יחידה |
+| `npm run lint` / `typecheck` | איכות קוד |
+| `npm run seed:test-sandbox` | מערך בדיקה 150×150 (DB) |
+| `npm run eval:matching` | הערכת התאמה |
 
-```bash
-npm test
-```
+## English
+
+**CITOV** is a conversation-first hiring POC: AI agents fill structured candidate/job cards, a **hybrid matcher** (rules + embeddings) ranks pairs, employers approve, candidates only see approved opportunities. Stack: **Next.js**, **Supabase Postgres** (+ pgvector), **Gemini**. Admin portal includes architecture docs, labeling sandbox, monitoring, and run reports. See `docs/SSOT/GO_LIVE.md` for production checklist.

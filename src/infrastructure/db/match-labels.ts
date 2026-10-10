@@ -3,7 +3,22 @@ import type { RelevanceLabel } from "@/domain/matching-eval/types";
 import { ensureSchema } from "./schema";
 import { getPool } from "./pool";
 
-export type MatchLabelSource = "admin" | "employer_action" | "import" | "crowd" | "test-run";
+export type MatchLabelSource =
+  | "admin"
+  | "employer_action"
+  | "import"
+  | "crowd"
+  | "test-run"
+  | "llm-judge-a"
+  | "llm-judge-b";
+
+const HUMAN_LABEL_SOURCES: MatchLabelSource[] = [
+  "admin",
+  "employer_action",
+  "import",
+  "crowd",
+  "test-run",
+];
 
 export type MatchLabelRow = {
   id: string;
@@ -105,7 +120,10 @@ export async function countMatchLabels(): Promise<number> {
   return Number(r.rows[0]?.c ?? 0);
 }
 
-export async function labeledPairKeys(): Promise<Set<string>> {
+export async function labeledPairKeys(humanOnly = true): Promise<Set<string>> {
   const rows = await listMatchLabels(10_000);
-  return new Set(rows.map((r) => `${r.jobId}:${r.candidateId}`));
+  const filtered = humanOnly
+    ? rows.filter((r) => HUMAN_LABEL_SOURCES.includes(r.source))
+    : rows;
+  return new Set(filtered.map((r) => `${r.jobId}:${r.candidateId}`));
 }

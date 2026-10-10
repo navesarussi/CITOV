@@ -3,17 +3,31 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAdminCache } from "@/components/admin/AdminCacheProvider";
+import { useTranslation } from "@/components/LocaleProvider";
 
-const LINKS: { href: string; label: string; match?: (path: string) => boolean }[] = [
-  { href: "/admin", label: "דשבורד", match: (p) => p === "/admin" },
-  { href: "/admin/candidates", label: "מועמדים" },
-  { href: "/admin/employers", label: "מעסיקים" },
-  { href: "/admin/labeling", label: "תיוג התאמות" },
-  { href: "/admin/sandbox-report", label: "דוח הרצה" },
-  { href: "/admin/monitoring", label: "ניטור" },
-  { href: "/admin/preview/employee", label: "תצוגת מועמד" },
-  { href: "/admin/preview/employer", label: "תצוגת מעסיק" },
-  { href: "/admin/guidelines", label: "פרומפטים" },
+type AdminNavKey =
+  | "dashboard"
+  | "candidates"
+  | "employers"
+  | "labeling"
+  | "sandboxReport"
+  | "architecture"
+  | "monitoring"
+  | "previewEmployee"
+  | "previewEmployer"
+  | "prompts";
+
+const LINKS: { href: string; labelKey: AdminNavKey; match?: (path: string) => boolean }[] = [
+  { href: "/admin", labelKey: "dashboard", match: (p) => p === "/admin" },
+  { href: "/admin/architecture", labelKey: "architecture" },
+  { href: "/admin/candidates", labelKey: "candidates" },
+  { href: "/admin/employers", labelKey: "employers" },
+  { href: "/admin/labeling", labelKey: "labeling" },
+  { href: "/admin/sandbox-report", labelKey: "sandboxReport" },
+  { href: "/admin/monitoring", labelKey: "monitoring" },
+  { href: "/admin/preview/employee", labelKey: "previewEmployee" },
+  { href: "/admin/preview/employer", labelKey: "previewEmployer" },
+  { href: "/admin/guidelines", labelKey: "prompts" },
 ];
 
 function isActive(pathname: string, link: (typeof LINKS)[number]): boolean {
@@ -23,6 +37,7 @@ function isActive(pathname: string, link: (typeof LINKS)[number]): boolean {
 
 const PREFETCH: Record<string, () => Promise<unknown>> = {
   "/admin": () => fetch("/api/admin/stats").then((r) => r.json()),
+  "/admin/architecture": () => fetch("/api/admin/architecture").then((r) => r.json()),
   "/admin/labeling": () => fetch("/api/admin/labeling").then((r) => r.json()),
   "/admin/candidates": () => fetch("/api/admin/candidates").then((r) => r.json()),
   "/admin/employers": () => fetch("/api/admin/employers").then((r) => r.json()),
@@ -34,10 +49,12 @@ export function AdminNav() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const cache = useAdminCache();
+  const { t } = useTranslation();
   return (
     <nav className="flex flex-wrap gap-2" aria-label="ניווט מנהל">
       {LINKS.map((link) => {
         const active = isActive(pathname, link);
+        const label = t.adminNav[link.labelKey];
         return (
           <Link
             key={link.href}
@@ -55,7 +72,7 @@ export function AdminNav() {
                 : "border-[var(--stroke)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--accent)]"
             }`}
           >
-            {link.label}
+            {label}
           </Link>
         );
       })}

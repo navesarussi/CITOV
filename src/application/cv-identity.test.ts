@@ -11,7 +11,15 @@ import {
 import { listCandidateProfiles } from "@/domain/candidate-profiles";
 
 const baseStore = {
-  users: [{ id: "u1", name: "Lian Ben Haim", role: "employee" as const, email: "l@x.com" }],
+  users: [
+    {
+      id: "u1",
+      name: "Lian Ben Haim",
+      role: "employee" as const,
+      email: "l@x.com",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    },
+  ],
   employees: [
     {
       userId: "u1",
@@ -25,7 +33,8 @@ const baseStore = {
   fieldQuestions: [],
   fieldAnswers: [],
   matches: [],
-  adminSettings: {},
+  adminSettings: undefined,
+  aiUsage: [],
 };
 
 describe("cv-identity", () => {
@@ -54,6 +63,8 @@ describe("cv-identity", () => {
         storageKey: "k",
         uploadedAt: new Date().toISOString(),
         extractionStatus: "ok",
+        textCharCount: 0,
+        extractedText: "",
       },
     });
     store = commitStagedCvToOtherProfile(store, "u1", "Nave Sarussi");
@@ -77,6 +88,8 @@ describe("cv-identity", () => {
         storageKey: "k",
         uploadedAt: new Date().toISOString(),
         extractionStatus: "ok",
+        textCharCount: 0,
+        extractedText: "",
       },
     });
     store = commitStagedCvToSelf(store, "u1");

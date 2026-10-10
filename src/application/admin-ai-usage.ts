@@ -29,7 +29,10 @@ export function aiUsageFeature(type: AiUsageType): AiFeatureKey {
     case "job_import":
       return "job";
     case "enrich_reason":
+    case "eval":
       return "matching";
+    case "chat":
+      return "chat";
     default:
       return "other";
   }

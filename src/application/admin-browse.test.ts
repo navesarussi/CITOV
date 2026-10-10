@@ -7,7 +7,7 @@ import {
   getAdminJobDetail,
 } from "./admin-browse";
 import type { StoreData } from "@/domain/types";
-import { emptyCandidateCard, emptyJobCard } from "@/domain/types";
+import { emptyCandidateCard, emptyCvProfile, emptyJobCard } from "@/domain/types";
 import { normalizeEmployerRecord, createJobSlot } from "@/domain/employer-jobs";
 
 function baseStore(): StoreData {
@@ -23,11 +23,7 @@ function baseStore(): StoreData {
         chat: [{ id: "1", role: "user", content: "hi", createdAt: "t" }],
         pendingFieldQuestionIds: [],
         cv: {
-          workHistory: [],
-          educationHistory: [],
-          unmappedFacts: [],
-          fieldEvidence: [],
-          conflicts: [],
+          ...emptyCvProfile(),
           documents: [
             {
               id: "d1",

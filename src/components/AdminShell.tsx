@@ -10,12 +10,14 @@ export function AdminShell(props: {
   title: string;
   subtitle: string;
   actions?: React.ReactNode;
+  wide?: boolean;
   children: React.ReactNode;
 }) {
+  const width = props.wide ? "max-w-6xl" : "max-w-5xl";
   return (
     <div className="workspace-shell atmosphere">
       <header className="glass-bar enter">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3">
+        <div className={`mx-auto flex ${width} flex-col gap-3 px-4 py-3`}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="settings-menu-anchor shrink-0">
@@ -37,7 +39,7 @@ export function AdminShell(props: {
           <AdminNav />
         </div>
       </header>
-      <main className="workspace-main flex max-w-5xl min-h-0 flex-1 flex-col">
+      <main className={`workspace-main flex ${width} min-h-0 flex-1 flex-col`}>
         <AdminBudgetBanner />
         {props.children}
       </main>
