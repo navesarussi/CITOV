@@ -59,6 +59,9 @@ export const en = {
     pillarApprovedBody: "You see opportunities that were approved for you — no noise.",
     ctaCardTitle: "Get started",
     ctaCardHint: "Sign in and start your first conversation in under a minute.",
+    legalConsentLabel:
+      "I have read and agree to the Terms of Service and Privacy Policy (data use, retention, deletion, and identity reveal only after mutual approval).",
+    legalConsentRequired: "Please accept the terms and privacy policy before signing in.",
     switchToEmployer: "Hiring? Go to the employer entry",
     switchToCandidate: "Job seeking? Go to the candidate entry",
   },
@@ -123,9 +126,9 @@ export const en = {
     aboutTitle: "About CITOV",
     back: "Back",
     privacyBody:
-      "CITOV stores the profile and chat information you share in order to match candidates and employers. We use Google sign-in for authentication. We do not sell your personal data. Contact us to request deletion of your account data.",
+      "CITOV processes chat, CV, and profile/job card data to suggest placement matches. Sign-in is via Google (employer name/email from Google). We do not sell identifying data to third parties. Contact stays on-platform; identifying details (including full CV) are shown to an employer only after the employer approved the match and the candidate explicitly consented. Data is kept while the account is active; use Settings → Delete my data for full erasure (profile, chat, matches, CV files). Contact: privacy@citov.tech.",
     termsBody:
-      "CITOV is a placement matching service. Matches are recommendations, not hiring guarantees. Users are responsible for the accuracy of information they provide. Misuse, harassment, or fraudulent profiles may lead to account removal.",
+      "CITOV is an AI-assisted placement matching service. Matches are recommendations, not hiring guarantees. Users must provide accurate information. Do not use agents to collect or share phone/email off-platform. Misuse may lead to suspension. Use constitutes acceptance of the privacy policy.",
     aboutBody:
       "CITOV helps people find work through natural conversation with an AI placement agent — without traditional search. There is another way.",
   },
@@ -254,7 +257,10 @@ export const en = {
     nextStep: "Next step — get in touch",
     contactName: "Contact: {value}",
     contactPhone: "Phone: {value}",
-    contactPending: "Contact details will appear here once the employer fills them on the job card.",
+    contactPending:
+      "Contact happens on-platform. After you consent below, the employer can view your identifying details here.",
+    consentCta: "I consent to proceed and reveal my identity to this employer",
+    consentDone: "Consent recorded — the employer can view your identifying details on-platform.",
   },
   api: {
     missingDetails: "Missing required details",

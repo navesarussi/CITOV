@@ -84,12 +84,30 @@ export async function deleteUserAccountData(userId: string): Promise<void> {
         `delete from match_labels where candidate_id = $1 or labeler_user_id = $1 or job_id = any($2::text[])`,
         [userId, jobIds],
       );
+      await client.query(
+        `delete from sandbox_llm_judgments where candidate_id = $1 or job_id = any($2::text[])`,
+        [userId, jobIds],
+      );
+      await client.query(
+        `delete from card_embedding_segments
+         where (owner_kind = 'candidate' and owner_id = $1)
+            or (owner_kind = 'job' and (owner_id = $1 or owner_id = any($2::text[])))`,
+        [userId, jobIds],
+      );
     } else {
       await client.query(
         `delete from match_labels where candidate_id = $1 or labeler_user_id = $1`,
         [userId],
       );
+      await client.query(`delete from sandbox_llm_judgments where candidate_id = $1`, [userId]);
+      await client.query(
+        `delete from card_embedding_segments where owner_kind = 'candidate' and owner_id = $1`,
+        [userId],
+      );
     }
+
+    await client.query(`delete from user_rate_limit_windows where user_id = $1`, [userId]);
+    await client.query(`delete from ai_usage where user_id = $1`, [userId]);
 
     await client.query(
       `update app_events

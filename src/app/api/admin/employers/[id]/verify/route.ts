@@ -1,4 +1,5 @@
 import { assertAdmin } from "@/infrastructure/admin-guard";
+import { recordAdminAudit } from "@/infrastructure/admin-audit";
 import { setEmployerVerified } from "@/infrastructure/db/normalized-store";
 import { ok, fail } from "@/infrastructure/http";
 
@@ -15,6 +16,11 @@ export async function POST(
       return ok({ error: "verified חייב boolean" }, { status: 400 });
     }
     await setEmployerVerified(id, body.verified);
+    await recordAdminAudit({
+      actorEmail: gate.email ?? "admin",
+      action: "employer.verify",
+      meta: { userId: id, verified: body.verified },
+    });
     return ok({ ok: true, userId: id, verified: body.verified });
   } catch (e) {
     return fail(e);

@@ -51,7 +51,7 @@ describe("canViewCandidateCv", () => {
     assert.equal(canViewCandidateCv(store(), { userId: "b1", isAdmin: false }, "e1"), false);
   });
 
-  it("allows verified employer on approved match when reveal enabled", () => {
+  it("allows verified employer when approved, reveal enabled, and candidate consented", () => {
     const prev = process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL;
     process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL = "true";
     try {
@@ -59,7 +59,11 @@ describe("canViewCandidateCv", () => {
       s.users = s.users.map((u) =>
         u.id === "b1" ? { ...u, employerVerified: true } : u,
       );
-      s.matches = s.matches.map((m) => ({ ...m, status: "approved" as const }));
+      s.matches = s.matches.map((m) => ({
+        ...m,
+        status: "approved" as const,
+        candidateConsentAt: new Date().toISOString(),
+      }));
       assert.equal(canViewCandidateCv(s, { userId: "b1", isAdmin: false }, "e1"), true);
     } finally {
       if (prev === undefined) delete process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL;

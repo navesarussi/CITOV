@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.26 — 2025-10-10
+
+- **Launch readiness:** mutual identity reveal (`candidate_consent_at`) before employer CV access; opportunities consent CTA; E2E reveal flow.
+- **Security backlog:** CSP header; complete delete-my-data tables; patch field allow-list; admin audit log; RLS migration (deny anon); H3/M1/M3/M5/M6 in one batch.
+- **Legal:** landing consent checkbox; expanded Hebrew/English privacy & terms (retention, deletion, on-platform contact, mutual reveal).
+
 ## 0.4.25 — 2025-10-10
 
 - **Product / security:** On-platform contact only — employer and candidate chat prompts never ask for phone/email or promise off-platform handoff; employer identity from Google. Strip IL phones/emails and `contactName`/`contactPhone` from job/candidate patches (including CV/job extraction). Prompt-regression checks for contact-policy violations.

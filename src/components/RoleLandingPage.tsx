@@ -51,6 +51,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   const [entering, setEntering] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(false);
   const [flags, setFlags] = useState<SessionFlags>(props.initialFlags ?? EMPTY_FLAGS);
   const [flagsReady, setFlagsReady] = useState(Boolean(props.initialFlags));
   const autoStarted = useRef(false);
@@ -173,6 +174,10 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   }
 
   async function startGoogleSignIn() {
+    if (!legalAccepted) {
+      setError(t.home.legalConsentRequired);
+      return;
+    }
     setError(null);
     setSigningIn(true);
     try {
@@ -187,6 +192,10 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
   }
 
   async function enterAsRole() {
+    if (!legalAccepted) {
+      setError(t.home.legalConsentRequired);
+      return;
+    }
     setError(null);
     setEntering(true);
     try {
@@ -251,10 +260,30 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
               <p className="py-6 text-center text-sm text-[var(--muted)]">{t.home.openingRole}</p>
             ) : (
               <div className="flex flex-col gap-3">
+                {showGoogle || showOpenEnter || showDevLogin ? (
+                  <label className="flex gap-2 text-xs leading-5 text-[var(--muted)]">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={legalAccepted}
+                      onChange={(e) => setLegalAccepted(e.target.checked)}
+                    />
+                    <span>
+                      {t.home.legalConsentLabel}{" "}
+                      <Link href="/legal/terms" className="font-medium text-[var(--accent)] underline">
+                        {t.settings.terms}
+                      </Link>{" "}
+                      ·{" "}
+                      <Link href="/legal/privacy" className="font-medium text-[var(--accent)] underline">
+                        {t.settings.privacy}
+                      </Link>
+                    </span>
+                  </label>
+                ) : null}
                 {showGoogle ? (
                   <>
                     <Button
-                      disabled={status === "loading" || signingIn}
+                      disabled={status === "loading" || signingIn || !legalAccepted}
                       onClick={() => void startGoogleSignIn()}
                       className="cta-glow brand-gradient-bg min-h-12 w-full border-0 py-3.5 text-base font-semibold hover:bg-transparent hover:brightness-105"
                     >

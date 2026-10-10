@@ -350,6 +350,8 @@ export type Match = {
   isTest?: boolean;
   datasetId?: string | null;
   status: MatchStatus;
+  /** ISO timestamp — candidate agreed to reveal identity to employer (mutual approval). */
+  candidateConsentAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };

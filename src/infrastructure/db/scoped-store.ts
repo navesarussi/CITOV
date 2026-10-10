@@ -407,6 +407,37 @@ export async function updateMatchStatus(params: {
   return ok;
 }
 
+export async function updateMatchCandidateConsent(params: {
+  matchId: string;
+  candidateId: string;
+}): Promise<boolean> {
+  const now = new Date().toISOString();
+  if (shouldUseMemoryStore()) {
+    const data = readMemoryStore();
+    const hit = data.matches.find(
+      (m) => m.id === params.matchId && m.candidateId === params.candidateId,
+    );
+    if (!hit || hit.status !== "approved" || hit.candidateConsentAt) return false;
+    writeMemory({
+      ...data,
+      matches: data.matches.map((m) =>
+        m.id === params.matchId ? { ...m, candidateConsentAt: now, updatedAt: now } : m,
+      ),
+    });
+    return true;
+  }
+  await ensureSchema();
+  const pool = await getPool();
+  const result = await pool.query(
+    `update matches
+     set candidate_consent_at = now(), updated_at = now()
+     where id = $1 and candidate_id = $2 and status = 'approved' and candidate_consent_at is null`,
+    [params.matchId, params.candidateId],
+  );
+  invalidateStoreCache();
+  return (result.rowCount ?? 0) > 0;
+}
+
 /** Re-export for tests / callers that need the in-memory snapshot after scoped memory writes. */
 export function peekMemoryStore(): StoreData {
   return readMemoryStore();

@@ -57,6 +57,10 @@ import {
   sanitizeCandidatePatch,
   sanitizeJobPatch,
 } from "@/domain/contact-info-sanitize";
+import {
+  filterCandidatePatchKeys,
+  filterJobPatchKeys,
+} from "@/domain/patch-field-allow-list";
 
 function isEmptyCardValue(v: unknown): boolean {
   if (v == null) return true;
@@ -96,7 +100,8 @@ function applyCandidatePatchSafely(
   patch?: CandidatePatch,
   now = new Date().toISOString(),
 ): { card: CandidateCard; cv: CandidateCvProfile | undefined; strippedContact: boolean } {
-  const sanitized = sanitizeCandidatePatch(patch as Record<string, unknown> | undefined);
+  const allowed = filterCandidatePatchKeys(patch as Record<string, unknown> | undefined);
+  const sanitized = sanitizeCandidatePatch(allowed);
   patch = sanitized.value as CandidatePatch | undefined;
   if (!patch) {
     return { card, cv: cv ? ensureCv(cv) : cv, strippedContact: sanitized.strippedFromPatch };
@@ -169,7 +174,8 @@ function applyCandidatePatch(card: CandidateCard, patch?: CandidatePatch): Candi
 }
 
 function applyJobPatch(card: JobCard, patch?: JobPatch): JobCard {
-  const sanitized = sanitizeJobPatch(patch as Record<string, unknown> | undefined);
+  const allowed = filterJobPatchKeys(patch as Record<string, unknown> | undefined);
+  const sanitized = sanitizeJobPatch(allowed);
   patch = sanitized.value as JobPatch | undefined;
   if (!patch) return card;
   let next: JobCard = {
@@ -345,7 +351,7 @@ export function applyEmployeeTurn(params: {
   }
 
   const sanitizedCandidatePatch = sanitizeCandidatePatch(
-    params.candidatePatch as Record<string, unknown> | undefined,
+    filterCandidatePatchKeys(params.candidatePatch as Record<string, unknown> | undefined),
   );
   const candidatePatch = sanitizedCandidatePatch.value as CandidatePatch | undefined;
 
@@ -578,7 +584,9 @@ export function applyEmployerTurn(params: {
     reply = `${DEGRADED_NOTICE_HE}\n\n${reply}`;
   }
 
-  const sanitizedJob = sanitizeJobPatch(params.jobPatch as Record<string, unknown> | undefined);
+  const sanitizedJob = sanitizeJobPatch(
+    filterJobPatchKeys(params.jobPatch as Record<string, unknown> | undefined),
+  );
   const jobPatch = sanitizedJob.value as JobPatch | undefined;
 
   reply = maybeAppendPlatformContactNotice(reply, {
