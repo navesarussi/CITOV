@@ -173,7 +173,9 @@ function buildEmployeeDynamicContext(params: {
   }
   if (inferences) {
     lines.push(
-      locale === "en" ? "\n### Weak CV inferences\n" : "\n### הסקות חלשות מהקו״ח\n",
+      locale === "en"
+        ? "\n### Fields awaiting user confirmation\nAsk about ONE item naturally before other topics.\n"
+        : "\n### שדות ממתינים לאישור\nשאל/י על פריט אחד בלבד, בשפה טבעית, לפני נושאים אחרים.\n",
       inferences,
     );
   }
@@ -208,6 +210,7 @@ export function cvWelcomeSystemNote(params: {
 function buildEmployerDynamicContext(params: {
   card: JobCard;
   chat: ChatMessage[];
+  pendingConfirmations?: string;
   locale?: "he" | "en";
 }): string {
   const locale = params.locale ?? "he";
@@ -219,7 +222,7 @@ function buildEmployerDynamicContext(params: {
     locale === "en"
       ? "## Session context (updates each turn)\n"
       : "## הקשר נוכחי (מתעדכן בכל תור)\n";
-  return [
+  const lines = [
     header,
     locale === "en" ? "### Known facts\n" : "### ידוע על המשרה\n",
     knownFactsText(params.card),
@@ -229,7 +232,17 @@ function buildEmployerDynamicContext(params: {
     missing ? `${missing.label} (${missing.key})` : locale === "en" ? "none" : "אין",
     locale === "en" ? "\n### Your recent questions\n" : "\n### שאלות שכבר שאלת\n",
     recent || (locale === "en" ? "none yet" : "אין עדיין"),
-  ].join("\n");
+  ];
+  const pending = params.pendingConfirmations?.trim();
+  if (pending) {
+    lines.push(
+      locale === "en"
+        ? "\n### Job fields awaiting confirmation\nConfirm ONE field at a time in natural language.\n"
+        : "\n### שדות משרה ממתינים לאישור\nאשר/י שדה אחד בכל פעם, בשפה טבעית.\n",
+      pending,
+    );
+  }
+  return lines.join("\n");
 }
 
 export function buildEmployeeConversation(params: {
@@ -267,6 +280,7 @@ export function buildEmployerConversation(params: {
   message: string;
   card: JobCard;
   chat: ChatMessage[];
+  pendingConfirmations?: string;
   locale?: "he" | "en";
 }): BuiltConversation {
   const locale = params.locale ?? "he";

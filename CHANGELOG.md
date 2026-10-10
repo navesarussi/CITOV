@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.4 — 2025-10-10
+
+- CV/job extraction: evidence quote per fact field, deterministic source/number checks, failed/low/medium → pending user confirmation in chat.
+- Cards show fields awaiting approval; employer job import uses the same gating.
+- Golden extraction eval (~15 CVs + ~10 jobs) with before/after metrics on admin monitoring.
+
 ## 0.3.3 — 2025-10-10
 
 - Admin **פרומפטים** tab: full prompt studio (cards, RTL editor, variable chips, preview, versioning, diff, rollback, eval).

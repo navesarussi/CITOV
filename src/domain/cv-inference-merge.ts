@@ -4,6 +4,7 @@ import type {
   EvidenceConfidence,
   PendingInference,
 } from "./types";
+import { validateExtractedField } from "./extraction-evidence";
 import { openReliabilityNote } from "./reliability";
 
 export type CvInference = {
@@ -35,6 +36,7 @@ export function applyInferences(
   inferences: CvInference[],
   now: string,
   documentId: string,
+  sourceText: string,
   openConflict: (
     cv: CandidateCvProfile,
     fieldKey: string,
@@ -54,7 +56,13 @@ export function applyInferences(
     if (!fieldKey || !value || !evidence) continue;
     if (fieldKey === "flexibility" || fieldKey === "extras") continue;
 
-    if (inf.confidence === "low") {
+    const check = validateExtractedField(
+      { fieldKey, value, evidence, confidence: inf.confidence },
+      sourceText,
+      cv.workHistory,
+    );
+
+    if (inf.confidence === "low" || inf.confidence === "medium" || !check.ok) {
       const dup = cv.pendingInferences.some(
         (p) =>
           p.status === "pending" &&
@@ -67,7 +75,7 @@ export function applyInferences(
           fieldKey,
           value,
           evidence,
-          confidence: "low",
+          confidence: inf.confidence === "medium" ? "medium" : "low",
           status: "pending",
           at: now,
         };

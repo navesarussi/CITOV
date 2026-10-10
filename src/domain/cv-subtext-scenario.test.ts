@@ -189,20 +189,21 @@ describe("CV subtext → candidate card (complex scenario)", () => {
     assert.equal(card.educationHistory.length, 1);
     assert.equal(cv.workHistory.length, 2);
 
-    // High/medium subtext landed on card (FR-CV-06 policy C)
+    // High-confidence subtext with valid evidence lands on card
     assert.equal(card.managementExperience, "כן");
     assert.equal(card.teamSizeManaged, "6");
     assert.equal(card.experienceLevel, "Senior");
-    assert.match(card.industryExperience, /תשלומים|Fintech|קמעונאות/i);
-    assert.match(card.customerFacingOk, /מוצר|תמיכה/);
 
-    // Low subtext must NOT fill card — pending for chat
+    // Medium/low subtext must NOT fill card — pending for chat confirmation
+    assert.equal(card.industryExperience, "");
+    assert.equal(card.customerFacingOk, "");
     assert.equal(card.personality, "");
     assert.equal(card.workStyle, "");
-    assert.equal(cv.pendingInferences.length, 2);
-    assert.ok(cv.pendingInferences.every((p) => p.confidence === "low"));
+    assert.equal(cv.pendingInferences.length, 4);
     assert.ok(cv.pendingInferences.some((p) => p.fieldKey === "personality"));
     assert.ok(cv.pendingInferences.some((p) => p.fieldKey === "workStyle"));
+    assert.ok(cv.pendingInferences.some((p) => p.fieldKey === "industryExperience"));
+    assert.ok(cv.pendingInferences.some((p) => p.fieldKey === "customerFacingOk"));
 
     // Unmapped → extras
     assert.equal(card.extras["מיקוד מוצר"], "B2B payments / retail ops");
@@ -221,8 +222,8 @@ describe("CV subtext → candidate card (complex scenario)", () => {
     assert.equal(summary.rolesFound, 2);
     assert.equal(summary.educationFound, 1);
 
-    // Reliability stays high when no contradictions
-    assert.equal(cv.reliability.score, 90); // 100 - 5*2 pending low inferences
+    // Reliability penalized for pending confirmations (no contradictions)
+    assert.equal(cv.reliability.score, 80); // 100 - 5*4 pending inferences
   });
 
   it("keeps mini-card free of histories and pending-inference fields", () => {

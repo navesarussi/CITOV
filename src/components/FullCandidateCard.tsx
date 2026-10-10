@@ -9,6 +9,7 @@ export function FullCandidateCard(props: {
   name?: string;
   card: CandidateCard | null | undefined;
   pendingCount?: number;
+  pendingFieldKeys?: string[];
 }) {
   const { t, fmt } = useTranslation();
   const card = props.card ?? emptyCandidateCard();
@@ -35,12 +36,21 @@ export function FullCandidateCard(props: {
         {lines.length === 0 ? (
           <p className="text-xs text-[var(--muted)]">{t.profile.emptyValue}</p>
         ) : (
-          lines.map((row) => (
-            <div key={row.key}>
-              <dt className="text-xs text-[var(--muted)]">{row.label}</dt>
-              <dd className="text-[var(--ink)]">{row.value || t.profile.emptyValue}</dd>
-            </div>
-          ))
+          lines.map((row) => {
+            const baseKey = row.key.startsWith("extra:") ? row.key.slice(6) : row.key;
+            const awaiting = props.pendingFieldKeys?.includes(baseKey);
+            return (
+              <div key={row.key}>
+                <dt className="text-xs text-[var(--muted)]">{row.label}</dt>
+                <dd className="text-[var(--ink)]">
+                  {row.value || t.profile.emptyValue}
+                  {awaiting ? (
+                    <span className="ms-1 text-xs font-medium text-[var(--warn)]">ממתין לאישור</span>
+                  ) : null}
+                </dd>
+              </div>
+            );
+          })
         )}
       </dl>
     </section>

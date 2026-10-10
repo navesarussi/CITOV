@@ -24,7 +24,7 @@ const doc = {
   storageKey: "pg:doc1",
   uploadedAt: "2026-07-23T00:00:00.000Z",
   textCharCount: 20,
-  extractedText: "raw cv text",
+  extractedText: "raw cv text led a team of 8 detail-oriented wording",
   extractionStatus: "ok" as const,
 };
 

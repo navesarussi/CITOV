@@ -11,13 +11,13 @@ function readPromptFile(relativePath: string): string {
 export const DEFAULT_CV_EXTRACTION_FACTS = `את/ה מגייס/ת מקצועית שמחלצת מקורות חיים עובדות מפורשות בלבד אל כרטיס מועמד/ת.
 כללים מחייבים:
 1. חלץ/י אך ורק מידע שמופיע במפורש בטקסט. אל תמציא/י, אל תנחש/י.
-2. מלא/י רק שדות שיש להם ערך אמיתי בטקסט. שדה ריק = אל תכלול/י אותו ב-patch.
-3. ערכים קצרים ותמציתיים (מילים בודדות עד משפט קצר). אסור טקסט חוזר / מילוי מלאכותי.
-4. workHistory: רשומה לכל תפקיד (חברה, תפקיד, תאריכים אם יש, description קצר עד ~2 משפטים).
-5. educationHistory: מוסד/תואר משמעותי בלבד.
-6. unmappedFacts: רק פרטים מפורשים שלא נכנסו לשדה קבוע (label+value קצרים).
-7. narrative: עד 3 משפטים מקצועיים — לא להעתיק את כל הקו״ח.
-8. fieldConfidence רק לשדות עמומים.
+2. לכל שדה: extractedFields עם fieldKey, value, evidence (ציטוט קצר מהמקור), confidence high|medium|low.
+3. patch רק משדות עם extractedFields תואם. שדה ריק = אל תכלול/י אותו.
+4. ערכים קצרים ותמציתיים (מילים בודדות עד משפט קצר). אסור טקסט חוזר / מילוי מלאכותי.
+5. workHistory: רשומה לכל תפקיד (חברה, תפקיד, תאריכים אם יש, description קצר עד ~2 משפטים).
+6. educationHistory: מוסד/תואר משמעותי בלבד.
+7. unmappedFacts: רק פרטים מפורשים שלא נכנסו לשדה קבוע (label+value קצרים).
+8. narrative: עד 3 משפטים מקצועיים — לא להעתיק את כל הקו״ח.
 החזר/י JSON קצר לפי הסכמה. אל תכלול inferences. אל תמלא שדות סתם.`;
 
 export const DEFAULT_CV_EXTRACTION_INFERENCES = `את/ה אנליסט/ית השמה. הפק/י הסקות סאבטקסט מבוקרות בלבד.
@@ -30,6 +30,7 @@ export const DEFAULT_CV_EXTRACTION_INFERENCES = `את/ה אנליסט/ית הש�
 
 export const DEFAULT_JOB_CARD_EXTRACTION = `את/ה עוזר/ת השמה שמחלץ/ת מידע מתיאור משרה אל כרטיס משרה.
 - חלץ/י אך ורק מה שמופיע במפורש בטקסט. אל תמציא/י ואל תנחש/י.
+- לכל שדה: extractedFields עם fieldKey, value, evidence (ציטוט מהמקור), confidence.
 - ערכים תמציתיים. שדה שלא מופיע בטקסט — אל תכלול/י אותו ב-patch.
 - העדף/י למלא: title, field, location, mustHaves, niceToHaves, requiredLanguages, salaryRange, workModel, seniorityLevel, personalityFit, teamCulture.
 - סכם/י את המשרה והתרבות בשדה narrative.

@@ -1,4 +1,4 @@
-import type { ChatMessage, EmployerRecord, JobCard, JobSlot } from "./types";
+import type { ChatMessage, EmployerRecord, JobCard, JobImportMeta, JobSlot } from "./types";
 import { emptyJobCard, normalizeJobCard } from "./types";
 
 function newJobId(): string {
@@ -36,6 +36,7 @@ export function normalizeEmployerRecord(
       ...(name ? { name } : {}),
       card: normalizeJobCard(j.card),
       chat: j.chat ?? [],
+      ...(j.importMeta ? { importMeta: j.importMeta } : {}),
     };
   });
 
@@ -84,7 +85,7 @@ export function withActiveJob(employer: EmployerRecord, jobId: string): Employer
 export function updateJobSlot(
   employer: EmployerRecord,
   jobId: string,
-  patch: { card?: JobCard; chat?: ChatMessage[]; name?: string },
+  patch: { card?: JobCard; chat?: ChatMessage[]; name?: string; importMeta?: JobImportMeta },
 ): EmployerRecord {
   const normalized = normalizeEmployerRecord(employer);
   const jobs = normalized.jobs.map((j) => {
@@ -97,6 +98,7 @@ export function updateJobSlot(
       ...(nextName ? { name: nextName } : {}),
       card: patch.card ?? j.card,
       chat: patch.chat ?? j.chat,
+      importMeta: patch.importMeta ?? j.importMeta,
     };
   });
   const next = { ...normalized, jobs };
