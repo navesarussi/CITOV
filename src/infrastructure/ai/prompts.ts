@@ -1,3 +1,6 @@
+/**
+ * טעינת תבניות פרומпт לשיחה וחילוץ — קבצי prompts/*.md, גרסת PROMPT_BUNDLE_VERSION.
+ */
 import { readFileSync } from "fs";
 import { join } from "path";
 import { renderPromptTemplate } from "@/domain/admin";

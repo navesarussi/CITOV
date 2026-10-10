@@ -159,7 +159,7 @@ export function ArchitectureExplorer() {
           {data.live.llmJudge.total > 0 ? (
             <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatTile
-                label="שופטי LLM — הסכמה A↔B"
+                label="שופטי מודל — הסכמה א׳↔ב׳"
                 value={`${(data.live.llmJudge.judgeAgreementRate * 100).toFixed(0)}%`}
                 sub={`${data.live.llmJudge.total} זוגות נשפטו`}
               />
@@ -214,7 +214,7 @@ export function ArchitectureExplorer() {
                   </div>
                   {selectedId === "matching" && data.live.eval.hybridNdcgAt5 != null ? (
                     <ul className="mt-4 space-y-1 text-sm text-[var(--muted)]">
-                      <li>דירוג איכות@5 (train): {(data.live.eval.hybridNdcgAt5 * 100).toFixed(1)}%</li>
+                      <li>דירוג איכות@5 (אימון): {(data.live.eval.hybridNdcgAt5 * 100).toFixed(1)}%</li>
                       <li>כיסוי@5: {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%</li>
                     </ul>
                   ) : null}
@@ -357,7 +357,7 @@ export function ArchitectureExplorer() {
               </dl>
               {data.live.eval.hybridNdcgAt5 != null ? (
                 <p className="mt-4 text-sm text-[var(--muted)]">
-                  מדדי הערכה (train): דיוק@5 {(data.live.eval.hybridPrecisionAt5! * 100).toFixed(1)}% · כיסוי@5{" "}
+                  מדדי הערכה (אימון): דיוק@5 {(data.live.eval.hybridPrecisionAt5! * 100).toFixed(1)}% · כיסוי@5{" "}
                   {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%
                 </p>
               ) : null}

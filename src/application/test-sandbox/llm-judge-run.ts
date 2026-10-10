@@ -1,3 +1,7 @@
+/**
+ * הרצת שופטים על זוגות test-run: סיווג דילוג/תור בעלים, שמירה נפרדת ממקורות אנוש.
+ * SANDBOX_JUDGE_BATCH_SIZE=6 — התאמה ל-timeout ב-Vercel.
+ */
 import {
   LLM_JUDGE_AUDIT_SAMPLE_RATE,
   LLM_JUDGE_HIGH_CONFIDENCE,

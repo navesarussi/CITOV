@@ -1,5 +1,5 @@
 /**
- * Aggregates sandbox two-judge runs for admin dashboards — separate from human labels.
+ * מדדי שופטים ללוח תיוג — הסכמה א׳↔ב׳, תור בעלים, ביקורת אדם; לא מערבב עם תיוג אנושי.
  */
 import { judgesAgree } from "@/domain/llm-judge";
 import { isHumanMatchLabelSource, listMatchLabels } from "@/infrastructure/db/match-labels";

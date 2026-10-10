@@ -415,7 +415,7 @@ export const he: Messages = {
       "החלת הסף משנה רק את סף כניסה לתור (match_queue_threshold): זוגות עם ציון היברידי מעל הסף ייכנסו לתור, מתחת — לא. אפשר לשנות שוב בכל עת. כרגע: {current}. מוצע: {suggested}.",
     applyThresholdReversible:
       "שינוי reversible — לא מוחק תיוגים; רק משנה מי נכנס לתור לפי הציון ההיברידי.",
-    llmJudgeTitle: "שופטי LLM (סandbox)",
+    llmJudgeTitle: "שופטי מודל (ארגז בדיקות)",
     llmJudgeHint:
       "שופט A מתייג; שופט B עצמאי עם ביקורת. קבלה אוטומטית רק בהסכמה וביטחון גבוה; מחלוקות ודגימת ביקורת לתור הבעלים.",
     llmJudgeAgreementAb: "הסכמה A↔B",

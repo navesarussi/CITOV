@@ -192,6 +192,7 @@ export type LlmJudgeStats = {
   needsOwner: number;
   auditSample: number;
   judgeAgreementRate: number;
+  judgeDisagreementCount: number;
   lowConfidenceCount: number;
 };
 
@@ -204,6 +205,7 @@ export async function sandboxLlmJudgeStats(): Promise<LlmJudgeStats> {
       needsOwner: 0,
       auditSample: 0,
       judgeAgreementRate: 0,
+      judgeDisagreementCount: 0,
       lowConfidenceCount: 0,
     };
   }
@@ -213,12 +215,14 @@ export async function sandboxLlmJudgeStats(): Promise<LlmJudgeStats> {
     if (r.judgesAgree) agree += 1;
     if (r.judgeA.confidence < 0.85 || r.judgeB.confidence < 0.85) lowConf += 1;
   }
+  const disagree = rows.length - agree;
   return {
     total: rows.length,
     autoSkipped: rows.filter((r) => r.autoSkipped).length,
     needsOwner: rows.filter((r) => r.needsOwner).length,
     auditSample: rows.filter((r) => r.auditSample).length,
     judgeAgreementRate: agree / rows.length,
+    judgeDisagreementCount: disagree,
     lowConfidenceCount: lowConf,
   };
 }

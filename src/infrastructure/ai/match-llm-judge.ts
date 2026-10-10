@@ -1,5 +1,6 @@
 /**
- * Batch Gemini judges for sandbox pairs — logs usage via callGeminiWithRetry.
+ * שני שופטי Gemini ל-batch בארגז בדיקות: א׳ מתייג, ב׳ רואה את א׳ + ביקורת עצמאית.
+ * מודל ב׳: GEMINI_JUDGE_B_MODEL (ברירת מחדל gemini-2.5-pro).
  */
 import { generateObject } from "ai";
 import { readFileSync } from "node:fs";

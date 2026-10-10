@@ -1,4 +1,6 @@
-/** Single entry for production match scores (hybrid + rule fallback + queue threshold). */
+/**
+ * נקודת כניסה לציון התאמה בפרודקשן — היברידי, כללים, סף תור (מ-adminSettings / env).
+ */
 import type { MatchScoreBreakdown } from "@/domain/match-score-breakdown";
 import { explainMatch, shouldQueueForEmployer } from "@/domain/matching";
 import type { MatchScoreMode } from "@/domain/matching-scorers";

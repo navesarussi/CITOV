@@ -1,5 +1,5 @@
 /**
- * Full product journey for admin architecture — Hebrew copy, swimlanes, code/model/human coloring.
+ * מסע מוצר מקצה לקצה לדף ארכיטקטורה — עברית אחידה, ערוצי פעולה, צבע לפי קוד/מודל/אדם.
  */
 export type JourneyLane = "candidate" | "employer" | "system" | "admin";
 export type JourneyKind = "code" | "model" | "human" | "both";
@@ -87,7 +87,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "sign-in",
     titleHe: "התחברות Google",
-    summaryHe: "OAuth מאובטח; אין סיסמאות מקומיות. הסשן נשמר ב-cookie HttpOnly.",
+    summaryHe: "התחברות מאובטחת דרך Google; אין סיסמאות מקומיות. הסשן נשמר בעוגייה מאובטחת בשרת.",
     lane: "candidate",
     kind: "code",
     x: 48,
@@ -119,7 +119,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "upload",
-    titleHe: "העלאת CV / משרה",
+    titleHe: "העלאת קורות חיים / משרה",
     summaryHe: "קובץ או טקסט — נשמר ומקושר לפרופיל; מפעיל צינור חילוץ.",
     lane: "candidate",
     kind: "code",
@@ -131,7 +131,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "extract-a",
     titleHe: "חילוץ — שלב א",
-    summaryHe: "מיפוי עובדות וראיות מהמסמך (Gemini structured).",
+    summaryHe: "מיפוי עובדות וראיות מהמסמך באמצעות Gemini (פלט מובנה).",
     lane: "system",
     kind: "model",
     x: 688,
@@ -164,7 +164,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "conflicts",
     titleHe: "סתירות ואישורים",
-    summaryHe: "CV מול שיחה — שאלות המשך עד כרטיס עקבי.",
+    summaryHe: "קורות חיים מול שיחה — שאלות המשך עד כרטיס עקבי.",
     lane: "candidate",
     kind: "both",
     x: 688,
@@ -174,8 +174,8 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "card-store",
-    titleHe: "כרטיס + matchCanonical",
-    summaryHe: "JSONB מובנה + טקסט קנוני להתאמה ולהטמעות.",
+    titleHe: "כרטיס + ייצוג קנוני",
+    summaryHe: "מבנה במאגר Supabase + טקסט קנוני להתאמה ולייצוג וקטורי.",
     lane: "system",
     kind: "code",
     x: 1220,
@@ -185,8 +185,8 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "embeddings",
-    titleHe: "הטמעות לפי מקטע",
-    summaryHe: "תפקיד · כישורים · פרופיל — מתעדכן כשהכרטיס משתנה.",
+    titleHe: "ייצוג וקטורי לפי מקטע",
+    summaryHe: "הטמעה לתפקיד · כישורים · פרופיל — מתעדכן כשהכרטיס משתנה.",
     lane: "system",
     kind: "model",
     x: 1420,
@@ -230,7 +230,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "calibration",
     titleHe: "כיול",
-    summaryHe: "רצפת דמיון — מפה cosines צפופים ל-0–1.",
+    summaryHe: "רצפת דמיון — ממפה ציוני קוסינוס צפופים לטווח 0–1 (מסמכי כיול).",
     lane: "system",
     kind: "code",
     x: 1576,
@@ -241,7 +241,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "hybrid-blend",
     titleHe: "שילוב היברידי",
-    summaryHe: "משקלי כללים + סמנטיקה (כיול train).",
+    summaryHe: "משקלי כללים + משמעות — כיול על מערך אימון.",
     lane: "system",
     kind: "code",
     x: 1712,
@@ -274,7 +274,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "threshold-queue",
     titleHe: "סף → תור",
-    summaryHe: "היברידי מעל match_queue_threshold נכנס לתור מעסיק.",
+    summaryHe: "ציון היברידי מעל סף כניסה לתור — נכנס לערוץ המעסיק.",
     lane: "system",
     kind: "code",
     x: 2040,
@@ -329,7 +329,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "crowd-label",
     titleHe: "תיוג קהילה",
-    summaryHe: "משתמשים מוזמנים לעזור — מקור crowd.",
+    summaryHe: "משתמשים מוזמנים לעזור — תיוג מקור «קהילה».",
     lane: "admin",
     kind: "human",
     x: 2040,
@@ -350,8 +350,8 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "llm-judges",
-    titleHe: "שני שופטי LLM",
-    summaryHe: "A מתייג; B עצמאי + ביקורת; הסכמה → דילוג או תור בעלים.",
+    titleHe: "שני שופטי מודל",
+    summaryHe: "שופט א׳ מתייג; שופט ב׳ עצמאי עם ביקורת על א׳ — הסכמה וביטחון גבוה → דילוג; אחרת תור בעלים עם שני הנימוקים.",
     lane: "admin",
     kind: "model",
     x: 2400,
@@ -361,8 +361,8 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "eval-holdout",
-    titleHe: "מערך eval / holdout",
-    summaryHe: "train לכיול; holdout לבדיקה — ללא דליפה.",
+    titleHe: "מערך הערכה + מדגם נעול",
+    summaryHe: "אימון לכיול; מדגם נעול לבדיקה — ללא דליפת תוויות.",
     lane: "admin",
     kind: "code",
     x: 2400,
@@ -372,8 +372,8 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "regression-gate",
-    titleHe: "שער רגרסיה CI",
-    summaryHe: "פרומптים ומדדי התאמה — merge רק כשירוק.",
+    titleHe: "שער רגרסיה",
+    summaryHe: "תבניות פרומпт ומדדי התאמה — מיזוג רק אחרי בדיקות ירוקות בשרשרת הבנייה.",
     lane: "admin",
     kind: "code",
     x: 2180,
@@ -384,7 +384,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "tune-loop",
     titleHe: "כיוון משקלים וסף",
-    summaryHe: "מנהל מעדכן threshold/weights → חוזר למנוע התאמות.",
+    summaryHe: "מנהל מעדכן סף ומשקלים — לולאה חזרה למנוע ההתאמות.",
     lane: "admin",
     kind: "human",
     x: 1680,
@@ -395,7 +395,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "side-monitoring",
     titleHe: "ניטור והתראות",
-    summaryHe: "שגיאות, איטיות, fingerprint — לוח monitoring.",
+    summaryHe: "שגיאות, איטיות, חתימת תקלה — לוח ניטור.",
     lane: "system",
     kind: "code",
     x: 48,
@@ -418,8 +418,8 @@ export const JOURNEY_NODES: JourneyNode[] = [
   },
   {
     id: "side-resilience",
-    titleHe: "חוסן (fallback)",
-    summaryHe: "Heuristic + תור שחזור cron כש-Gemini נופל.",
+    titleHe: "חוסן וגיבוי",
+    summaryHe: "תשובה לפי חוקים + משימה מתוזמנת לשחזור כש-Gemini נופל.",
     lane: "system",
     kind: "code",
     x: 488,
@@ -431,7 +431,7 @@ export const JOURNEY_NODES: JourneyNode[] = [
   {
     id: "side-privacy",
     titleHe: "פרטיות והרשאות",
-    summaryHe: "API לפי משתמש; מנהלים בנתיבים נפרדים.",
+    summaryHe: "גישה לפי משתמש בלבד; מנהלים בערוצי פעולה נפרדים.",
     lane: "system",
     kind: "code",
     x: 736,
@@ -448,15 +448,15 @@ export const JOURNEY_EDGES: JourneyEdge[] = [
   { from: "profile-pick", to: "upload", labelHe: "קובץ" },
   { from: "upload", to: "extract-a", labelHe: "טקסט" },
   { from: "extract-a", to: "extract-b", labelHe: "עובדות" },
-  { from: "extract-b", to: "evidence-gate", labelHe: "patch" },
+  { from: "extract-b", to: "evidence-gate", labelHe: "עדכון כרטיס" },
   { from: "evidence-gate", to: "conflicts", labelHe: "כרטיס" },
   { from: "chat-agent", to: "conflicts", labelHe: "שיחה", dashed: true },
   { from: "conflicts", to: "card-store", labelHe: "אישור" },
-  { from: "card-store", to: "embeddings", labelHe: "canonical" },
+  { from: "card-store", to: "embeddings", labelHe: "ייצוג קנוני" },
   { from: "embeddings", to: "hard-filters", labelHe: "וקטורים" },
   { from: "hard-filters", to: "rule-score" },
   { from: "rule-score", to: "semantic-score" },
-  { from: "semantic-score", to: "calibration", labelHe: "cosine" },
+  { from: "semantic-score", to: "calibration", labelHe: "קוסינוס" },
   { from: "calibration", to: "hybrid-blend" },
   { from: "hybrid-blend", to: "must-gates" },
   { from: "must-gates", to: "flexibility" },
@@ -467,7 +467,7 @@ export const JOURNEY_EDGES: JourneyEdge[] = [
   { from: "employer-decision", to: "implicit-labels", labelHe: "פעולה" },
   { from: "implicit-labels", to: "crowd-label", dashed: true },
   { from: "crowd-label", to: "admin-label" },
-  { from: "admin-label", to: "llm-judges", labelHe: "sandbox" },
+  { from: "admin-label", to: "llm-judges", labelHe: "ארגז בדיקות" },
   { from: "llm-judges", to: "eval-holdout" },
   { from: "eval-holdout", to: "regression-gate" },
   { from: "regression-gate", to: "tune-loop" },
