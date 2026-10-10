@@ -122,8 +122,8 @@ async function upsertEmployerProfile(
 async function insertAiUsage(client: PoolClient, record: AiUsageRecord): Promise<void> {
   await client.query(
     `insert into ai_usage
-       (id, type, prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd, created_at)
-     values ($1, $2, $3, $4, $5, $6, $7)
+       (id, type, prompt_tokens, completion_tokens, total_tokens, cached_prompt_tokens, estimated_cost_usd, created_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8)
      on conflict (id) do nothing`,
     [
       record.id,
@@ -131,6 +131,7 @@ async function insertAiUsage(client: PoolClient, record: AiUsageRecord): Promise
       record.promptTokens,
       record.completionTokens,
       record.totalTokens,
+      record.cachedPromptTokens ?? 0,
       record.estimatedCostUsd,
       record.createdAt,
     ],

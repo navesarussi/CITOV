@@ -84,4 +84,23 @@ describe("admin", () => {
     assert.equal(rec.totalTokens, 150);
     assert.ok(rec.estimatedCostUsd > 0);
   });
+
+  it("summarizes cached tokens and savings", () => {
+    const store: StoreData = {
+      ...emptyStore(),
+      aiUsage: [
+        createAiUsageRecord({
+          id: "a",
+          type: "employee_intake",
+          promptTokens: 10_000,
+          completionTokens: 100,
+          cachedPromptTokens: 8000,
+          createdAt: new Date().toISOString(),
+        }),
+      ],
+    };
+    const stats = computeAdminStats(store);
+    assert.equal(stats.aiUsage.totalCachedTokens, 8000);
+    assert.ok(stats.aiUsage.estimatedCacheSavingsUsd > 0);
+  });
 });

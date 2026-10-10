@@ -25,7 +25,15 @@ type AdminStats = {
     last24hCalls: number;
     last24hTokens: number;
     last24hCostUsd: number;
-    byType: { type: string; calls: number; tokens: number; costUsd: number }[];
+    totalCachedTokens?: number;
+    estimatedCacheSavingsUsd?: number;
+    byType: {
+      type: string;
+      calls: number;
+      tokens: number;
+      costUsd: number;
+      cachedTokens?: number;
+    }[];
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -270,6 +278,12 @@ export default function AdminPage() {
           value={formatUsd(stats.aiUsage.estimatedCostUsd)}
           sub={`${formatTokens(stats.aiUsage.totalTokens)} טוקנים · ${stats.aiUsage.totalCalls} קריאות · 24ש ${formatUsd(stats.aiUsage.last24hCostUsd)}`}
         >
+          {(stats.aiUsage.totalCachedTokens ?? 0) > 0 ? (
+            <p className="mt-2 text-xs text-[var(--accent)]">
+              חיסכון ממטמון (הערכה): {formatUsd(stats.aiUsage.estimatedCacheSavingsUsd ?? 0)} ·{" "}
+              {formatTokens(stats.aiUsage.totalCachedTokens ?? 0)} טוקנים ממטמון
+            </p>
+          ) : null}
           <ul className="mt-2 space-y-0.5 text-xs text-[var(--muted)]">
             {stats.aiUsage.byType.slice(0, 6).map((row) => (
               <li key={row.type}>

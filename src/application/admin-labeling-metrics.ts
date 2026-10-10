@@ -15,6 +15,8 @@ export type LabelCounts = Record<RelevanceLabel, number>;
 export type DisagreementRow = {
   jobId: string;
   candidateId: string;
+  jobTitle: string;
+  candidateTitle: string;
   humanLabel: RelevanceLabel;
   systemQueued: boolean;
   ruleScore: number;
@@ -66,6 +68,8 @@ export function buildDisagreements(
       rows.push({
         jobId: l.jobId,
         candidateId: l.candidateId,
+        jobTitle: resolved.job.title?.trim() || l.jobId,
+        candidateTitle: resolved.candidate.desiredRole?.trim() || l.candidateId,
         humanLabel: l.label,
         systemQueued,
         ruleScore: ex.ruleScore,

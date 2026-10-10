@@ -14,28 +14,15 @@ import {
   type AiTokenUsage,
   type CandidatePatch,
 } from "./schemas";
+import { extractGeminiUsage } from "./usage-extract";
 
 /** Without caps Gemini can hit finishReason=length (~65k tokens) and fail structured parse. */
 const PASS_A_MAX_TOKENS = 4096;
 const PASS_B_MAX_TOKENS = 2048;
 const MAX_CV_CHARS = 14_000;
 
-function extractUsage(usage?: {
-  promptTokens?: number;
-  completionTokens?: number;
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
-}): AiTokenUsage | undefined {
-  if (!usage) return undefined;
-  const promptTokens = usage.promptTokens ?? usage.inputTokens ?? 0;
-  const completionTokens = usage.completionTokens ?? usage.outputTokens ?? 0;
-  if (promptTokens === 0 && completionTokens === 0) return undefined;
-  return {
-    promptTokens,
-    completionTokens,
-    totalTokens: usage.totalTokens ?? promptTokens + completionTokens,
-  };
+function extractUsage(usage?: Parameters<typeof extractGeminiUsage>[0]): AiTokenUsage | undefined {
+  return extractGeminiUsage(usage);
 }
 
 function clipCvText(text: string): string {

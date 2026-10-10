@@ -17,25 +17,12 @@ import {
   type IntakeResult,
   type JobPatch,
 } from "./schemas";
+import { extractGeminiUsage } from "./usage-extract";
 
 export { runCvExtraction } from "./cv-extraction";
 
-function extractUsage(usage?: {
-  promptTokens?: number;
-  completionTokens?: number;
-  inputTokens?: number;
-  outputTokens?: number;
-  totalTokens?: number;
-}): AiTokenUsage | undefined {
-  if (!usage) return undefined;
-  const promptTokens = usage.promptTokens ?? usage.inputTokens ?? 0;
-  const completionTokens = usage.completionTokens ?? usage.outputTokens ?? 0;
-  if (promptTokens === 0 && completionTokens === 0) return undefined;
-  return {
-    promptTokens,
-    completionTokens,
-    totalTokens: usage.totalTokens ?? promptTokens + completionTokens,
-  };
+function extractUsage(usage?: Parameters<typeof extractGeminiUsage>[0]): AiTokenUsage | undefined {
+  return extractGeminiUsage(usage);
 }
 
 export async function runEmployeeIntake(params: {

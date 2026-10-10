@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "006_match_labels";
+const MIGRATION_VERSION = "007_ai_usage_cache_tokens";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -67,6 +67,8 @@ create table if not exists candidate_document_blobs (
   created_at timestamptz not null default now()
 );
 create index if not exists candidate_document_blobs_user_idx on candidate_document_blobs (user_id);
+
+alter table ai_usage add column if not exists cached_prompt_tokens integer not null default 0;
 
 create table if not exists match_labels (
   id text primary key,

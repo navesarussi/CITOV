@@ -1,5 +1,5 @@
 import { extendedLiveMetrics } from "@/application/admin-labeling-metrics";
-import { nextLabelingPairs, scoresForPair } from "@/application/admin-labeling";
+import { getLabelingPair, nextLabelingPairs, scoresForPair } from "@/application/admin-labeling";
 import type { RelevanceLabel } from "@/domain/matching-eval/types";
 import { assertAdmin } from "@/infrastructure/admin-guard";
 import { mergeEvalFixtureIntoIndex } from "@/application/eval-embedding-index";
@@ -9,16 +9,21 @@ import { readMatchingStore, readStore, writeStore } from "@/infrastructure/store
 import { upsertAdminSettings } from "@/infrastructure/db/normalized-store";
 import { ok, fail } from "@/infrastructure/http";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const gate = await assertAdmin();
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
     const store = await readMatchingStore();
     const index = mergeEvalFixtureIntoIndex(await loadMatchingEmbeddingIndex(store));
-    const [pairs, metrics] = await Promise.all([
-      nextLabelingPairs(store, index, 1),
-      extendedLiveMetrics(store, index),
-    ]);
+    const url = new URL(req.url);
+    const jobId = url.searchParams.get("jobId")?.trim();
+    const candidateId = url.searchParams.get("candidateId")?.trim();
+    const metrics = await extendedLiveMetrics(store, index);
+    if (jobId && candidateId) {
+      const pair = getLabelingPair(store, jobId, candidateId, index, "review");
+      return ok({ pair, metrics });
+    }
+    const pairs = await nextLabelingPairs(store, index, 1);
     return ok({ pair: pairs[0] ?? null, metrics });
   } catch (e) {
     return fail(e);

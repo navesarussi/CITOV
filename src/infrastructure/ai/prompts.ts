@@ -93,6 +93,27 @@ export type BuiltConversation = {
   messages: ModelChatMessage[];
 };
 
+const CONTEXT_HINT_HE = "(מופיע בהודעת הקשר הראשונה ב־messages)";
+const CONTEXT_HINT_EN = "(see the first context message in messages)";
+
+function contextHint(locale: "he" | "en" | undefined): string {
+  return locale === "en" ? CONTEXT_HINT_EN : CONTEXT_HINT_HE;
+}
+
+/** Static system prefix — identical across turns for Gemini implicit context caching. */
+function renderStaticSystem(template: string, locale: "he" | "en" | undefined): string {
+  const hint = contextHint(locale);
+  return renderPromptTemplate(template, {
+    chat_history: hint,
+    new_message: hint,
+    current_card: hint,
+    known_facts: hint,
+    missing_field_key: hint,
+    pending_field_questions: hint,
+    recent_agent_questions: hint,
+  });
+}
+
 function renderSystem(template: string, vars: Record<string, string>): string {
   return renderPromptTemplate(template, {
     chat_history: "(ההיסטוריה מגיעה כהודעות נפרדות — ראה/י messages)",
@@ -103,6 +124,66 @@ function renderSystem(template: string, vars: Record<string, string>): string {
     pending_field_questions: vars.pending_field_questions,
     recent_agent_questions: vars.recent_agent_questions,
   });
+}
+
+function buildEmployeeDynamicContext(params: {
+  card: CandidateCard;
+  chat: ChatMessage[];
+  pendingQuestions: FieldQuestion[];
+  pendingConflicts?: string;
+  pendingInferences?: string;
+  openReliabilityNotes?: string;
+  locale?: "he" | "en";
+}): string {
+  const locale = params.locale ?? "he";
+  const pending = params.pendingQuestions
+    .map((q) => `- [${q.id}] ${q.question}`)
+    .join("\n");
+  const missing = nextMissingCandidateField(params.card);
+  const recent = recentAssistantReplies(params.chat)
+    .map((q) => `- ${q}`)
+    .join("\n");
+  const header =
+    locale === "en"
+      ? "## Session context (updates each turn)\n"
+      : "## הקשר נוכחי (מתעדכן בכל תור)\n";
+  const lines = [
+    header,
+    locale === "en" ? "### Known facts\n" : "### ידוע על המועמד/ת\n",
+    knownFactsText(params.card),
+    locale === "en" ? "\n### Card snapshot (JSON)\n" : "\n### צילום כרטיס (JSON)\n",
+    JSON.stringify(compactCard(params.card), null, 2),
+    locale === "en" ? "\n### Next missing field\n" : "\n### שדה חסר הבא\n",
+    missing ? `${missing.label} (${missing.key})` : locale === "en" ? "none" : "אין",
+    locale === "en" ? "\n### Pending domain questions\n" : "\n### שאלות תחום ממתינות\n",
+    pending || (locale === "en" ? "none" : "אין"),
+    locale === "en" ? "\n### Your recent questions\n" : "\n### שאלות שכבר שאלת\n",
+    recent || (locale === "en" ? "none yet" : "אין עדיין"),
+  ];
+  const conflicts = params.pendingConflicts?.trim();
+  const inferences = params.pendingInferences?.trim();
+  const notes = params.openReliabilityNotes?.trim();
+  if (conflicts) {
+    lines.push(
+      locale === "en"
+        ? "\n### CV vs chat conflicts\n"
+        : "\n### קונפליקטים (קו״ח מול שיחה)\n",
+      conflicts,
+    );
+  }
+  if (inferences) {
+    lines.push(
+      locale === "en" ? "\n### Weak CV inferences\n" : "\n### הסקות חלשות מהקו״ח\n",
+      inferences,
+    );
+  }
+  if (notes) {
+    lines.push(
+      locale === "en" ? "\n### Open reliability notes\n" : "\n### סתירות פתוחות\n",
+      notes,
+    );
+  }
+  return lines.join("\n");
 }
 
 export function cvWelcomeSystemNote(params: {
@@ -124,6 +205,33 @@ export function cvWelcomeSystemNote(params: {
     : `\n\n[אירוע: קו"ח ראשון. את/ה סוכן/ת CITOV — לעולם אל תציג/י את עצמך בשם ${account ?? "בעל/ת החשבון"}. פנה/י למועמד/ת${subject ? ` בשם ${subject}` : ""}. "קיבלתי את קורות החיים שלך", חוזק, שאלה.]`;
 }
 
+function buildEmployerDynamicContext(params: {
+  card: JobCard;
+  chat: ChatMessage[];
+  locale?: "he" | "en";
+}): string {
+  const locale = params.locale ?? "he";
+  const missing = nextMissingJobField(params.card);
+  const recent = recentAssistantReplies(params.chat)
+    .map((q) => `- ${q}`)
+    .join("\n");
+  const header =
+    locale === "en"
+      ? "## Session context (updates each turn)\n"
+      : "## הקשר נוכחי (מתעדכן בכל תור)\n";
+  return [
+    header,
+    locale === "en" ? "### Known facts\n" : "### ידוע על המשרה\n",
+    knownFactsText(params.card),
+    locale === "en" ? "\n### Job card (JSON)\n" : "\n### צילום כרטיס משרה (JSON)\n",
+    JSON.stringify(compactCard(params.card), null, 2),
+    locale === "en" ? "\n### Next missing field\n" : "\n### שדה חסר הבא\n",
+    missing ? `${missing.label} (${missing.key})` : locale === "en" ? "none" : "אין",
+    locale === "en" ? "\n### Your recent questions\n" : "\n### שאלות שכבר שאלת\n",
+    recent || (locale === "en" ? "none yet" : "אין עדיין"),
+  ].join("\n");
+}
+
 export function buildEmployeeConversation(params: {
   template: string;
   message: string;
@@ -136,43 +244,21 @@ export function buildEmployeeConversation(params: {
   locale?: "he" | "en";
   accountHolderFirstName?: string;
 }): BuiltConversation {
-  const pending = params.pendingQuestions
-    .map((q) => `- [${q.id}] ${q.question}`)
-    .join("\n");
-  const missing = nextMissingCandidateField(params.card);
-  const recent = recentAssistantReplies(params.chat)
-    .map((q) => `- ${q}`)
-    .join("\n");
-  const conflicts = params.pendingConflicts?.trim();
-  const inferences = params.pendingInferences?.trim();
-  const notes = params.openReliabilityNotes?.trim();
-  const conflictBlock = conflicts
-    ? `\n\nקונפליקטים ממקורות שונים (CV מול שיחה) — ברר/י בעדינות מה מעודכן, בלי למחוק מקורות:\n${conflicts}`
-    : "";
-  const inferenceBlock = inferences
-    ? `\n\nהסקות חלשות מהקו״ח לאישור (אל תציין שמדובר ב״הסקה״ או ציון):\n${inferences}`
-    : "";
-  const notesBlock = notes
-    ? `\n\nסתירות פתוחות לבירור (בלי להזכיר אמינות/ציונים):\n${notes}`
-    : "";
+  const locale = params.locale ?? "he";
+  const dynamicContext = buildEmployeeDynamicContext(params);
+  const staticSystem =
+    renderStaticSystem(params.template, locale) +
+    agentIdentitySystemBlock(locale) +
+    (params.accountHolderFirstName
+      ? `\n\n[${locale === "en" ? "Account holder (not your name)" : "בעל/ת החשבון (לא שמך)"}: ${params.accountHolderFirstName}]`
+      : "");
 
   return {
-    system:
-      renderSystem(params.template, {
-        current_card: JSON.stringify(compactCard(params.card), null, 2),
-        known_facts: knownFactsText(params.card),
-        missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
-        pending_field_questions: pending || "אין",
-        recent_agent_questions: recent || "אין עדיין",
-      }) +
-      conflictBlock +
-      inferenceBlock +
-      notesBlock +
-      agentIdentitySystemBlock(params.locale ?? "he") +
-      (params.accountHolderFirstName
-        ? `\n\n[הקשר: בעל/ת החשבון המחובר/ת: ${params.accountHolderFirstName}. זה לא שמך ולא בהכרח שם המועמד/ת.]`
-        : ""),
-    messages: toModelMessages(params.chat, params.message),
+    system: staticSystem,
+    messages: [
+      { role: "user", content: dynamicContext },
+      ...toModelMessages(params.chat, params.message),
+    ],
   };
 }
 
@@ -181,21 +267,16 @@ export function buildEmployerConversation(params: {
   message: string;
   card: JobCard;
   chat: ChatMessage[];
+  locale?: "he" | "en";
 }): BuiltConversation {
-  const missing = nextMissingJobField(params.card);
-  const recent = recentAssistantReplies(params.chat)
-    .map((q) => `- ${q}`)
-    .join("\n");
-
+  const locale = params.locale ?? "he";
+  const dynamicContext = buildEmployerDynamicContext({ ...params, locale });
   return {
-    system: renderSystem(params.template, {
-      current_card: JSON.stringify(compactCard(params.card), null, 2),
-      known_facts: knownFactsText(params.card),
-      missing_field_key: missing ? `${missing.label} (${missing.key})` : "",
-      pending_field_questions: "אין",
-      recent_agent_questions: recent || "אין עדיין",
-    }),
-    messages: toModelMessages(params.chat, params.message),
+    system: renderStaticSystem(params.template, locale),
+    messages: [
+      { role: "user", content: dynamicContext },
+      ...toModelMessages(params.chat, params.message),
+    ],
   };
 }
 
