@@ -10,7 +10,8 @@ import { useTranslation } from "@/components/LocaleProvider";
 import { OpportunityList } from "@/components/OpportunityList";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
 import { SegmentedTabs } from "@/components/ui/SegmentedTabs";
-import { useStoredUser } from "@/lib/use-stored-user";
+import { syncStoredUserWithGoogleSession } from "@/lib/client-session";
+import { useGoogleWorkspaceSync } from "@/lib/use-google-workspace-sync";
 import type { CandidateCard } from "@/domain/types";
 
 type Tab = "chat" | "jobs";
@@ -19,8 +20,8 @@ export default function EmployeePage() {
   const { t, fmt, locale } = useTranslation();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("chat");
-  const { user: sessionUser, ready: sessionReady } = useStoredUser("employee");
-  const userId = sessionUser?.id ?? null;
+  const { user: sessionUser, ready: sessionReady, syncError } = useGoogleWorkspaceSync("employee");
+  const [userId, setUserId] = useState<string | null>(null);
   const name = sessionUser?.name ?? "";
   const [me, setMe] = useState<{
     card: unknown;
@@ -48,14 +49,23 @@ export default function EmployeePage() {
 
   const refresh = useCallback(
     async (id: string) => {
-      const [meRes] = await Promise.all([
-        fetch(`/api/me?userId=${id}&locale=${locale}`).then((r) => r.json()),
-        refreshLists(id),
-      ]);
+      const meFetch = await fetch(`/api/me?userId=${id}&locale=${locale}`);
+      if (meFetch.status === 409) {
+        const synced = await syncStoredUserWithGoogleSession("employee");
+        if (synced?.id && synced.id !== id) {
+          setUserId(synced.id);
+          return;
+        }
+      }
+      const [meRes] = await Promise.all([meFetch.json(), refreshLists(id)]);
       setMe(meRes);
     },
     [locale, refreshLists],
   );
+
+  useEffect(() => {
+    setUserId(sessionUser?.id ?? null);
+  }, [sessionUser?.id]);
 
   useEffect(() => {
     if (!userId) return;
@@ -157,9 +167,9 @@ export default function EmployeePage() {
       />
 
       <main className={`workspace-main ${tab === "chat" ? "workspace-main--fit" : ""}`}>
-      {me?.error ? (
+      {syncError || me?.error ? (
         <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
-          {me.error}
+          {syncError ?? me?.error}
         </p>
       ) : null}
 

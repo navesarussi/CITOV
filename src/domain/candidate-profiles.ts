@@ -61,13 +61,26 @@ export function ensureProfilePack(emp: EmployeeRecord, accountLabel = "אני"):
   return syncActiveToLegacy({ ...emp, cv }, pack);
 }
 
+/** DB chat_messages are authoritative for the active profile when the pack slot is empty or stale. */
+export function pickAuthoritativeChat(
+  dbChat: ChatMessage[],
+  packChat: ChatMessage[],
+): ChatMessage[] {
+  const db = dbChat ?? [];
+  const pack = packChat ?? [];
+  if (pack.length === 0) return db;
+  if (db.length === 0) return pack;
+  if (db.length >= pack.length) return db;
+  return pack;
+}
+
 function syncActiveToLegacy(emp: EmployeeRecord, pack: CandidateProfilePack): EmployeeRecord {
   const active =
     pack.profiles.find((p) => p.id === pack.activeProfileId) ?? pack.profiles[0]!;
   return {
     ...emp,
     card: active.card,
-    chat: active.chat,
+    chat: pickAuthoritativeChat(emp.chat ?? [], active.chat ?? []),
     pendingFieldQuestionIds: active.pendingFieldQuestionIds,
     cv: emp.cv,
   };

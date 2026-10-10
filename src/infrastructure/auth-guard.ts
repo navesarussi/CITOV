@@ -4,7 +4,10 @@ import { DEFAULT_LOCALE, type Locale } from "@/i18n/types";
 import type { StoreData, User } from "@/domain/types";
 import { allowOpenAuth } from "@/infrastructure/auth-flags";
 import { getDevSession, isDevAuthEnabled } from "@/infrastructure/dev-auth";
+import { sessionOwnsUser } from "@/domain/session-ownership";
+import { findUserByEmailOrGoogle } from "@/infrastructure/db/normalized-store";
 import { findUserById, readActorStore } from "@/infrastructure/db/slice-store";
+import { resolveOAuthSessionEmail } from "@/infrastructure/session-email";
 
 export function allowDemo(): boolean {
   return process.env.ALLOW_DEMO === "true";
@@ -48,18 +51,40 @@ async function authorizeUserId(
   }
 
   const session = await auth();
-  const email = session?.user?.email;
+  const email = (await resolveOAuthSessionEmail()) ?? undefined;
   const googleId = session?.user?.googleId ?? session?.user?.id;
   if (!email && !googleId) return { ok: false, status: 401, error: api.googleRequired };
 
   const user = await findUserById(userId);
   if (!user) return { ok: false, status: 404, error: api.userNotFound };
-  const emailMatch = email && user.email === email;
-  const googleMatch = googleId && user.googleId === googleId;
-  if (!emailMatch && !googleMatch) {
-    return { ok: false, status: 403, error: api.unauthorized };
+  if (
+    sessionOwnsUser({
+      sessionEmail: email,
+      sessionGoogleId: googleId,
+      userEmail: user.email,
+      userGoogleId: user.googleId,
+    })
+  ) {
+    return { ok: true, user };
   }
-  return { ok: true, user };
+
+  const canonical = email
+    ? await findUserByEmailOrGoogle(email, googleId)
+    : null;
+  if (
+    canonical &&
+    canonical.id !== userId &&
+    sessionOwnsUser({
+      sessionEmail: email,
+      sessionGoogleId: googleId,
+      userEmail: canonical.email,
+      userGoogleId: canonical.googleId,
+    })
+  ) {
+    return { ok: false, status: 409, error: api.sessionUserStale };
+  }
+
+  return { ok: false, status: 403, error: api.unauthorized };
 }
 
 /** Auth only — no store load. Use with slice readers on list endpoints. */

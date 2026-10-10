@@ -258,6 +258,7 @@ export const en = {
     demoDisabled: "Demo mode is disabled. Sign in with Google.",
     userNotFound: "User not found",
     unauthorized: "Not authorized for this user",
+    sessionUserStale: "Session updated — reloading your account…",
     questionTooShort: "Question is too short",
     defineFieldFirst: "Define the job field before asking field-wide questions",
   },

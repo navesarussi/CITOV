@@ -18,7 +18,8 @@ import {
   workspaceSummaries,
 } from "@/domain/employer-job-workspace";
 import type { ChatMessage, JobCard } from "@/domain/types";
-import { useStoredUser } from "@/lib/use-stored-user";
+import { syncStoredUserWithGoogleSession } from "@/lib/client-session";
+import { useGoogleWorkspaceSync } from "@/lib/use-google-workspace-sync";
 
 type Tab = "chat" | "candidates";
 
@@ -26,8 +27,8 @@ export default function EmployerPage() {
   const { t, fmt, locale } = useTranslation();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("chat");
-  const { user: sessionUser, ready: sessionReady } = useStoredUser("employer");
-  const userId = sessionUser?.id ?? null;
+  const { user: sessionUser, ready: sessionReady, syncError } = useGoogleWorkspaceSync("employer");
+  const [userId, setUserId] = useState<string | null>(null);
   const name = sessionUser?.name ?? "";
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const [workspaces, setWorkspaces] = useState<EmployerJobWorkspace[]>([]);
@@ -56,9 +57,15 @@ export default function EmployerPage() {
   const refresh = useCallback(
     async (id: string, jobId?: string | null) => {
       const q = jobId ? `&jobId=${encodeURIComponent(jobId)}` : "";
-      const meRes = await fetch(`/api/me?userId=${id}${q}&locale=${locale}`).then((r) =>
-        r.json(),
-      );
+      const meFetch = await fetch(`/api/me?userId=${id}${q}&locale=${locale}`);
+      if (meFetch.status === 409) {
+        const synced = await syncStoredUserWithGoogleSession("employer");
+        if (synced?.id && synced.id !== id) {
+          setUserId(synced.id);
+          return;
+        }
+      }
+      const meRes = await meFetch.json();
       const nextWorkspaces = parseJobWorkspaces(meRes.jobs);
       setWorkspaces(nextWorkspaces);
       setMe(meRes);
@@ -68,6 +75,10 @@ export default function EmployerPage() {
     },
     [locale, refreshLists],
   );
+
+  useEffect(() => {
+    setUserId(sessionUser?.id ?? null);
+  }, [sessionUser?.id]);
 
   useEffect(() => {
     if (!userId) return;

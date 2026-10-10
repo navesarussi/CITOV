@@ -13,11 +13,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/",
   },
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       if (account?.provider === "google" && profile) {
-        token.googleId = (profile as { sub?: string }).sub;
-        token.picture = (profile as { picture?: string }).picture;
+        const p = profile as { sub?: string; email?: string; picture?: string };
+        token.googleId = p.sub;
+        token.picture = p.picture;
+        if (p.email) token.email = p.email;
       }
+      if (user?.email && !token.email) token.email = user.email;
       return token;
     },
     async session({ session, token }) {
@@ -26,6 +29,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         (session.user as { googleId?: string }).googleId = token.googleId as
           | string
           | undefined;
+        const email = (token.email as string | undefined) ?? session.user.email;
+        if (email) session.user.email = email;
       }
       return session;
     },

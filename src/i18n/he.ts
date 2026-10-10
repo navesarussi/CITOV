@@ -260,6 +260,7 @@ export const he: Messages = {
     demoDisabled: "מצב דמו כבוי. התחברו עם Google.",
     userNotFound: "משתמש לא נמצא",
     unauthorized: "אין הרשאה למשתמש הזה",
+    sessionUserStale: "הסשן עודכן — טוען מחדש את החשבון…",
     questionTooShort: "השאלה קצרה מדי",
     defineFieldFirst: "יש להגדיר תחום במשרה לפני שאלות כלליות",
   },

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminPromptWorkbench } from "@/components/admin/AdminPromptWorkbench";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
@@ -76,7 +76,6 @@ export default function AdminPage() {
   const [saved, setSaved] = useState(false);
   const [isCustom, setIsCustom] = useState(false);
   const [aiMode, setAiMode] = useState<string | null>(null);
-  const [bootTimedOut, setBootTimedOut] = useState(false);
   const [defaultCandidate, setDefaultCandidate] = useState("");
   const [defaultEmployer, setDefaultEmployer] = useState("");
 
@@ -109,15 +108,14 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => setBootTimedOut(true), 10000);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (status === "loading" && !bootTimedOut) return;
+    if (status === "loading") return;
+    if (status === "unauthenticated") {
+      setError("נדרשת התחברות עם Google");
+      return;
+    }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- dashboard fetch on auth ready
     void load();
-  }, [status, load, bootTimedOut]);
+  }, [status, load]);
 
   async function savePrompts() {
     setSaving(true);
@@ -166,7 +164,7 @@ export default function AdminPage() {
     }
   }
 
-  if ((!data && !error) && (status === "loading" || !bootTimedOut)) {
+  if (!data && !error && status === "loading") {
     return (
       <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
         <main className="text-center">
@@ -181,15 +179,25 @@ export default function AdminPage() {
   }
 
   if (error && !data) {
+    const needsSignIn = status === "unauthenticated" || error.includes("התחברות");
     return (
       <div className="atmosphere flex min-h-dvh items-center justify-center px-5">
         <main className="panel max-w-lg rounded-[var(--panel-radius)] p-8 text-center">
           <SettingsMenu />
           <p className="text-[var(--muted)]">{error}</p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
-            <Button variant="secondary" onClick={() => void load()}>
-              נסו שוב
-            </Button>
+            {needsSignIn ? (
+              <Button
+                variant="secondary"
+                onClick={() => void signIn("google", { callbackUrl: "/admin" })}
+              >
+                התחברות עם Google
+              </Button>
+            ) : (
+              <Button variant="secondary" onClick={() => void load()}>
+                נסו שוב
+              </Button>
+            )}
             <Link href="/" className="text-sm text-[var(--accent)] hover:underline">
               חזרה להתחלה
             </Link>
