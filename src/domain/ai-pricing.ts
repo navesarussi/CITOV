@@ -1,4 +1,10 @@
-/** USD per token — update when Google publishes new list prices. */
+/**
+ * USD per token — Google AI Gemini API list pricing.
+ * Source: https://ai.google.dev/gemini-api/docs/pricing (Gemini 2.5 Flash + embedding-001)
+ * As-of: 2025-10-01 (verify on invoice / pricing page before changing).
+ */
+export const GEMINI_LIST_PRICING_AS_OF = "2025-10-01";
+
 export const GEMINI_PRICING = {
   "gemini-2.5-flash": { input: 0.075 / 1_000_000, output: 0.3 / 1_000_000 },
   "gemini-embedding-001": { input: 0.025 / 1_000_000, output: 0 },

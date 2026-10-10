@@ -15,10 +15,18 @@ function resolveBuildId(): string {
 
 const pkg = JSON.parse(readFileSync("./package.json", "utf8")) as { version: string };
 
+function resolveBuildTimeIso(): string {
+  if (process.env.VERCEL_DEPLOYMENT_CREATED_AT) {
+    return new Date(Number(process.env.VERCEL_DEPLOYMENT_CREATED_AT)).toISOString();
+  }
+  return new Date().toISOString();
+}
+
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: pkg.version,
     NEXT_PUBLIC_APP_BUILD_ID: resolveBuildId(),
+    NEXT_PUBLIC_APP_BUILD_TIME: resolveBuildTimeIso(),
   },
   // Keep the file-parsing libs out of the server bundle (they use Node built-ins
   // and ship their own workers/assets).

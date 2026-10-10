@@ -185,6 +185,7 @@ export type AiTokenUsage = {
   totalTokens: number;
   /** Gemini implicit/context cache read tokens (inputTokenDetails.cacheReadTokens). */
   cachedPromptTokens?: number;
+  thinkingTokens?: number;
 };
 
 export type IntakeResult = {

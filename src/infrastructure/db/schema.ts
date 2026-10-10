@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "007_ai_usage_cache_tokens";
+const MIGRATION_VERSION = "008_crowd_labels_and_usage_thinking";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -69,6 +69,7 @@ create table if not exists candidate_document_blobs (
 create index if not exists candidate_document_blobs_user_idx on candidate_document_blobs (user_id);
 
 alter table ai_usage add column if not exists cached_prompt_tokens integer not null default 0;
+alter table ai_usage add column if not exists thinking_tokens integer not null default 0;
 
 create table if not exists match_labels (
   id text primary key,
@@ -76,7 +77,8 @@ create table if not exists match_labels (
   candidate_id text not null,
   label text not null check (label in ('good', 'acceptable', 'bad')),
   note text,
-  source text not null check (source in ('admin', 'employer_action', 'import')),
+  source text not null check (source in ('admin', 'employer_action', 'import', 'crowd')),
+  labeler_role text,
   labeler_user_id text not null default '',
   rule_score double precision,
   hybrid_score double precision,
@@ -88,6 +90,11 @@ create index if not exists match_labels_pair_idx on match_labels (job_id, candid
 create index if not exists match_labels_source_idx on match_labels (source, updated_at desc);
 create unique index if not exists match_labels_unique_admin
   on match_labels (job_id, candidate_id, source, labeler_user_id);
+
+alter table match_labels add column if not exists labeler_role text;
+alter table match_labels drop constraint if exists match_labels_source_check;
+alter table match_labels add constraint match_labels_source_check
+  check (source in ('admin', 'employer_action', 'import', 'crowd'));
 `;
 
 let schemaReady: Promise<void> | undefined;

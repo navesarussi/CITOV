@@ -173,7 +173,7 @@ export async function nextLabelingPairs(
 }
 
 export async function buildDatasetFromDbLabels(store: StoreData): Promise<MatchingEvalDataset | null> {
-  const rows = await listMatchLabels();
+  const rows = (await listMatchLabels()).filter((r) => r.source === "admin");
   if (!rows.length) return null;
   const labels: EvalLabel[] = rows.map((r) => ({
     jobId: r.jobId,

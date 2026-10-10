@@ -34,6 +34,9 @@ type AdminStats = {
       costUsd: number;
       cachedTokens?: number;
     }[];
+    byDay?: { day: string; costUsd: number; calls: number; tokens: number }[];
+    crowdLabels?: number;
+    adminCrowdAgreementRate?: number | null;
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -252,17 +255,6 @@ export default function AdminPage() {
         </>
       }
     >
-      <nav className="mb-4 flex flex-wrap gap-3 text-sm">
-        <Link href="/admin/candidates" className="text-[var(--accent)] hover:underline">
-          דפדפן מועמדים
-        </Link>
-        <Link href="/admin/employers" className="text-[var(--accent)] hover:underline">
-          דפדפן מעסיקים
-        </Link>
-        <Link href="/admin/labeling" className="text-[var(--accent)] hover:underline">
-          תיוג התאמות (live eval)
-        </Link>
-      </nav>
       {seedMsg ? <p className="mb-3 text-sm text-[var(--muted)]">{seedMsg}</p> : null}
 
       <section className="enter-delay grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -274,7 +266,7 @@ export default function AdminPage() {
           sub={`${stats.matches.approved} אושרו · ${stats.matches.queued} בתור`}
         />
         <AdminStatCard
-          label="עלות AI (הערכה)"
+          label="עלות AI (לפי מחירון)"
           value={formatUsd(stats.aiUsage.estimatedCostUsd)}
           sub={`${formatTokens(stats.aiUsage.totalTokens)} טוקנים · ${stats.aiUsage.totalCalls} קריאות · 24ש ${formatUsd(stats.aiUsage.last24hCostUsd)}`}
         >
@@ -291,8 +283,23 @@ export default function AdminPage() {
               </li>
             ))}
           </ul>
+          <ul className="mt-2 max-h-24 space-y-0.5 overflow-y-auto text-xs text-[var(--muted)]">
+            {(stats.aiUsage.byDay ?? []).slice(0, 7).map((d) => (
+              <li key={d.day}>
+                {d.day}: {formatUsd(d.costUsd)} · {d.calls} קריאות
+              </li>
+            ))}
+          </ul>
+          {(stats.aiUsage.crowdLabels ?? 0) > 0 ? (
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              תיוג קהל: {stats.aiUsage.crowdLabels}
+              {stats.aiUsage.adminCrowdAgreementRate != null
+                ? ` · הסכמה מנהל↔קהל ${(stats.aiUsage.adminCrowdAgreementRate * 100).toFixed(0)}%`
+                : null}
+            </p>
+          ) : null}
           <p className="mt-2 text-xs text-[var(--muted)]">
-            הערכה פנימית (Gemini Flash + embedding rates ב־ai-pricing.ts) — חיוב בפועל ב־Google.
+            חישוב לפי טוקנים מה-API ומחירון Gemini (2025-10-01, ai-pricing.ts) — חשבונית Google היא מקור האמת.
           </p>
           <a
             href="https://aistudio.google.com/usage"
@@ -322,6 +329,16 @@ export default function AdminPage() {
           label="ממוצע הודעות משתמש — מעסיקים"
           value={stats.engagement.avgEmployerUserMessages.toFixed(1)}
         />
+      </section>
+
+      <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">
+        <h2 className="text-sm font-semibold text-[var(--muted)]">מה חדש (0.2.0)</h2>
+        <ul className="mt-2 list-disc space-y-1 ps-5 text-sm text-[var(--ink)]">
+          <li>ארגז חול מנהל — מועמד/מעסיק אינטראקטיבי</li>
+          <li>ניווט דשבורד אחיד + כותרות משרה בדפדפן מעסיקים</li>
+          <li>עלות AI לפי מחירון + תיוג קהל אופציונלי</li>
+        </ul>
+        <p className="mt-2 text-xs text-[var(--muted)]">פרטים מלאים ב־CHANGELOG.md ברепו.</p>
       </section>
 
       <section className="panel enter-delay-2 mt-4 rounded-[var(--panel-radius)] p-5">

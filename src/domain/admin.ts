@@ -1,3 +1,4 @@
+import { isAdminSandboxUserId } from "@/domain/admin-sandbox";
 import { storeEngagementStats } from "@/domain/admin-engagement";
 import { estimateCacheSavingsUsd, estimateCostUsd, GEMINI_PRICING } from "@/domain/ai-pricing";
 import type { AiUsageRecord, AiUsageType, StoreData } from "./types";
@@ -34,6 +35,9 @@ export type AdminStats = {
     }[];
     totalCachedTokens: number;
     estimatedCacheSavingsUsd: number;
+    byDay: { day: string; costUsd: number; calls: number; tokens: number }[];
+    crowdLabels: number;
+    adminCrowdAgreementRate: number | null;
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -50,19 +54,24 @@ export type AdminStats = {
 };
 
 export function isDemoUserId(userId: string): boolean {
-  return DEMO_USER_IDS.has(userId) || userId.startsWith("seed-");
+  return DEMO_USER_IDS.has(userId) || userId.startsWith("seed-") || isAdminSandboxUserId(userId);
 }
 
 export function estimateAiCostUsd(
   promptTokens: number,
   completionTokens: number,
   cachedPromptTokens = 0,
+  thinkingTokens = 0,
 ): number {
-  return estimateCostUsd("gemini-2.5-flash", promptTokens, completionTokens, cachedPromptTokens);
+  return (
+    estimateCostUsd("gemini-2.5-flash", promptTokens, completionTokens, cachedPromptTokens) +
+    estimateCostUsd("gemini-2.5-flash", 0, thinkingTokens, 0)
+  );
 }
 
 function summarizeAiUsage(usage: AiUsageRecord[]) {
   const since = Date.now() - 24 * 60 * 60 * 1000;
+  const byDayMap = new Map<string, { costUsd: number; calls: number; tokens: number }>();
   const byTypeMap = new Map<
     AiUsageType,
     { calls: number; tokens: number; costUsd: number; cachedTokens: number }
@@ -82,6 +91,12 @@ function summarizeAiUsage(usage: AiUsageRecord[]) {
     prev.costUsd += r.estimatedCostUsd;
     prev.cachedTokens += cached;
     byTypeMap.set(r.type, prev);
+    const day = r.createdAt.slice(0, 10);
+    const dayPrev = byDayMap.get(day) ?? { costUsd: 0, calls: 0, tokens: 0 };
+    dayPrev.calls += 1;
+    dayPrev.tokens += r.totalTokens;
+    dayPrev.costUsd += r.estimatedCostUsd;
+    byDayMap.set(day, dayPrev);
     if (new Date(r.createdAt).getTime() >= since) {
       last24hCalls += 1;
       last24hTokens += r.totalTokens;
@@ -97,6 +112,10 @@ function summarizeAiUsage(usage: AiUsageRecord[]) {
     last24hCostUsd,
     totalCachedTokens,
     estimatedCacheSavingsUsd,
+    byDay: [...byDayMap.entries()]
+      .map(([day, v]) => ({ day, ...v }))
+      .sort((a, b) => b.day.localeCompare(a.day))
+      .slice(0, 14),
   };
 }
 
@@ -145,6 +164,8 @@ export function computeAdminStats(store: StoreData): AdminStats {
       totalTokens: usage.reduce((sum, r) => sum + r.totalTokens, 0),
       estimatedCostUsd: usage.reduce((sum, r) => sum + r.estimatedCostUsd, 0),
       ...summarizeAiUsage(usage),
+      crowdLabels: 0,
+      adminCrowdAgreementRate: null,
     },
     engagement: storeEngagementStats(store),
     users: realUsers.length,
@@ -162,9 +183,11 @@ export function createAiUsageRecord(params: {
   promptTokens: number;
   completionTokens: number;
   cachedPromptTokens?: number;
+  thinkingTokens?: number;
   createdAt: string;
 }): AiUsageRecord {
-  const totalTokens = params.promptTokens + params.completionTokens;
+  const thinkingTokens = params.thinkingTokens ?? 0;
+  const totalTokens = params.promptTokens + params.completionTokens + thinkingTokens;
   const cachedPromptTokens = params.cachedPromptTokens ?? 0;
   return {
     id: params.id,
@@ -173,10 +196,12 @@ export function createAiUsageRecord(params: {
     completionTokens: params.completionTokens,
     totalTokens,
     cachedPromptTokens: cachedPromptTokens > 0 ? cachedPromptTokens : undefined,
+    thinkingTokens: thinkingTokens > 0 ? thinkingTokens : undefined,
     estimatedCostUsd: estimateAiCostUsd(
       params.promptTokens,
       params.completionTokens,
       cachedPromptTokens,
+      thinkingTokens,
     ),
     createdAt: params.createdAt,
   };
