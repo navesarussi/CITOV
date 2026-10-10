@@ -382,12 +382,12 @@ export const he: Messages = {
     labelBad: "לא מתאים",
     agreement: "הסכמה בין המערכת לאדם",
     queueThreshold: "סף כניסה לתור",
-    legacyMatcher: "התאמה לפי מילים (חוקים)",
+    legacyMatcher: "התאמה לפי מילים",
     legacyMatcherHint:
-      "מסנן לפי חפיפת מילים וחוקים קבועים — מהיר ושקוף; פחות רגיש להבדלי ניסוח ושפה.",
-    smartMatcher: "התאמה היברידית (משמעות + חוקים)",
+      "חפיפת מילים וחוקים קבועים — מהיר ושקוף; פחות סלחני להבדלי ניסוח ושפה.",
+    smartMatcher: "התאמה לפי משמעות + חוקים",
     smartMatcherHint:
-      "משלבת דמיון משמעותי (embeddings) עם חוקים ודרישות חובה — קרוב יותר לחוויית המוצר.",
+      "embeddings + דרישות חובה — קרוב לתור ההתאמות בפרודקשן.",
     kpiPrecision: "דיוק בחמישייה",
     kpiPrecisionTip: "מתוך חמש ההתאמות הראשונות — כמה סימנת כמתאים/סביר",
     kpiRecall: "כיסוי בחמישייה",
@@ -405,9 +405,11 @@ export const he: Messages = {
       "מבוסס על {count} זוגות שתויגו — נקודת פתיחה בלבד; כדאי לבדוק שוב אחרי עוד תיוגים.",
     applyThreshold: "החלת הסף",
     applyThresholdHelp:
-      "מעדכן את סף כניסה לתור ההתאמות (match_queue_threshold) — רק זוגות עם ציון היברידי מעל הסף נכנסים לתור. כרגע: {current}. מוצע מהתיוגים: {suggested}.",
+      "החלת הסף משנה רק את סף כניסה לתור (match_queue_threshold): זוגות עם ציון היברידי מעל הסף ייכנסו לתור, מתחת — לא. אפשר לשנות שוב בכל עת. כרגע: {current}. מוצע: {suggested}.",
+    applyThresholdReversible:
+      "שינוי reversible — לא מוחק תיוגים; רק משנה מי נכנס לתור לפי הציון ההיברידי.",
     applyThresholdConfirm:
-      "להחליף את סף התור מ-{current} ל-{suggested}? (משפיע על התאמות חדשות; מדגם קטן — לבדוק שוב אחרי עוד תיוגים.)",
+      "להחליף סף תור מ-{current} ל-{suggested}?\n\nהשפעה על {count} זוגות שתויגו (היברידי):\n• בתור היום: {queuedBefore}\n• בתור אחרי: {queuedAfter}\n• הסכמה עם התיוג שלך: {agreementBefore}% → {agreementAfter}%",
     scoreTitle: "פירוט הציון לזוג הזה",
     finalHybrid: "ציון התאמה חכמה",
     finalRule: "ציון התאמה קלאסי",

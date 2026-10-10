@@ -110,6 +110,60 @@ export function sweepThresholds(
   return steps;
 }
 
+export type ThresholdApplyPreview = {
+  currentThreshold: number;
+  newThreshold: number;
+  labeledPairs: number;
+  queuedBefore: number;
+  queuedAfter: number;
+  agreementBefore: number;
+  agreementAfter: number;
+};
+
+export function previewThresholdApply(
+  store: StoreData,
+  dataset: MatchingEvalDataset,
+  index: MatchEmbeddingIndex | undefined,
+  newThreshold: number,
+): ThresholdApplyPreview {
+  const currentThreshold = readQueueThreshold(store.adminSettings);
+  let queuedBefore = 0;
+  let queuedAfter = 0;
+  let agreeBefore = 0;
+  let agreeAfter = 0;
+  for (const l of dataset.labels) {
+    const resolved = resolveLabelingPair(store, l.jobId, l.candidateId);
+    if (!resolved) continue;
+    const cVec = index?.candidate.get(l.candidateId) ?? index?.candidate.get(`seed-${l.candidateId}`);
+    const jVec = index?.job.get(l.jobId);
+    const ex = explainMatchPair({
+      candidate: resolved.candidate,
+      job: resolved.job,
+      candidateId: l.candidateId,
+      jobId: l.jobId,
+      vectors: cVec && jVec ? { candidate: cVec, job: jVec } : undefined,
+      adminSettings: store.adminSettings,
+    });
+    const humanPos = humanPositive(l.label);
+    const before = ex.hybridScore >= currentThreshold;
+    const after = ex.hybridScore >= newThreshold;
+    if (before) queuedBefore += 1;
+    if (after) queuedAfter += 1;
+    if (before === humanPos) agreeBefore += 1;
+    if (after === humanPos) agreeAfter += 1;
+  }
+  const n = dataset.labels.length || 1;
+  return {
+    currentThreshold,
+    newThreshold,
+    labeledPairs: dataset.labels.length,
+    queuedBefore,
+    queuedAfter,
+    agreementBefore: Math.round((agreeBefore / n) * 100),
+    agreementAfter: Math.round((agreeAfter / n) * 100),
+  };
+}
+
 export function pickSuggestedThreshold(steps: ThresholdSweepRow[]): ThresholdSweepRow | null {
   if (!steps.length) return null;
   let best = steps[0]!;

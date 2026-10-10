@@ -403,9 +403,11 @@ export const en = {
       "Based on {count} labeled pairs — a starting point only; re-check after more labels.",
     applyThreshold: "Apply threshold",
     applyThresholdHelp:
-      "Updates the match queue threshold (match_queue_threshold) — only pairs above this hybrid score enter the queue. Current: {current}. Suggested from labels: {suggested}.",
+      "Sets match_queue_threshold only — pairs above the hybrid score enter the queue. Reversible anytime. Current: {current}. Suggested: {suggested}.",
+    applyThresholdReversible:
+      "Reversible — labels are not deleted; only queue membership by hybrid score changes.",
     applyThresholdConfirm:
-      "Change queue threshold from {current} to {suggested}? (Affects new matches; small sample — validate after more labels.)",
+      "Change queue threshold from {current} to {suggested}?\n\nOn {count} labeled pairs (hybrid):\n• In queue now: {queuedBefore}\n• In queue after: {queuedAfter}\n• Agreement with your labels: {agreementBefore}% → {agreementAfter}%",
     scoreTitle: "Score breakdown for this pair",
     finalHybrid: "Final smart score",
     finalRule: "Classic rule score",

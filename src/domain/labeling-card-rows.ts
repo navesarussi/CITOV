@@ -2,6 +2,7 @@ import { candidateCardViewLines } from "@/domain/candidate-card-views";
 import { CANDIDATE_FIELD_META, JOB_FIELD_META } from "@/domain/card-fields";
 import { formatCardValue } from "@/domain/card-extras";
 import type { CompanyCard } from "@/domain/company-card";
+import { hebrewDisplayCandidateCard, hebrewDisplayJobCard } from "@/domain/hebrew-display";
 import type { CandidateCard, JobCard } from "@/domain/types";
 
 const CANDIDATE_LABELS = Object.fromEntries(
@@ -13,13 +14,15 @@ function jobFieldValue(job: JobCard, key: string): string {
 }
 
 export function labelingJobRows(job: JobCard): { label: string; value: string }[] {
-  return JOB_FIELD_META.map((m) => ({ label: m.label, value: jobFieldValue(job, m.key) }));
+  const view = hebrewDisplayJobCard(job);
+  return JOB_FIELD_META.map((m) => ({ label: m.label, value: jobFieldValue(view, m.key) }));
 }
 
 export function labelingCandidateRows(
   candidate: CandidateCard,
 ): { label: string; value: string }[] {
-  return candidateCardViewLines(candidate, "full", CANDIDATE_LABELS).map((l) => ({
+  const view = hebrewDisplayCandidateCard(candidate);
+  return candidateCardViewLines(view, "full", CANDIDATE_LABELS).map((l) => ({
     label: l.label,
     value: l.value,
   }));

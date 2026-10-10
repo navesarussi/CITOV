@@ -1,4 +1,5 @@
-import { extendedLiveMetrics } from "@/application/admin-labeling-metrics";
+import { buildDatasetFromDbLabels } from "@/application/admin-labeling";
+import { extendedLiveMetrics, previewThresholdApply } from "@/application/admin-labeling-metrics";
 import { getLabelingPair, nextLabelingPairs, scoresForPair } from "@/application/admin-labeling";
 import type { RelevanceLabel } from "@/domain/matching-eval/types";
 import { assertAdmin } from "@/infrastructure/admin-guard";
@@ -35,13 +36,27 @@ export async function POST(req: Request) {
     const gate = await assertAdmin();
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
     const body = (await req.json()) as {
-      action?: "label" | "applyThreshold";
+      action?: "label" | "applyThreshold" | "previewThreshold";
       jobId?: string;
       candidateId?: string;
       label?: RelevanceLabel;
       note?: string;
       threshold?: number;
     };
+
+    if (body.action === "previewThreshold") {
+      const t = Number(body.threshold);
+      if (!Number.isFinite(t) || t < 0.1 || t > 0.95) {
+        return ok({ error: "סף לא תקין" }, { status: 400 });
+      }
+      const store = await readMatchingStore();
+      const index = mergeEvalFixtureIntoIndex(await loadMatchingEmbeddingIndex(store));
+      const dataset = await buildDatasetFromDbLabels(store);
+      if (!dataset?.labels.length) {
+        return ok({ error: "אין מספיק תיוגים לתצוגה מקדימה" }, { status: 400 });
+      }
+      return ok({ preview: previewThresholdApply(store, dataset, index, t) });
+    }
 
     if (body.action === "applyThreshold") {
       const t = Number(body.threshold);

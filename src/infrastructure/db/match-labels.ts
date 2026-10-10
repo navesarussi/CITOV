@@ -37,8 +37,8 @@ export async function upsertMatchLabel(params: {
   const id = randomUUID();
   await pool.query(
     `insert into match_labels
-      (id, job_id, candidate_id, label, note, source, labeler_user_id, labeler_role, rule_score, hybrid_score, matcher_version, updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, now())
+      (id, job_id, candidate_id, label, note, source, labeler_user_id, rule_score, hybrid_score, matcher_version, updated_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, now())
      on conflict (job_id, candidate_id, source, labeler_user_id)
      do update set
        label = excluded.label,
@@ -55,7 +55,6 @@ export async function upsertMatchLabel(params: {
       params.note?.trim() || null,
       params.source,
       params.labelerUserId ?? "",
-      params.labelerRole ?? null,
       params.ruleScore ?? null,
       params.hybridScore ?? null,
       params.matcherVersion ?? null,

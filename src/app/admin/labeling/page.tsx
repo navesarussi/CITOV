@@ -12,11 +12,16 @@ import { useTranslation } from "@/components/LocaleProvider";
 import { Button } from "@/components/ui/Button";
 import type { RelevanceLabel } from "@/domain/matching-eval/types";
 
+const LABELING_STORAGE_KEY = "citov_admin_labeling_note";
+
 export default function AdminLabelingPage() {
   const { t, fmt } = useTranslation();
   const [pair, setPair] = useState<LabelingPair | null>(null);
   const [metrics, setMetrics] = useState<LabelingMetricsView | null>(null);
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return sessionStorage.getItem(LABELING_STORAGE_KEY) ?? "";
+  });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -66,6 +71,10 @@ export default function AdminLabelingPage() {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    sessionStorage.setItem(LABELING_STORAGE_KEY, note);
+  }, [note]);
+
   const submit = useCallback(
     async (label: RelevanceLabel) => {
       if (!pair || submitting) return;
@@ -114,12 +123,38 @@ export default function AdminLabelingPage() {
   async function applySuggestedThreshold() {
     const threshold = metrics?.suggestedThreshold;
     if (threshold == null || submitting) return;
-    const current = (metrics?.queueThreshold ?? 0.6).toFixed(2);
+    const previewRes = await fetch("/api/admin/labeling", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "previewThreshold", threshold }),
+    });
+    const previewData = (await previewRes.json()) as {
+      error?: string;
+      preview?: {
+        currentThreshold: number;
+        newThreshold: number;
+        labeledPairs: number;
+        queuedBefore: number;
+        queuedAfter: number;
+        agreementBefore: number;
+        agreementAfter: number;
+      };
+    };
+    if (!previewRes.ok || previewData.error || !previewData.preview) {
+      setError(previewData.error ?? "לא ניתן לחשב תצוגה מקדימה");
+      return;
+    }
+    const p = previewData.preview;
     if (
       !confirm(
         fmt(t.adminLabeling.applyThresholdConfirm, {
-          current,
-          suggested: threshold.toFixed(2),
+          current: p.currentThreshold.toFixed(2),
+          suggested: p.newThreshold.toFixed(2),
+          count: String(p.labeledPairs),
+          queuedBefore: String(p.queuedBefore),
+          queuedAfter: String(p.queuedAfter),
+          agreementBefore: String(p.agreementBefore),
+          agreementAfter: String(p.agreementAfter),
         }),
       )
     ) {

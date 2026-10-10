@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.3 — 2025-10-10
+
+- Labeling POST: drop unused `labeler_role` insert; schema alters run statement-by-statement.
+- Hebrew display for admin labeling cards/field compare; backfill persists Hebrew + canonical.
+- Matcher rename + threshold preview (before/after queue/agreement) with confirmation.
+- Admin layout cache provider, nav prefetch, labeling note persisted in sessionStorage.
+
 ## 0.2.2 — 2025-10-10
 
 - Fix prod labeling 500: `ensureSchema` always runs idempotent ALTERs (`labeler_role`, `match_queue_threshold`, etc.).
