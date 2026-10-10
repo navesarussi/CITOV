@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.5 — 2025-10-10
+
+- Extraction evidence: merge overlapping work-history intervals before summing experience years.
+- Numeric fields validated against field evidence only (not whole CV text); deterministic experience-years still allowed.
+- `validateFieldSanity` / work-history checks (date order, plausible years, salary) → pending confirmation when failed.
+
 ## 0.4.4 — 2025-10-10
 
 - **Removed crowd labeling** (`/help-match`, `/api/crowd-labeling`) for privacy; legacy `source=crowd` rows remain in DB but are excluded from admin metrics and eval.
