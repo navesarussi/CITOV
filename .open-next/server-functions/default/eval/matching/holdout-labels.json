@@ -1,5 +1,0 @@
-{
-  "version": "holdout-v1",
-  "description": "Human holdout labels imported via npm run eval:import-labels",
-  "labels": []
-}

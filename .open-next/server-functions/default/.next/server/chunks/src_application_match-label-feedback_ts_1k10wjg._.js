@@ -1,3 +1,0 @@
-module.exports=[64579,e=>e.a(async(a,r)=>{try{var d=e.i(56064),o=e.i(43485),t=e.i(13737),c=e.i(29689),i=e.i(24590),n=a([d,o,t,c,i]);async function s(e){let a="approved"===e.status?"good":"bad",r=await (0,i.readMatchingStore)(),c=await (0,t.loadMatchingEmbeddingIndex)(r),n=(0,d.scoresForPair)(r,e.jobId,e.candidateId,c);await (0,o.upsertMatchLabel)({jobId:e.jobId,candidateId:e.candidateId,label:a,note:"approved"===e.status?"employer approved":"employer rejected",source:"employer_action",labelerUserId:e.employerId,ruleScore:n.ruleScore,hybridScore:n.hybridScore,matcherVersion:n.matcherVersion})}[d,o,t,c,i]=n.then?(await n)():n,e.s(["recordEmployerMatchFeedback",0,s]),r()}catch(e){r(e)}},!1)];
-
-//# sourceMappingURL=src_application_match-label-feedback_ts_1k10wjg._.js.map
