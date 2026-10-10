@@ -6,6 +6,7 @@ import { CandidateQueue } from "@/components/CandidateQueue";
 import { type ChatTurnPayload } from "@/components/ChatPanel";
 import { EmployerChatLayout } from "@/components/EmployerChatLayout";
 import { JobFilterBar } from "@/components/JobFilterBar";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { WorkspaceHeader } from "@/components/WorkspaceHeader";
@@ -338,6 +339,7 @@ export function EmployerWorkspaceView(props: { layout: "page" | "embedded" }) {
         tabs={tabs}
       />
       <main className="workspace-main">{body}</main>
+      <ConsentBanner />
     </div>
   );
 }

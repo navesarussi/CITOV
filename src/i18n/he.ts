@@ -97,7 +97,12 @@ export const he: Messages = {
     privacy: "מדיניות פרטיות",
     terms: "תנאי שירות",
     about: "אודות",
-    report: "דיווח על בעיה",
+    report: "דווח על בעיה",
+    deleteMyData: "מחק את הנתונים שלי",
+    deleteMyDataConfirm: "למחוק לצמיתות את פרופיל השיחה וההתאמות? לא ניתן לשחזר.",
+    consentBanner:
+      "בשימוש ב-CITOV את/ה מאשר/ת את מדיניות הפרטיות ועיבוד הנתונים לשם השמה.",
+    consentAccept: "מאשר/ת",
     rate: "דירוג האפליקציה",
     rateTitle: "איך הייתה החוויה?",
     rateHint: "הדירוג שלכם עוזר לנו לשפר את CITOV.",

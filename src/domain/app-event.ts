@@ -1,6 +1,7 @@
 export type AppEventKind =
   | "api_error"
   | "client_error"
+  | "user_feedback"
   | "ai_failure"
   | "ai_retry"
   | "ai_budget"
