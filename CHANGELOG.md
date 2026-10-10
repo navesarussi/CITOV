@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.16 — 2025-10-10
+
+- Security (H1): public `/api/health/db|ai|auth` return `{ ok }` only; admin `?detail=1` for diagnostics.
+
+## 0.4.15 — 2025-10-10
+
+- Security (C2): block full `writeNormalizedStore` unless `ALLOW_FULL_STORE_WRITE=1`; targeted field-question persist for employer ask; remove redundant full-store write on admin threshold apply; store cache TTL ~30s.
+
 ## 0.4.14 — 2025-10-10
 
 - Security (C1): CV access only on approved matches + verified employer + identity-reveal flag; queued candidates anonymized; role immutable after signup; admin employer verification toggle.

@@ -1,4 +1,5 @@
 import { ok } from "@/infrastructure/http";
+import { assertAdmin } from "@/infrastructure/admin-guard";
 import { getSupabaseConfig } from "@/infrastructure/supabase/client";
 import { deriveSupabaseUrlFromDatabaseUrl } from "@/infrastructure/supabase/derive-url";
 import { parseDatabaseUrl, poolerConnectionCandidates } from "@/infrastructure/db/connection-string";
@@ -23,28 +24,41 @@ function databaseDiagnostics() {
   }
 }
 
-export async function GET() {
-  const diagnostics = databaseDiagnostics();
+/** Public: `{ ok }`. Admin `?detail=1`: Postgres / Supabase diagnostics (no secrets). */
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const detail = url.searchParams.get("detail") === "1";
+  const adminGate = detail ? await assertAdmin() : { ok: false as const };
+
   const elapsed = startDbTimer();
   try {
-    const supabase = getSupabaseConfig();
-    const derivedUrl = deriveSupabaseUrlFromDatabaseUrl(process.env.DATABASE_URL);
     const pool = await getPool();
-    const result = await pool.query<{ now: Date }>(`select now()`);
+    await pool.query<{ now: Date }>(`select now()`);
     logDbTiming("health/db", elapsed(), { host: getResolvedDatabaseHost() });
-    return ok({
-      postgres: true,
-      timestamp: result.rows[0]?.now,
-      supabase: Boolean(supabase),
-      supabaseUrl: supabase?.url ?? derivedUrl,
-      diagnostics: {
-        ...diagnostics,
-        resolvedHost: getResolvedDatabaseHost(),
-        timingMs: Math.round(elapsed()),
-      },
-    });
+    if (adminGate.ok) {
+      const supabase = getSupabaseConfig();
+      const derivedUrl = deriveSupabaseUrlFromDatabaseUrl(process.env.DATABASE_URL);
+      return ok({
+        ok: true,
+        postgres: true,
+        supabase: Boolean(supabase),
+        supabaseUrl: supabase?.url ?? derivedUrl,
+        diagnostics: {
+          ...databaseDiagnostics(),
+          resolvedHost: getResolvedDatabaseHost(),
+          timingMs: Math.round(elapsed()),
+        },
+      });
+    }
+    return ok({ ok: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    return ok({ error: message, postgres: false, diagnostics }, { status: 500 });
+    if (adminGate.ok) {
+      return ok(
+        { ok: false, error: message, postgres: false, diagnostics: databaseDiagnostics() },
+        { status: 500 },
+      );
+    }
+    return ok({ ok: false }, { status: 500 });
   }
 }
