@@ -101,11 +101,16 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
     if (!user?.id) return;
     if (!window.confirm(t.settings.deleteMyDataConfirm)) return;
     setOpen(false);
-    await fetch("/api/me/delete-data", {
+    const res = await fetch("/api/me/delete-data", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId: user.id, confirm: true }),
     });
+    const payload = (await res.json()) as { ok?: boolean; error?: string };
+    if (!res.ok || payload.error) {
+      window.alert(payload.error ?? t.settings.deleteMyDataConfirm);
+      return;
+    }
     clearSessionOnLogout();
     router.push("/");
     router.refresh();
