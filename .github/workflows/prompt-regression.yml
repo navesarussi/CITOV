@@ -1,0 +1,48 @@
+name: Prompt regression
+
+on:
+  pull_request:
+    paths:
+      - "prompts/**"
+      - "src/infrastructure/ai/**"
+      - "src/application/extraction-eval.ts"
+      - "src/domain/extraction-evidence.ts"
+      - "eval/extraction/**"
+      - "eval/matching/**"
+      - "eval/ci/**"
+      - "scripts/ci-prompt-regression.ts"
+  workflow_dispatch:
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - name: Extraction + matching thresholds
+        env:
+          REGRESSION_SUMMARY_PATH: eval/ci/last-run-summary.md
+        run: npm run ci:prompt-regression
+      - name: PR comment (Hebrew summary)
+        if: github.event_name == 'pull_request' && always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          marker='<!-- prompt-regression -->'
+          body="$(cat eval/ci/last-run-summary.md 2>/dev/null || echo 'בדיקת רגרסיה — ראו summary ב-job.')"
+          full="${marker}
+          ${body}"
+          existing="$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --jq '.[] | select(.body | contains("prompt-regression")) | .id' | head -1)"
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${existing}" -f body="$full"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$full"
+          fi
