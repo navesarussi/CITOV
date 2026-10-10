@@ -60,6 +60,16 @@ npm run set-gemini-env
 # then redeploy in the Vercel dashboard
 ```
 
+## Sandbox labeling (test dataset)
+
+After **#41–#43** are on Production:
+
+1. **Seed** (from a machine with prod `DATABASE_URL`): `npm run seed:test-sandbox`
+   - Or in admin: **דוח הרצה** (`/admin/sandbox-report`) → **הרץ seed + הערכה** (full 150×150 eval; may take minutes).
+2. **Label:** admin labeling → enable **נתוני בדיקה**; labels use `source=test-run`.
+3. **Verify isolation:** real candidate/employer queues must not show `sandbox-*` users or `is_test` matches (see `docs/eval/TEST_SANDBOX.md`).
+4. Optional cron: set `CRON_SECRET` and hit `GET /api/cron/recover-degraded` on a schedule after resilience deploy.
+
 ## After deploy — prompts
 
 - Default prompts live in `prompts/candidate/system-prompt.md` and `prompts/employer/system-prompt.md`
