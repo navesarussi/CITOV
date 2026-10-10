@@ -21,7 +21,10 @@
     "seed:demo": "tsx scripts/seed-demo.ts",
     "seed:test-sandbox": "tsx scripts/seed-test-sandbox.ts",
     "test:cv-live": "tsx --test src/infrastructure/ai/cv-extraction.live.test.ts",
-    "set-gemini-env": "node scripts/set-vercel-gemini-env.mjs"
+    "set-gemini-env": "node scripts/set-vercel-gemini-env.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.95",
@@ -39,6 +42,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.0",
     "@playwright/test": "^1.55.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
@@ -50,6 +54,7 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.65.0"
   }
 }
