@@ -29,8 +29,20 @@ describe("extractGeminiUsage", () => {
 
   it("mergeAiTokenUsage sums thinking and cached tokens", () => {
     const merged = mergeAiTokenUsage(
-      { promptTokens: 100, completionTokens: 10, thinkingTokens: 5, cachedPromptTokens: 20 },
-      { promptTokens: 50, completionTokens: 5, thinkingTokens: 3, cachedPromptTokens: 10 },
+      {
+        promptTokens: 100,
+        completionTokens: 10,
+        thinkingTokens: 5,
+        cachedPromptTokens: 20,
+        totalTokens: 115,
+      },
+      {
+        promptTokens: 50,
+        completionTokens: 5,
+        thinkingTokens: 3,
+        cachedPromptTokens: 10,
+        totalTokens: 58,
+      },
     );
     assert.equal(merged?.promptTokens, 150);
     assert.equal(merged?.completionTokens, 15);
