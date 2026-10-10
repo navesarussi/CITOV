@@ -10,9 +10,9 @@
 | skills / mustHaves / techStack | ✓ | | ✓ | | `SKILL_ALIASES` + families |
 | languages / requiredLanguages | ✓ | | | | `LANGUAGE_ALIASES` |
 | seniority / seniorityLevel / experienceLevel | | ✓ | | | `SENIORITY_ALIASES` |
-| personality / workStyle ↔ personalityFit / teamCulture | ✓ | | | ✓ | **No** — raw `textScore` + profile embeddings |
+| personality / workStyle ↔ personalityFit / teamCulture | | | | ✓ | **No** — profile embeddings only (rule component 0) |
 | summary / narrative / companyDescription | | | | ✓ | **No** — embeddings only |
-| salary* | ✓ | | | | **No** |
+| salary* | ✓ | | | | **No** — `salary-normalize` ILS/month overlap |
 | education | | | | ✓ (via profile text) | `canonicalizeEducationToken` (reports; not in rule yet) |
 
 Production rule path uses `enrichCandidateForRuleMatch` / `enrichJobForRuleMatch` before `scoreMatch`. Embeddings use `candidateForMatching` / `jobForMatching` for **role** and **skills** segments; **profile** segment keeps display-language free text.
@@ -20,7 +20,8 @@ Production rule path uses `enrichCandidateForRuleMatch` / `enrichJobForRuleMatch
 ## CI guard
 
 - `eval/matching/cross-lang-consistency.test.ts` — 20 pairs × (`en` | `he` | `mixed`), \|Δ\| ≤ 0.05 for rule / semantic / hybrid bases, identical queue bit.
-- `npm run ci:prompt-regression` runs the same eval and fails if pass rate &lt; 100%.
+- `eval/matching/cross-lang-holdout.test.ts` — 15 frozen pairs (no alias tuning); pass rate logged only.
+- `npm run ci:prompt-regression` gates on training set pass rate &lt; 100%; holdout is report-only.
 
 ## Prod coverage
 

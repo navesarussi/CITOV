@@ -251,7 +251,7 @@ export function buildVariantCards(
   if (variant === "he") {
     return { candidate: cardCandidate(spec.he.candidate), job: cardJob(spec.he.job) };
   }
-  const idx = Number.parseInt(spec.id.match(/p(\d+)/)?.[1] ?? "0", 10);
+  const idx = Number.parseInt(spec.id.match(/(?:p|h)(\d+)/)?.[1] ?? "0", 10);
   const heJob = idx % 2 === 0;
   if (heJob) {
     return { candidate: cardCandidate(spec.en.candidate), job: cardJob(spec.he.job) };

@@ -17,6 +17,8 @@ import {
   type LangVariantId,
 } from "./cross-lang-dataset";
 
+export type { CrossLangPairSpec, LangVariantId };
+
 export const CROSS_LANG_SCORE_TOLERANCE = 0.05;
 
 const VARIANTS: LangVariantId[] = ["en", "he", "mixed"];
@@ -34,10 +36,12 @@ function hashVec(seed: string, dim = 12): number[] {
 }
 
 /** Shared pseudo-embeddings per logical pair (language-invariant reference vectors). */
-export function buildCrossLangEmbeddingIndex(): MatchEmbeddingIndex {
+export function buildCrossLangEmbeddingIndex(
+  pairs: CrossLangPairSpec[] = CROSS_LANG_PAIRS,
+): MatchEmbeddingIndex {
   const candidate = new Map<string, SegmentVectors>();
   const job = new Map<string, SegmentVectors>();
-  for (const spec of CROSS_LANG_PAIRS) {
+  for (const spec of pairs) {
     const id = spec.id;
     candidate.set(id, {
       role: hashVec(`${id}:c:role`),
@@ -103,13 +107,14 @@ export type CrossLangEvalReport = {
 
 export function runCrossLangConsistencyEval(
   tolerance = CROSS_LANG_SCORE_TOLERANCE,
+  pairs: CrossLangPairSpec[] = CROSS_LANG_PAIRS,
 ): CrossLangEvalReport {
-  const index = buildCrossLangEmbeddingIndex();
+  const index = buildCrossLangEmbeddingIndex(pairs);
   const threshold = readQueueThreshold(undefined);
   const pairResults: CrossLangPairResult[] = [];
   const failures: string[] = [];
 
-  for (const spec of CROSS_LANG_PAIRS) {
+  for (const spec of pairs) {
     const baseline = scoreVariant(spec, "en", index, threshold);
     const variants = {} as Record<LangVariantId, VariantScores>;
     let pass = true;

@@ -2,7 +2,7 @@
 
 ## 0.4.26 — 2025-10-10
 
-- **Matching i18n:** 20×3 cross-language consistency eval (rule/semantic/hybrid \|Δ\| ≤ 0.05, queue parity); seniority/field/skill aliases; `MATCHING_I18N_AUDIT.md`; prod coverage script + backfill.
+- **Matching i18n:** 20×3 cross-language consistency eval (rule/semantic/hybrid \|Δ\| ≤ 0.05, queue parity); seniority/field/skill aliases; frozen 15-pair holdout (report-only ~13% pass); salary normalized to ILS/month in rules; personality/culture removed from rule `textScore`; `MATCHING_I18N_AUDIT.md`; prod coverage script + backfill.
 - **Launch readiness:** mutual identity reveal (`candidate_consent_at`) before employer CV access; opportunities consent CTA; E2E reveal flow.
 - **Security backlog:** CSP header; complete delete-my-data tables; patch field allow-list; admin audit log; RLS migration (deny anon); H3/M1/M3/M5/M6 in one batch.
 - **Legal:** landing consent checkbox; expanded Hebrew/English privacy & terms (retention, deletion, on-platform contact, mutual reveal).

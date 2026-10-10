@@ -11,6 +11,7 @@ import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
 import { checkChatPromptContactPolicy } from "../src/infrastructure/ai/prompt-contact-policy";
 import { runCrossLangConsistencyEval } from "../eval/matching/cross-lang-eval";
+import { CROSS_LANG_HOLDOUT_PAIRS } from "../eval/matching/cross-lang-holdout-dataset";
 
 type Thresholds = {
   extraction: {
@@ -107,6 +108,23 @@ function checkCrossLangConsistency(
   return report.overallPassRate >= t.minOverallPassRate;
 }
 
+/** Holdout is report-only — never fails CI (no alias tuning on this set). */
+function reportCrossLangHoldout(lines: string[]): void {
+  const report = runCrossLangConsistencyEval(undefined, CROSS_LANG_HOLDOUT_PAIRS);
+  lines.push("### התאמה רב-לשונית — holdout קפוא (15 זוגות, ללא כיוון aliases)");
+  lines.push(
+    `- Pass rate: ${(report.overallPassRate * 100).toFixed(0)}% (**דיווח בלבד**, לא סף merge)`,
+  );
+  for (const [variant, rate] of Object.entries(report.variantPassRates)) {
+    lines.push(`- ${variant}: ${(rate * 100).toFixed(0)}%`);
+  }
+  if (report.failures.length) {
+    for (const f of report.failures.slice(0, 8)) {
+      lines.push(`- כשל holdout: ${f}`);
+    }
+  }
+}
+
 function checkContactPromptPolicy(lines: string[]): boolean {
   const violations = checkChatPromptContactPolicy();
   lines.push("### מדיניות יצירת קשר (prompts)");
@@ -126,6 +144,7 @@ function main(): void {
   const okContact = checkContactPromptPolicy(lines);
   lines.push("");
   const okCrossLang = checkCrossLangConsistency(thresholds.crossLang, lines);
+  reportCrossLangHoldout(lines);
   lines.push("");
   const okExtract = checkExtraction(thresholds.extraction, lines);
   lines.push("");

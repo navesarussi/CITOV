@@ -9,6 +9,11 @@ import {
   ruleWeightsForDomain,
   type RuleComponentWeights,
 } from "./work-domain";
+import {
+  candidateMonthlySalaryRange,
+  jobMonthlySalaryRange,
+  salaryMonthlyOverlapScore,
+} from "./salary-normalize";
 import type { CandidateCard, JobCard } from "./types";
 
 function normalize(value: string): string {
@@ -57,11 +62,13 @@ export function computeRuleComponents(
   const skills = skillsOverlap(candSkills, [...job.mustHaves, ...job.niceToHaves]);
   const soft = overlap(candidate.softSkills, job.niceToHaves);
   const languages = overlap(candidate.languages, job.requiredLanguages);
-  const personality = textScore(candidate.personality, job.personalityFit);
-  const culture = textScore(candidate.workStyle, job.teamCulture);
-  const salary =
-    textScore(candidate.salaryExpectation, job.salaryRange) ||
-    textScore(candidate.salaryMin, job.salaryMin);
+  // Personality / culture: embeddings only (profile segment) — not rule textScore (HE/EN skew).
+  const personality = 0;
+  const culture = 0;
+  const salary = salaryMonthlyOverlapScore(
+    candidateMonthlySalaryRange(candidate),
+    jobMonthlySalaryRange(job),
+  );
 
   const mustPenalty =
     job.mustHaves.length === 0

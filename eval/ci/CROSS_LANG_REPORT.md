@@ -19,6 +19,24 @@ Eval: `runCrossLangConsistencyEval()` — 20 logical pairs × 3 variants (`en`, 
 | p15–p17 | Field + role not canonical | `FIELD_ALIASES` + bookkeeper/security |
 | Hybrid Δ on mixed | Semantic opts on raw Hebrew text | Score using `enrich*ForRuleMatch` views |
 
+## Frozen holdout (overfitting check)
+
+Separate set: `eval/matching/cross-lang-holdout-dataset.ts` — **15** pairs authored without alias-table tuning (slang/typos: פולסטאק, דבאופס, ר"ג, etc.).
+
+| Variant | Pass rate (holdout, honest) |
+|---------|-----------------------------|
+| `en` | 100% |
+| `he` | ~40% |
+| `mixed` | ~13% |
+| **Overall pairs** | **~13% (2/15)** |
+
+CI logs holdout under “holdout קפוא” — **report-only**, does not gate merge. Training set (`cross-lang-dataset.ts`, 20 pairs) remains at **100%** with `minOverallPassRate: 1`.
+
+## Rule scoring (HE/EN)
+
+- **Salary:** normalized to ILS/month (`salary-normalize.ts`) — overlap score, not `textScore`.
+- **Personality / culture:** rule components **0**; profile segment embeddings only.
+
 ## Prod canonical coverage
 
 Run on deploy (read-only): `npx tsx scripts/report-match-canonical-coverage.ts`  

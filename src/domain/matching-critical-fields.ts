@@ -20,9 +20,9 @@ export const MATCHING_FIELD_AUDIT: MatchingFieldAuditRow[] = [
   { field: "languages / requiredLanguages", usedInRule: true, usedInSemanticRole: false, usedInSemanticSkills: false, usedInSemanticProfile: false, canonicalEnglish: true, notes: "LANGUAGE_ALIASES" },
   { field: "seniority / seniorityLevel / experienceLevel", usedInRule: false, usedInSemanticRole: true, usedInSemanticSkills: false, usedInSemanticProfile: false, canonicalEnglish: true, notes: "SENIORITY_ALIASES → matchCanonical.seniority" },
   { field: "softSkills", usedInRule: true, usedInSemanticRole: false, usedInSemanticSkills: true, usedInSemanticProfile: false, canonicalEnglish: false, notes: "Token overlap as-is; partial HE aliases via skills where listed" },
-  { field: "personality / workStyle ↔ personalityFit / teamCulture", usedInRule: true, usedInSemanticRole: false, usedInSemanticSkills: false, usedInSemanticProfile: true, canonicalEnglish: false, notes: "Free text — rule textScore + profile embeddings only" },
+  { field: "personality / workStyle ↔ personalityFit / teamCulture", usedInRule: false, usedInSemanticRole: false, usedInSemanticSkills: false, usedInSemanticProfile: true, canonicalEnglish: false, notes: "Profile segment embeddings only (no rule textScore — avoids HE/EN skew)" },
   { field: "summary / narrative / companyDescription", usedInRule: false, usedInSemanticRole: false, usedInSemanticSkills: false, usedInSemanticProfile: true, canonicalEnglish: false, notes: "Embeddings only (profile segment); not canonicalized" },
-  { field: "salary* / salaryRange", usedInRule: true, usedInSemanticRole: false, usedInSemanticSkills: false, usedInSemanticProfile: false, canonicalEnglish: false, notes: "textScore on raw strings" },
+  { field: "salary* / salaryRange", usedInRule: true, usedInSemanticRole: false, usedInSemanticSkills: false, usedInSemanticProfile: false, canonicalEnglish: false, notes: "salary-normalize → ILS/month overlap (K, ranges, yearly, hourly)" },
   {
     field: "education / educationHistory",
     usedInRule: false,
