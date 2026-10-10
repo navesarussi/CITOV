@@ -336,7 +336,18 @@ sequenceDiagram
       <li>CV blobs בטבלה נפרדת; גישת admin מוגבלת לנתיבי admin.</li>
     </ul>
     <h3>Observability</h3>
-    <p>Health routes (<code>/api/health/db|ai|auth</code>), לוג שגיאות Gemini + degraded flags ב־final chat frame. אין OpenTelemetry מוטמע ב-POC.</p>
+    <p>Health routes (<code>/api/health/db|ai|auth</code>), לוג שגיאות Gemini + degraded flags ב־final chat frame. <code>[db-timing]</code> logs when <code>DB_TIMING_LOG≠0</code>. אין OpenTelemetry מוטמע ב-POC.</p>
+
+    <h3>ביצועים (DB / cold start)</h3>
+    <ul>
+      <li><code>DATABASE_URL</code> על pooler (פורט 6543, sin1) — חיבור ישיר בלי sweep של 104 hosts; cache <code>global.__shidukhPg</code>.</li>
+      <li><code>?pgbouncer=true</code> נוסף אוטומטית ל-transaction pooler (ללא prepared statements).</li>
+      <li><code>/api/health/db</code> — רק <code>select now()</code>, בלי <code>ensureSchema</code>.</li>
+      <li><code>ensureSchema</code> — דילוג מהיר כש-<code>app_users</code> + <code>match_labels</code> + migration קיימים (DDL פעם אחת).</li>
+    </ul>
+
+    <h3>תיוגים חיים</h3>
+    <p>טבלה <code>match_labels</code> (admin, employer_action, import). Admin <code>/admin/labeling</code> + מטריקות rule vs hybrid production על תיוגים ב-DB.</p>
 
     <h2 id="limits">מגבלות ידועות ומפת דרכים</h2>
     <ul>

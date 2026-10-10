@@ -10,6 +10,12 @@ npm run eval:embed-fixtures  # refresh vectors (needs GOOGLE_GENERATIVE_AI_API_K
 npm run seed:demo          # load eval cards into Postgres (needs DATABASE_URL; idempotent)
 ```
 
+**Live prod:** Admin → «טעינת דמו» or `POST /api/admin/seed-demo` (idempotent, refreshes embeddings + matches). **Live labels:** `/admin/labeling` writes `match_labels` and shows P@5/R@5 vs rule/hybrid on labeled pairs.
+
+## Match canonical (English) for rules
+
+Eval seeds apply `matchCanonical` (dictionary + extraction schema) so rule token overlap improves cross-language pairs **without** replacing Hebrew display fields. After canonical: **rule-based-v1** P@5 **33.6%** (was ~30.4%), R@5 **75.1%**; hybrid unchanged (embeddings stay multilingual).
+
 ## Holdout labeling (human)
 
 ~60 pairs **not** in the 90 train labels: `eval/matching/labeling/holdout-v1.csv` (UTF-8 BOM). Open `eval/matching/labeling/label.html` locally (RTL, keyboard 1/2/3, export CSV/JSON). Import filled sheet with `eval:import-labels`; `eval:matching` then reports **Train** and **Holdout** separately.
@@ -22,7 +28,7 @@ Threshold (0.6), cosine floor (0.75), and hybrid weights (80/20) were grid-searc
 
 | Matcher | Thr | P@5 | R@5 | MRR | nDCG@5 | Good miss | Acc miss | Bad queued |
 |---------|----:|----:|----:|----:|-------:|----------:|---------:|-----------:|
-| **rule-based-v1** | 0.28 | 30.4% | 68.7% | 1.000 | 0.780 | 8 | 25 | 1 |
+| **rule-based-v1** (with canonical on eval seeds) | 0.28 | **33.6%** | **75.1%** | 1.000 | **0.821** | 8 | 25 | 1 |
 | **semantic-legacy-v1** (no calibration, \((c+1)/2\)) | 0.28 | 40.8% | 90.9% | 0.927 | 0.887 | 0 | 0 | **32** |
 | **hybrid-legacy-v1** (55/45, no calibration) | 0.28 | 39.2% | 87.9% | 1.000 | 0.890 | 0 | 0 | **32** |
 | **semantic-v1** (calibrated + empty-segment skip) | 0.28 | **41.6%** | **93.2%** | 1.000 | **0.943** | 0 | 6 | 9 |
