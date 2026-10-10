@@ -267,9 +267,9 @@ export default function EmployerPage() {
             void renameJob(id, name);
           }}
         />
-        {me?.error ? (
+        {syncError || me?.error ? (
           <p className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2 text-sm text-[var(--warn)]">
-            {me.error}
+            {syncError ?? me?.error}
           </p>
         ) : null}
         {tab === "chat" ? (
