@@ -10,5 +10,9 @@
     "minMacroNdcgAtK": 0.85,
     "minMacroRecallAtK": 0.85,
     "maxBadQueued": 3
+  },
+  "crossLang": {
+    "minOverallPassRate": 1,
+    "maxScoreDelta": 0.05
   }
 }

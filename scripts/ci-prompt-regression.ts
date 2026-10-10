@@ -10,6 +10,7 @@ import { createEvalMatcherDefinitions } from "../eval/matching/eval-matchers";
 import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
 import { checkChatPromptContactPolicy } from "../src/infrastructure/ai/prompt-contact-policy";
+import { runCrossLangConsistencyEval } from "../eval/matching/cross-lang-eval";
 
 type Thresholds = {
   extraction: {
@@ -23,6 +24,10 @@ type Thresholds = {
     minMacroNdcgAtK: number;
     minMacroRecallAtK: number;
     maxBadQueued: number;
+  };
+  crossLang: {
+    minOverallPassRate: number;
+    maxScoreDelta: number;
   };
 };
 
@@ -84,6 +89,24 @@ function checkMatching(t: Thresholds["matching"], lines: string[]): boolean {
   );
 }
 
+function checkCrossLangConsistency(
+  t: Thresholds["crossLang"],
+  lines: string[],
+): boolean {
+  const report = runCrossLangConsistencyEval(t.maxScoreDelta);
+  lines.push("### התאמה רב-לשונית (HE↔EN)");
+  lines.push(`- Pass rate: ${(report.overallPassRate * 100).toFixed(0)}% (מינימום ${(t.minOverallPassRate * 100).toFixed(0)}%)`);
+  for (const [variant, rate] of Object.entries(report.variantPassRates)) {
+    lines.push(`- ${variant}: ${(rate * 100).toFixed(0)}%`);
+  }
+  if (report.failures.length) {
+    for (const f of report.failures.slice(0, 5)) {
+      lines.push(`- **כשל:** ${f}`);
+    }
+  }
+  return report.overallPassRate >= t.minOverallPassRate;
+}
+
 function checkContactPromptPolicy(lines: string[]): boolean {
   const violations = checkChatPromptContactPolicy();
   lines.push("### מדיניות יצירת קשר (prompts)");
@@ -102,10 +125,12 @@ function main(): void {
   const lines: string[] = ["## בדיקת רגרסיה (prompts / matching)", ""];
   const okContact = checkContactPromptPolicy(lines);
   lines.push("");
+  const okCrossLang = checkCrossLangConsistency(thresholds.crossLang, lines);
+  lines.push("");
   const okExtract = checkExtraction(thresholds.extraction, lines);
   lines.push("");
   const okMatch = checkMatching(thresholds.matching, lines);
-  const ok = okContact && okExtract && okMatch;
+  const ok = okContact && okCrossLang && okExtract && okMatch;
   lines.push("");
   lines.push(ok ? "**✅ עבר**" : "**❌ נכשל — אל תפרסמו prompts בלי בדיקה ידנית**");
 

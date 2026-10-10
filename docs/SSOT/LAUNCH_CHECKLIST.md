@@ -18,6 +18,8 @@ Status key: **🟢** ready in this PR / on main · **🟡** needs owner action a
 | 12 | Consent checkbox on landing | 🟢 | Terms + privacy links before Google / open enter |
 | 13 | Privacy + terms (HE) | 🟢 | Expanded i18n bodies |
 | 14 | E2E identity reveal flow | 🟢 | `e2e/identity-reveal.spec.ts` + `/api/e2e/reveal-flow` |
+| 19 | HE↔EN matching consistency eval (20×3 variants) | 🟢 | `eval/matching/cross-lang-*` + CI regression |
+| 20 | Prod `matchCanonical` coverage report / backfill | 🟡 | `scripts/report-match-canonical-coverage.ts --apply` on prod |
 | 15 | Admin prompt reset after deploy | 🟡 | Owner: איפוס לברירת מחדל in admin prompts |
 | 16 | `EMPLOYER_APPROVED_IDENTITY_REVEAL` in prod | 🟡 | Set `true` when ready for recruiter CV view |
 | 17 | Google OAuth testers / consent screen | 🟡 | See `docs/SSOT/GO_LIVE.md` |
