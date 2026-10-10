@@ -172,10 +172,10 @@ export function ArchitectureExplorer() {
                   {selectedId === "matching" && data.live.eval.hybridNdcgAt5 != null ? (
                     <ul className="mt-4 space-y-1 text-sm text-[var(--muted)]">
                       <li>
-                        nDCG@5 (train): {(data.live.eval.hybridNdcgAt5 * 100).toFixed(1)}%
+                        דירוג איכות@5 (train): {(data.live.eval.hybridNdcgAt5 * 100).toFixed(1)}%
                       </li>
                       <li>
-                        Recall@5: {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%
+                        כיסוי@5: {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%
                       </li>
                     </ul>
                   ) : null}
@@ -299,7 +299,7 @@ export function ArchitectureExplorer() {
               </dl>
               {data.live.eval.hybridNdcgAt5 != null ? (
                 <p className="mt-4 text-sm text-[var(--muted)]">
-                  מדדי eval (train): דיוק@5 {(data.live.eval.hybridPrecisionAt5! * 100).toFixed(1)}% · Recall@5{" "}
+                  מדדי הערכה (train): דיוק@5 {(data.live.eval.hybridPrecisionAt5! * 100).toFixed(1)}% · כיסוי@5{" "}
                   {((data.live.eval.hybridRecallAt5 ?? 0) * 100).toFixed(1)}%
                 </p>
               ) : null}

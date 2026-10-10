@@ -38,10 +38,31 @@ export default function SandboxReportPage() {
     setRunning(true);
     setError("");
     try {
-      const res = await fetch("/api/admin/sandbox-run-report", { method: "POST" });
-      const data = (await res.json()) as { report?: ReportPayload; error?: string };
-      if (!res.ok) throw new Error(data.error ?? "ההרצה נכשלה");
-      setReport(data.report ?? null);
+      const seedRes = await fetch("/api/admin/sandbox-run-report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "seed" }),
+      });
+      const seedData = (await seedRes.json()) as { report?: ReportPayload; error?: string };
+      if (!seedRes.ok) throw new Error(seedData.error ?? "ההרצה נכשלה");
+      setReport(seedData.report ?? null);
+
+      let offset = 0;
+      let done = false;
+      while (!done) {
+        const jRes = await fetch("/api/admin/sandbox-run-report", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "judgeChunk", offset, reset: offset === 0 }),
+        });
+        const jData = (await jRes.json()) as {
+          judge?: { done: boolean; judgedCount: number; totalQueued: number };
+          error?: string;
+        };
+        if (!jRes.ok) throw new Error(jData.error ?? "שיפוט AI נכשל");
+        done = jData.judge?.done ?? true;
+        offset = jData.judge?.judgedCount ?? offset;
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -53,7 +74,7 @@ export default function SandboxReportPage() {
   const rb = report?.rebuild;
 
   return (
-    <AdminShell title="דוח הרצה — נתוני בדיקה" subtitle="הערכת 150×150 + סטטיסטיקות מנוע">
+    <AdminShell title="דוח הרצה — נתוני בדיקה" subtitle="הערכת 150×150, שיפוט AI, וסטטיסטיקות מנוע ההתאמות">
       <div className="mb-4 flex flex-wrap gap-2">
         <Button variant="secondary" onClick={() => void load()} disabled={loading}>
           רענון
@@ -80,18 +101,18 @@ export default function SandboxReportPage() {
           <section className="panel grid gap-3 rounded-xl p-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="זוגות (150×150)" value={String(ev.pairCount)} />
             <Stat label="בתור (מעל סף)" value={`${ev.queuedCount} / סף ${(ev.threshold * 100).toFixed(0)}%`} />
-            <Stat label="החלפה ל-rule" value={String(ev.degradedToRuleCount)} />
-            <Stat label="אי-הסכמה rule↔hybrid" value={String(ev.ruleHybridDisagreementCount)} />
-            <Stat label="זמן rebuild" value={`${rb.durationMs} ms`} />
-            <Stat label="degraded ב-rebuild" value={String(rb.degradedToRule)} />
-            <Stat label="וקטורי embedding" value={String(report.embedding.segmentVectorsLoaded)} />
+            <Stat label="מעבר לכללים בלבד" value={String(ev.degradedToRuleCount)} />
+            <Stat label="אי-הסכמה קלאסי↔חכם" value={String(ev.ruleHybridDisagreementCount)} />
+            <Stat label="זמן בנייה מחדש" value={`${rb.durationMs} ms`} />
+            <Stat label="מוגבל בבנייה" value={String(rb.degradedToRule)} />
+            <Stat label="וקטורי ייצוג" value={String(report.embedding.segmentVectorsLoaded)} />
             <Stat
               label="AI (הרצה)"
               value={`${report.embedding.aiUsageCallsDuringRun} קריאות · $${report.embedding.aiUsageCostUsdDuringRun.toFixed(4)}`}
             />
           </section>
           <section>
-            <h2 className="mb-2 font-semibold">התפלגות ציונים (hybrid)</h2>
+            <h2 className="mb-2 font-semibold">התפלגות ציונים (התאמה חכמה)</h2>
             <ul className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
               {ev.scoreHistogram.map((h) => (
                 <li key={h.bucket} className="flex justify-between rounded-lg bg-[var(--chip)] px-3 py-1.5">

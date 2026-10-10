@@ -8,7 +8,7 @@ export type AiFeatureKey = "chat" | "cv" | "embedding" | "job" | "matching" | "t
 const FEATURE_LABELS_HE: Record<AiFeatureKey, string> = {
   chat: "צ'אט (סוכן)",
   cv: "ניתוח קורות חיים",
-  embedding: "Embeddings / התאמות",
+  embedding: "ייצוג וקטורי / התאמה",
   job: "ייבוא משרות",
   matching: "הסבר התאמות",
   translation: "תרגום תצוגה",
@@ -30,6 +30,7 @@ export function aiUsageFeature(type: AiUsageType): AiFeatureKey {
       return "job";
     case "enrich_reason":
     case "eval":
+    case "llm_judge":
       return "matching";
     case "chat":
       return "chat";
