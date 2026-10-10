@@ -6,17 +6,19 @@ import { getPool } from "./pool";
 export type MatchLabelSource =
   | "admin"
   | "employer_action"
+  | "candidate_action"
   | "import"
   | "crowd"
   | "test-run"
   | "llm-judge-a"
   | "llm-judge-b";
 
+/** Human/admin labeling sources used for metrics and eval (legacy `crowd` excluded). */
 const HUMAN_LABEL_SOURCES: MatchLabelSource[] = [
   "admin",
   "employer_action",
+  "candidate_action",
   "import",
-  "crowd",
   "test-run",
 ];
 

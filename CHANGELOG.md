@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.4 — 2025-10-10
+
+- **Removed crowd labeling** (`/help-match`, `/api/crowd-labeling`) for privacy; legacy `source=crowd` rows remain in DB but are excluded from admin metrics and eval.
+- Candidate **לא רלוונטי** now stored as `candidate_action`; employer approve/reject unchanged; admin + LLM-judge labeling unchanged.
+
 ## 0.3.6 — 2025-10-10
 
 - Test-data sandbox: `is_test` + `dataset_id` on users/matches, production store filters, `sandbox-*` IDs.
@@ -9,7 +14,7 @@
 ## 0.3.5 — 2025-10-10
 
 - Persist structured `score_breakdown` on queued matches (rule components, semantic segments, hybrid gates, flexibility, engine config).
-- Admin **למה ההתאמה הזו?** drawer with Hebrew waterfall + side-by-side cards; candidates see top reasons and **לא רלוונטי** crowd label.
+- Admin **למה ההתאמה הזו?** drawer with Hebrew waterfall + side-by-side cards; candidates see top reasons and **לא רלוונטי** feedback.
 - Match rebuilds log to monitoring; flexibility rebuild uses embedding-aware path; role-boost documented + holdout A/B test.
 
 ## 0.3.4 — 2025-10-10
@@ -66,7 +71,7 @@
 - Admin navigation: dashboard link on all admin pages; guidelines page.
 - Employer job list: human titles, location, match counts; technical IDs behind toggle.
 - AI cost dashboard: token-level cost from API usage + documented Gemini list pricing; daily breakdown.
-- Crowd labeling opt-in at `/help-match` (`source=crowd`).
+- ~~Crowd labeling~~ (removed in 0.4.4).
 - `matchCanonical` backfill on demo seed for Hebrew↔English rule matching.
 - Labeling UI redesign and Gemini cache token logging (from 0.1.x work merged earlier today).
 

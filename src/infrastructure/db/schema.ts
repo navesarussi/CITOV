@@ -148,7 +148,7 @@ alter table match_labels add column if not exists labeler_role text;
 alter table match_labels drop constraint if exists match_labels_source_check;
 alter table match_labels add constraint match_labels_source_check
   check (source in (
-    'admin', 'employer_action', 'import', 'crowd', 'test-run',
+    'admin', 'employer_action', 'candidate_action', 'import', 'crowd', 'test-run',
     'llm-judge-a', 'llm-judge-b'
   ));
 

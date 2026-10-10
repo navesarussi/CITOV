@@ -34,8 +34,6 @@ export type AdminStats = {
     totalCachedTokens: number;
     estimatedCacheSavingsUsd: number;
     byDay: { day: string; costUsd: number; calls: number; tokens: number }[];
-    crowdLabels: number;
-    adminCrowdAgreementRate: number | null;
   };
   engagement: {
     avgCandidateKnowledgePercent: number;
@@ -162,8 +160,6 @@ export function computeAdminStats(store: StoreData): AdminStats {
       totalTokens: usage.reduce((sum, r) => sum + r.totalTokens, 0),
       estimatedCostUsd: usage.reduce((sum, r) => sum + r.estimatedCostUsd, 0),
       ...summarizeAiUsage(usage),
-      crowdLabels: 0,
-      adminCrowdAgreementRate: null,
     },
     engagement: storeEngagementStats(store),
     users: realUsers.length,
