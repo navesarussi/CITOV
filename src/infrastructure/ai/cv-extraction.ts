@@ -20,6 +20,12 @@ import {
   type CandidatePatch,
 } from "./schemas";
 import { extractGeminiUsage, mergeAiTokenUsage } from "./usage-extract";
+import {
+  redactTelemetryText,
+  withGeminiTelemetry,
+} from "@/infrastructure/observability/gemini-telemetry";
+import { defaultGeminiModelId } from "./gemini-client";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 /** Without caps Gemini can hit finishReason=length (~65k tokens) and fail structured parse. */
 const PASS_A_MAX_TOKENS = 4096;
@@ -104,47 +110,66 @@ export async function runCvExtraction(params: {
     const passBSystem =
       (await resolvePromptText("cv_extraction_inferences")) || PASS_B_SYSTEM_LEGACY;
     const passA = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(),
-        temperature: 0.1,
-        maxOutputTokens: PASS_A_MAX_TOKENS,
-        schema: cvExtractionSchema,
-        system: passASystem,
-        messages: [
+      generateObject(
+        withGeminiTelemetry(
           {
-            role: "user",
-            content: `קורות חיים לניתוח (עובדות מפורשות בלבד):\n\n${cvText}\n\nכרטיס נוכחי (לא ריק בלבד):\n${JSON.stringify(cardHint)}`,
+            model: getGeminiModel(),
+            temperature: 0.1,
+            maxOutputTokens: PASS_A_MAX_TOKENS,
+            schema: cvExtractionSchema,
+            system: passASystem,
+            messages: [
+              {
+                role: "user",
+                content: `קורות חיים לניתוח (עובדות מפורשות בלבד):\n\n${cvText}\n\nכרטיס נוכחי (לא ריק בלבד):\n${JSON.stringify(cardHint)}`,
+              },
+            ],
           },
-        ],
-      }),
+          {
+            callType: "cv_extraction_pass_a",
+            model: defaultGeminiModelId(),
+            inputSummary: `[cv chars=${cvText.length}] ${redactTelemetryText(cvText, 80)}`,
+          },
+        ),
+      ),
     );
 
     let inferences: CvExtractionResult["inferences"] = [];
     let usageB: AiTokenUsage | undefined;
     try {
       const passB = await callGeminiWithRetry(() =>
-        generateObject({
-          model: getGeminiModel(),
-          temperature: 0.2,
-          maxOutputTokens: PASS_B_MAX_TOKENS,
-          schema: cvInferencePassSchema,
-          system: passBSystem,
-          messages: [
+        generateObject(
+          withGeminiTelemetry(
             {
-              role: "user",
-              content: `טקסט קורות חיים:\n\n${cvText}\n\nחילוץ מובנה קיים:\n${JSON.stringify({
-                patch: passA.object.patch,
-                workHistory: passA.object.workHistory,
-                educationHistory: passA.object.educationHistory,
-              })}`,
+              model: getGeminiModel(),
+              temperature: 0.2,
+              maxOutputTokens: PASS_B_MAX_TOKENS,
+              schema: cvInferencePassSchema,
+              system: passBSystem,
+              messages: [
+                {
+                  role: "user",
+                  content: `טקסט קורות חיים:\n\n${cvText}\n\nחילוץ מובנה קיים:\n${JSON.stringify({
+                    patch: passA.object.patch,
+                    workHistory: passA.object.workHistory,
+                    educationHistory: passA.object.educationHistory,
+                  })}`,
+                },
+              ],
             },
-          ],
-        }),
+            {
+              callType: "cv_extraction_pass_b",
+              model: defaultGeminiModelId(),
+              inputSummary: `[cv pass-b chars=${cvText.length}]`,
+            },
+          ),
+        ),
       );
       inferences = (passB.object.inferences ?? []).slice(0, 12);
       usageB = extractUsage(passB.usage);
     } catch (err) {
       console.error("cv subtext pass B failed; keeping pass A only", err);
+      void captureServerException(err, { tags: { callType: "cv_extraction_pass_b" } });
     }
 
     const usage = mergeAiTokenUsage(extractUsage(passA.usage), usageB);
@@ -182,6 +207,7 @@ export async function runCvExtraction(params: {
     };
   } catch (err) {
     console.error("cv extraction Gemini failed; queue retry", err);
+    void captureServerException(err, { tags: { callType: "cv_extraction_pass_a" } });
     return { patch: {}, provider: "gemini", failed: true };
   }
 }

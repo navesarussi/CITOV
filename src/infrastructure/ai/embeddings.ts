@@ -5,6 +5,7 @@ import { isSegmentNonempty } from "@/domain/card-embedding-text";
 import { logAiUsageSafe } from "@/infrastructure/db/ai-usage";
 import { callGeminiWithRetry, getGeminiApiKeys, hasGeminiKey } from "./gemini-client";
 import { extractGeminiUsage } from "./usage-extract";
+import { withGeminiTelemetry } from "@/infrastructure/observability/gemini-telemetry";
 
 export const DEFAULT_EMBEDDING_MODEL =
   process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-001";
@@ -49,16 +50,26 @@ export async function embedTexts(
     const google = googleEmbedProvider();
     const started = Date.now();
     const result = await callGeminiWithRetry(() =>
-      embedMany({
-        model: google.embedding(modelId),
-        values: texts,
-        providerOptions: {
-          google: {
-            outputDimensionality: EMBEDDING_DIMENSIONS,
-            taskType: "SEMANTIC_SIMILARITY",
+      embedMany(
+        withGeminiTelemetry(
+          {
+            model: google.embedding(modelId),
+            values: texts,
+            providerOptions: {
+              google: {
+                outputDimensionality: EMBEDDING_DIMENSIONS,
+                taskType: "SEMANTIC_SIMILARITY",
+              },
+            },
           },
-        },
-      }),
+          {
+            callType: "embedding",
+            model: modelId,
+            userId: opts?.userId,
+            inputSummary: `batch=${texts.length} chars=${texts.join("").length}`,
+          },
+        ),
+      ),
     );
     const promptTokens = result.usage?.tokens ?? texts.join("").length / 4;
     logAiUsageSafe({

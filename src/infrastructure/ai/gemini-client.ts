@@ -3,6 +3,7 @@
  */
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { recordAppEventSafe } from "@/infrastructure/db/app-events";
+import { captureServerException } from "@/infrastructure/observability/sentry-server";
 
 const DEFAULT_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-flash-latest";
 
@@ -111,6 +112,7 @@ export async function callGeminiWithRetry<T>(
           message: msg,
           stack: err instanceof Error ? err.stack : undefined,
         });
+        void captureServerException(err, { tags: { subsystem: "gemini" } });
         throw err;
       }
       rotateGeminiKey();

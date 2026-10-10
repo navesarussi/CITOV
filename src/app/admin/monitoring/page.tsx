@@ -57,6 +57,36 @@ export default function AdminMonitoringPage() {
       {loading && !data ? <p className="text-sm text-[var(--muted)]">טוען ניטור…</p> : null}
       {data ? (
         <div className="space-y-5">
+          {(data.observability.sentry || data.observability.langfuse) && (
+            <section className="panel rounded-[var(--panel-radius)] p-5">
+              <h2 className="text-base font-semibold text-[var(--hero)]">Sentry &amp; Langfuse</h2>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                שגיאות production, traces של קריאות Gemini, ועלויות — לפי env ב-Vercel.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {data.observability.sentry ? (
+                  <a
+                    href={data.observability.sentry}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-[var(--stroke)] bg-white/90 px-3 py-2 text-sm font-medium text-[var(--hero)] underline-offset-2 hover:underline"
+                  >
+                    Open Sentry
+                  </a>
+                ) : null}
+                {data.observability.langfuse ? (
+                  <a
+                    href={data.observability.langfuse}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-[var(--stroke)] bg-white/90 px-3 py-2 text-sm font-medium text-[var(--hero)] underline-offset-2 hover:underline"
+                  >
+                    Langfuse
+                  </a>
+                ) : null}
+              </div>
+            </section>
+          )}
           <section className="panel rounded-[var(--panel-radius)] p-5">
             <h2 className="text-base font-semibold text-[var(--hero)]">תקציב AI</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

@@ -9,6 +9,7 @@ import { z } from "zod";
 import type { RelevanceLabel } from "@/domain/matching-eval/types";
 import type { CandidateCard, JobCard } from "@/domain/types";
 import { callGeminiWithRetry, getGeminiModel, hasGeminiKey } from "./gemini-client";
+import { withGeminiTelemetry } from "@/infrastructure/observability/gemini-telemetry";
 import { extractGeminiUsage } from "./usage-extract";
 import type { AiTokenUsage } from "./schemas";
 
@@ -114,13 +115,18 @@ export async function runTwoJudgeBatch(
       )
       .join("\n\n---\n\n");
     const { object, usage: uA } = await callGeminiWithRetry(() =>
-      generateObject({
-        model: getGeminiModel(modelA),
-        temperature: 0.2,
-        schema: judgeASchema,
-        system: systemA,
-        prompt: userA,
-      }),
+      generateObject(
+        withGeminiTelemetry(
+          {
+            model: getGeminiModel(modelA),
+            temperature: 0.2,
+            schema: judgeASchema,
+            system: systemA,
+            prompt: userA,
+          },
+          { callType: "llm_judge_a", model: modelA, inputSummary: `pairs=${pairs.length}` },
+        ),
+      ),
     );
     const u = extractGeminiUsage(uA);
     if (u) usage.push({ usage: u, model: modelA });
@@ -142,13 +148,18 @@ export async function runTwoJudgeBatch(
     .join("\n\n---\n\n");
 
   const { object: blindB, usage: uBlind } = await callGeminiWithRetry(() =>
-    generateObject({
-      model: getGeminiModel(modelB),
-      temperature: 0.25,
-      schema: judgeASchema,
-      system: loadPrompt("match-judge-b-blind.md"),
-      prompt: userBBlind,
-    }),
+    generateObject(
+      withGeminiTelemetry(
+        {
+          model: getGeminiModel(modelB),
+          temperature: 0.25,
+          schema: judgeASchema,
+          system: loadPrompt("match-judge-b-blind.md"),
+          prompt: userBBlind,
+        },
+        { callType: "llm_judge_b", model: modelB, inputSummary: `pairs=${pairs.length} blind` },
+      ),
+    ),
   );
   const uBlindParsed = extractGeminiUsage(uBlind);
   if (uBlindParsed) usage.push({ usage: uBlindParsed, model: modelB });
@@ -183,13 +194,18 @@ export async function runTwoJudgeBatch(
     .join("\n\n---\n\n");
 
   const { object: critiqueB, usage: uCrit } = await callGeminiWithRetry(() =>
-    generateObject({
-      model: getGeminiModel(modelB),
-      temperature: 0.2,
-      schema: critiqueSchema,
-      system: loadPrompt("match-judge-b.md"),
-      prompt: userCritique,
-    }),
+    generateObject(
+      withGeminiTelemetry(
+        {
+          model: getGeminiModel(modelB),
+          temperature: 0.2,
+          schema: critiqueSchema,
+          system: loadPrompt("match-judge-b.md"),
+          prompt: userCritique,
+        },
+        { callType: "llm_judge_b", model: modelB, inputSummary: `pairs=${pairs.length} critique` },
+      ),
+    ),
   );
   const uCritParsed = extractGeminiUsage(uCrit);
   if (uCritParsed) usage.push({ usage: uCritParsed, model: modelB });
