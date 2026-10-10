@@ -8,12 +8,14 @@ export async function POST(req: Request) {
       stack?: string;
       url?: string;
       userId?: string;
+      kind?: "client_error" | "user_feedback";
     };
     if (!body.message?.trim()) {
       return ok({ error: "message required" }, { status: 400 });
     }
+    const kind = body.kind === "user_feedback" ? "user_feedback" : "client_error";
     recordAppEventSafe({
-      kind: "client_error",
+      kind,
       severity: "warn",
       route: body.url ?? null,
       message: body.message,

@@ -80,13 +80,38 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
     setOpen(false);
   }
 
-  function reportIssue() {
-    const subject = encodeURIComponent(t.settings.reportSubject);
-    const body = encodeURIComponent(
-      `${t.settings.reportBody}\n\nURL: ${typeof window !== "undefined" ? window.location.href : ""}`,
-    );
-    window.location.href = `mailto:navesarussi@gmail.com?subject=${subject}&body=${body}`;
+  async function reportIssue() {
+    const extra = window.prompt(t.settings.reportBody) ?? "";
+    const user = readStoredUser();
+    const message = [extra.trim() || t.settings.reportSubject, `URL: ${window.location.href}`]
+      .filter(Boolean)
+      .join("\n");
+    await fetch("/api/events/client", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "user_feedback",
+        message,
+        url: window.location.href,
+        userId: user?.id,
+      }),
+    });
     setOpen(false);
+  }
+
+  async function deleteMyData() {
+    const user = readStoredUser();
+    if (!user?.id) return;
+    if (!window.confirm(t.settings.deleteMyDataConfirm)) return;
+    setOpen(false);
+    await fetch("/api/me/delete-data", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: user.id, confirm: true }),
+    });
+    clearSessionOnLogout();
+    router.push("/");
+    router.refresh();
   }
 
   function submitRating() {
@@ -196,9 +221,14 @@ export function SettingsMenu(props: { variant?: "fixed" | "inline" | "header" })
             </section>
 
             <section className="settings-menu-section">
-              <MenuButton icon="report" onClick={reportIssue}>
+              <MenuButton icon="report" onClick={() => void reportIssue()}>
                 {t.settings.report}
               </MenuButton>
+              {showSignOut ? (
+                <MenuButton icon="report" onClick={() => void deleteMyData()}>
+                  {t.settings.deleteMyData}
+                </MenuButton>
+              ) : null}
               <MenuButton
                 icon="star"
                 onClick={() => {

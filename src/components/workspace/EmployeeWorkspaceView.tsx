@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CandidateProfileBar } from "@/components/CandidateProfileBar";
 import { EmployeeChatLayout } from "@/components/EmployeeChatLayout";
 import { type ChatTurnPayload } from "@/components/ChatPanel";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { SettingsMenu } from "@/components/SettingsMenu";
 import { useTranslation } from "@/components/LocaleProvider";
 import { OpportunityList } from "@/components/OpportunityList";
@@ -231,6 +232,7 @@ export function EmployeeWorkspaceView(props: { layout: "page" | "embedded" }) {
         >
           {body}
         </div>
+        <ConsentBanner />
       </div>
     );
   }
@@ -243,6 +245,7 @@ export function EmployeeWorkspaceView(props: { layout: "page" | "embedded" }) {
         tabs={tabs}
       />
       <main className={`workspace-main ${tab === "chat" ? "workspace-main--fit" : ""}`}>{body}</main>
+      <ConsentBanner />
     </div>
   );
 }

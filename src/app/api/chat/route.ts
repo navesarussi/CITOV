@@ -105,6 +105,15 @@ export async function POST(req: Request) {
     const gate = await assertActor(body.userId);
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
 
+    const { checkUserRateLimit } = await import("@/infrastructure/user-rate-limit");
+    const rl = checkUserRateLimit(body.userId);
+    if (!rl.allowed) {
+      return ok(
+        { error: `יותר מדי בקשות AI — נסו שוב בעוד ${rl.retryAfterSec ?? 60} שניות` },
+        { status: 429 },
+      );
+    }
+
     const store = gate.store;
     const userId = body.userId;
     const user = store.users.find((u) => u.id === userId);
