@@ -11,6 +11,8 @@ import type {
   WorkHistoryEntry,
 } from "./types";
 import { emptyCvProfile, emptyReliability } from "./types";
+import { pushPendingConfirmations } from "./extraction-apply-pending";
+import type { ExtractedField } from "./extraction-evidence";
 import { applyInferences, type CvInference } from "./cv-inference-merge";
 import { openReliabilityNote, recomputeReliability, resolveReliabilityNotesForField } from "./reliability";
 
@@ -28,6 +30,8 @@ export type CvPatchInput = {
   unmappedFacts?: UnmappedFact[];
   fieldConfidence?: Record<string, EvidenceConfidence>;
   inferences?: CvInference[];
+  pendingConfirmations?: ExtractedField[];
+  sourceText?: string;
 };
 
 export type CvImportSummary = {
@@ -286,8 +290,10 @@ export function mergeCvIntoEmployee(
     input.inferences ?? [],
     now,
     document.id,
+    input.sourceText ?? document.extractedText ?? "",
     openConflict,
   );
+  pushPendingConfirmations(cv, input.pendingConfirmations ?? [], now);
   card = inferred.card;
   fieldsUpdated += inferred.fieldsUpdated;
 
@@ -428,7 +434,22 @@ export function formatPendingInferencesForPrompt(cv?: CandidateCvProfile): strin
   const pending = (cv?.pendingInferences ?? []).filter((p) => p.status === "pending");
   if (!pending.length) return "";
   return pending
-    .map((p) => `- ${p.fieldKey}: "${p.value}" (רמז מהקו״ח: ${p.evidence})`)
+    .map(
+      (p) =>
+        `- ${p.fieldKey}: "${p.value}" (ממתין לאישור — מקור: ${p.evidence || "קו״ח"})`,
+    )
+    .join("\n");
+}
+
+export function formatPendingJobConfirmationsForPrompt(
+  pending: { fieldKey: string; value: string; evidence: string }[],
+): string {
+  if (!pending.length) return "";
+  return pending
+    .map(
+      (p) =>
+        `- ${p.fieldKey}: "${p.value}" (ממתין לאישור — מקור: ${p.evidence || "תיאור משרה"})`,
+    )
     .join("\n");
 }
 

@@ -314,6 +314,7 @@ async function runEmployerStream(
     card: prep.card,
     chat: prep.chat,
     systemPrompt: prep.systemPrompt,
+    pendingJobConfirmations: prep.pendingJobConfirmations,
   });
 
   let replyText = "";
@@ -326,6 +327,7 @@ async function runEmployerStream(
       card: prep.card,
       chat: prep.chat,
       systemPrompt: prep.systemPrompt,
+      pendingJobConfirmations: prep.pendingJobConfirmations,
     });
     for await (const delta of streamed.textStream) {
       if (!delta) continue;

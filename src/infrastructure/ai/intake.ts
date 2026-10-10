@@ -11,6 +11,7 @@ import { heuristicEmployeeIntake, heuristicEmployerIntake, heuristicCvWelcomeRep
 import { buildEmployeeConversation, buildEmployerConversation, cvWelcomeSystemNote } from "./prompts";
 import {
   candidatePatchSchema,
+  jobExtractionSchema,
   jobPatchSchema,
   type AiTokenUsage,
   type CandidatePatch,
@@ -104,6 +105,7 @@ export async function runEmployerIntake(params: {
   card: JobCard;
   chat: ChatMessage[];
   systemPrompt: string;
+  pendingJobConfirmations?: string;
 }): Promise<IntakeResult> {
   if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     return heuristicEmployerIntake(params.message, params.card, params.chat);
@@ -115,6 +117,7 @@ export async function runEmployerIntake(params: {
       message: params.message,
       card: params.card,
       chat: params.chat,
+      pendingConfirmations: params.pendingJobConfirmations,
     });
 
     const { object, usage } = await callGeminiWithRetry(() =>
@@ -193,12 +196,14 @@ export function streamEmployerReply(params: {
   card: JobCard;
   chat: ChatMessage[];
   systemPrompt: string;
+  pendingJobConfirmations?: string;
 }): { textStream: AsyncIterable<string>; usage: Promise<AiTokenUsage | undefined> } {
   const { system, messages } = buildEmployerConversation({
     template: params.systemPrompt,
     message: params.message,
     card: params.card,
     chat: params.chat,
+    pendingConfirmations: params.pendingJobConfirmations,
   });
   const result = streamText({
     model: getGeminiModel(),
@@ -361,6 +366,7 @@ export async function extractEmployerPatch(params: {
   card: JobCard;
   chat: ChatMessage[];
   systemPrompt: string;
+  pendingJobConfirmations?: string;
 }): Promise<{ jobPatch: JobPatch; usage?: AiTokenUsage }> {
   try {
     const { system, messages } = buildEmployerConversation({
@@ -368,6 +374,7 @@ export async function extractEmployerPatch(params: {
       message: params.message,
       card: params.card,
       chat: params.chat,
+      pendingConfirmations: params.pendingJobConfirmations,
     });
     const { object, usage } = await callGeminiWithRetry(() =>
       generateObject({
@@ -400,10 +407,15 @@ const JOB_EXTRACTION_SYSTEM_LEGACY = `את/ה עוזר/ת השמה שמחלץ/ת
 החזר/י JSON עם השדה patch בלבד.`;
 
 /** Extract job card fields from a raw job-description document. */
+export type JobDescriptionExtractionResult = CardExtraction<JobPatch> & {
+  extractedFields?: import("@/domain/extraction-evidence").ExtractedField[];
+  pendingConfirmations?: import("@/domain/extraction-evidence").ExtractedField[];
+};
+
 export async function runJobDescriptionExtraction(params: {
   text: string;
   card: JobCard;
-}): Promise<CardExtraction<JobPatch>> {
+}): Promise<JobDescriptionExtractionResult> {
   if (!hasGeminiKey() || (await isAiBudgetBlocked())) {
     const h = heuristicEmployerIntake(params.text, params.card, []);
     return { patch: h.jobPatch ?? {}, provider: "heuristic" };
@@ -415,7 +427,7 @@ export async function runJobDescriptionExtraction(params: {
       generateObject({
         model: getGeminiModel(),
         temperature: 0.2,
-        schema: z.object({ patch: jobPatchSchema }),
+        schema: jobExtractionSchema,
         system,
         messages: [
           {
@@ -425,7 +437,12 @@ export async function runJobDescriptionExtraction(params: {
         ],
       }),
     );
-    return { patch: object.patch, provider: "gemini", usage: extractUsage(usage) };
+    return {
+      patch: object.patch,
+      extractedFields: object.extractedFields,
+      provider: "gemini",
+      usage: extractUsage(usage),
+    };
   } catch (err) {
     console.error("job extraction Gemini failed, using heuristic", err);
     const h = heuristicEmployerIntake(params.text, params.card, []);

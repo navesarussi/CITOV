@@ -1,4 +1,5 @@
 import { computeAiBudgetStatus } from "@/application/ai-budget";
+import { runExtractionEval, type ExtractionEvalMetrics } from "@/application/extraction-eval";
 import type { GroupedIssue } from "@/domain/app-event";
 import { listAiUsageSince } from "@/infrastructure/db/ai-usage-query";
 import {
@@ -12,6 +13,7 @@ export type MonitoringDashboard = {
   latency: { route: string; p50: number; p95: number; count: number }[];
   aiBudget: ReturnType<typeof computeAiBudgetStatus>;
   e2e: Record<string, unknown> | null;
+  extractionEval: ExtractionEvalMetrics;
 };
 
 export async function buildMonitoringDashboard(): Promise<MonitoringDashboard> {
@@ -29,5 +31,6 @@ export async function buildMonitoringDashboard(): Promise<MonitoringDashboard> {
     latency,
     aiBudget: computeAiBudgetStatus(usage),
     e2e,
+    extractionEval: runExtractionEval(),
   };
 }

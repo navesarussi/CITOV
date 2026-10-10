@@ -75,8 +75,20 @@ describe("applyJobDescriptionExtraction", () => {
     const { card, jobId } = applyJobDescriptionExtraction(
       seed(),
       "b1",
-      { title: "מלצר/ית", field: "מסעדנות", mustHaves: ["שירות"] },
-      "טקסט תיאור משרה",
+      {
+        patch: { title: "מלצר/ית", field: "מסעדנות", mustHaves: ["שירות"] },
+        extractedFields: [
+          { fieldKey: "title", value: "מלצר/ית", evidence: "מלצר/ית", confidence: "high" },
+          { fieldKey: "field", value: "מסעדנות", evidence: "מסעדנות", confidence: "high" },
+          {
+            fieldKey: "mustHaves",
+            value: "שירות",
+            evidence: "שירות",
+            confidence: "high",
+          },
+        ],
+        sourceText: "טקסט תיאור משרה מלצר/ית מסעדנות שירות",
+      },
     );
     assert.equal(card.title, "מלצר/ית");
     assert.equal(card.field, "מסעדנות");

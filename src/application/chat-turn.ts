@@ -46,6 +46,8 @@ import type {
 } from "@/domain/types";
 import { emptyCvProfile } from "@/domain/types";
 import { resolveLiveChatPrompts } from "@/application/admin-prompt-catalog";
+import { formatPendingJobConfirmationsForPrompt } from "@/domain/cv-merge";
+import { resolveJobImportConfirmationsFromPatch } from "@/domain/job-extraction-merge";
 import type { AiTokenUsage, CandidatePatch, JobPatch } from "@/infrastructure/ai/schemas";
 
 function isEmptyCardValue(v: unknown): boolean {
@@ -267,18 +269,26 @@ export async function prepareEmployerTurn(
   store: StoreData,
   userId: string,
   jobId?: string,
-): Promise<{ card: JobCard; chat: ChatMessage[]; systemPrompt: string; jobId: string }> {
+): Promise<{
+  card: JobCard;
+  chat: ChatMessage[];
+  systemPrompt: string;
+  jobId: string;
+  pendingJobConfirmations: string;
+}> {
   const raw = store.employers.find((e) => e.userId === userId);
   if (!raw) throw new NotFoundError("Employer");
   let employer = normalizeEmployerRecord(raw);
   if (jobId) employer = withActiveJob(employer, jobId);
   const active = getActiveJob(employer);
   const prompts = await resolveLiveChatPrompts(store.adminSettings);
+  const pending = active.importMeta?.pendingConfirmations?.filter((p) => p.status === "pending") ?? [];
   return {
     card: active.card,
     chat: active.chat,
     systemPrompt: prompts.employerPrompt,
     jobId: active.id,
+    pendingJobConfirmations: formatPendingJobConfirmationsForPrompt(pending),
   };
 }
 
@@ -480,9 +490,17 @@ export function applyEmployerTurn(params: {
   const active = getActiveJob(employer);
 
   const card = applyJobPatch(active.card, params.jobPatch);
+  const slotAfterConfirm = resolveJobImportConfirmationsFromPatch(
+    { ...active, card },
+    params.jobPatch ?? {},
+  );
   const newMessages = [makeMessage("user", message), makeMessage("assistant", reply)];
   const chat = [...active.chat, ...newMessages];
-  const updated = updateJobSlot(employer, active.id, { card, chat });
+  const updated = updateJobSlot(employer, active.id, {
+    card: slotAfterConfirm.card,
+    chat,
+    importMeta: slotAfterConfirm.importMeta,
+  });
   const mirrored = withActiveJob(updated, active.id);
   const usageRecords = collectUsageRecords(userId, "employer_intake", [
     params.usage,

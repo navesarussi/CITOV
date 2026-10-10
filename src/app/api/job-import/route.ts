@@ -43,10 +43,21 @@ export async function POST(req: Request) {
     if (jobId) employer = withActiveJob(employer, jobId);
     const activeCard = getActiveJob(employer).card;
 
-    const { patch, provider, usage } = await runJobDescriptionExtraction({ text, card: activeCard });
-    const applied = applyJobDescriptionExtraction(store, userId, patch, text, jobId);
+    const extracted = await runJobDescriptionExtraction({ text, card: activeCard });
+    const applied = applyJobDescriptionExtraction(
+      store,
+      userId,
+      {
+        patch: extracted.patch,
+        extractedFields: extracted.extractedFields,
+        sourceText: text,
+      },
+      jobId,
+    );
 
     let next: StoreData = applied.store;
+    const provider = extracted.provider;
+    const usage = extracted.usage;
     if (usage) {
       next = {
         ...next,
@@ -73,7 +84,13 @@ export async function POST(req: Request) {
       jobs: nextEmployer.jobs,
       activeJobId: nextEmployer.activeJobId,
     });
-    return ok({ ok: true, provider, card: applied.card, jobId: applied.jobId });
+    return ok({
+      ok: true,
+      provider,
+      card: applied.card,
+      jobId: applied.jobId,
+      pendingConfirmations: extracted.pendingConfirmations?.length ?? 0,
+    });
   } catch (e) {
     return fail(e);
   }

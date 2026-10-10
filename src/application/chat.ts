@@ -17,6 +17,7 @@ import {
   type JobCard,
   type StoreData,
 } from "@/domain/types";
+import { mergeGatedJobExtraction } from "@/domain/job-extraction-merge";
 import { runEmployeeIntake, runEmployerIntake } from "@/infrastructure/ai/intake";
 import type { JobPatch } from "@/infrastructure/ai/schemas";
 import {
@@ -77,6 +78,7 @@ export async function handleEmployerChat(
     card: prep.card,
     chat: prep.chat,
     systemPrompt: prep.systemPrompt,
+    pendingJobConfirmations: prep.pendingJobConfirmations,
   });
   return applyEmployerTurn({
     store,
@@ -117,8 +119,11 @@ export function applyCvExtraction(
 export function applyJobDescriptionExtraction(
   store: StoreData,
   userId: string,
-  patch: JobPatch,
-  sourceText: string,
+  payload: {
+    patch: JobPatch;
+    extractedFields?: import("@/domain/extraction-evidence").ExtractedField[];
+    sourceText: string;
+  },
   jobId?: string,
 ): { store: StoreData; card: JobCard; jobId: string } {
   const raw = store.employers.find((e) => e.userId === userId);
@@ -127,15 +132,28 @@ export function applyJobDescriptionExtraction(
   let employer = normalizeEmployerRecord(raw);
   if (jobId) employer = withActiveJob(employer, jobId);
   const active = getActiveJob(employer);
+  const now = new Date().toISOString();
 
-  const patched = applyJobPatch(active.card, patch);
-  const snippet = sourceText.trim().slice(0, 3000);
-  const narrative = [patched.narrative, snippet ? `תיאור משרה שהועלה:\n${snippet}` : ""]
+  const { slot } = mergeGatedJobExtraction(
+    active,
+    {
+      patch: payload.patch as Record<string, unknown>,
+      extractedFields: payload.extractedFields,
+      sourceText: payload.sourceText,
+    },
+    now,
+  );
+
+  const snippet = payload.sourceText.trim().slice(0, 3000);
+  const narrative = [
+    slot.card.narrative,
+    snippet ? `תיאור משרה שהועלה:\n${snippet}` : "",
+  ]
     .filter(Boolean)
     .join("\n\n");
-  const card: JobCard = { ...patched, narrative };
+  const card: JobCard = { ...slot.card, narrative };
 
-  const updated = updateJobSlot(employer, active.id, { card });
+  const updated = updateJobSlot(employer, active.id, { card, importMeta: slot.importMeta });
   const mirrored = withActiveJob(updated, active.id);
 
   return {

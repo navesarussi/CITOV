@@ -6,6 +6,7 @@ import {
 } from "./gemini-client";
 import type { CandidateCard } from "@/domain/types";
 import { compactCard } from "@/domain/chat-context";
+import { gateExtractedFields } from "@/domain/extraction-evidence";
 import { isExtractTextUsable, sanitizeCvPatch } from "@/domain/cv-sanitize";
 import { isAiBudgetBlocked } from "@/application/ai-budget-gate";
 import { heuristicEmployeeIntake } from "./heuristic";
@@ -66,6 +67,12 @@ export type CvExtractionResult = {
     value: string;
     evidence: string;
     confidence: "high" | "medium" | "low";
+  }[];
+  pendingConfirmations?: {
+    fieldKey: string;
+    value: string;
+    evidence: string;
+    confidence?: "high" | "medium" | "low";
   }[];
   provider: "gemini" | "heuristic";
   usage?: AiTokenUsage;
@@ -154,8 +161,16 @@ export async function runCvExtraction(params: {
           }
         : undefined;
 
+    const gated = gateExtractedFields({
+      sourceText: cvText,
+      patch: (passA.object.patch ?? {}) as Record<string, unknown>,
+      extractedFields: passA.object.extractedFields,
+      fieldConfidence: passA.object.fieldConfidence,
+      workHistory: passA.object.workHistory,
+    });
+
     const sanitized = sanitizeCvPatch({
-      patch: passA.object.patch ?? {},
+      patch: gated.acceptedPatch,
       workHistory: passA.object.workHistory,
       educationHistory: passA.object.educationHistory,
       unmappedFacts: passA.object.unmappedFacts,
@@ -171,6 +186,7 @@ export async function runCvExtraction(params: {
       unmappedFacts: sanitized.unmappedFacts,
       fieldConfidence: sanitized.fieldConfidence,
       inferences: sanitized.inferences,
+      pendingConfirmations: gated.pendingConfirmations,
       provider: "gemini",
       usage,
       strippedCount: sanitized.strippedCount,

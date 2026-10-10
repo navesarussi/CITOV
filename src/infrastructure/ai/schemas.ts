@@ -104,10 +104,18 @@ export const cvInferenceSchema = z.object({
   confidence: z.enum(["high", "medium", "low"]),
 });
 
+export const extractedFieldSchema = z.object({
+  fieldKey: z.string(),
+  value: z.string(),
+  evidence: z.string(),
+  confidence: z.enum(["high", "medium", "low"]).optional(),
+});
+
 /** Deep CV extraction payload (patch + structured histories + leftovers). */
 export const cvExtractionSchema = z.object({
   subjectFullName: optStr,
   patch: candidatePatchSchema,
+  extractedFields: z.array(extractedFieldSchema).optional(),
   workHistory: z.array(workHistoryEntrySchema).optional(),
   educationHistory: z.array(educationHistoryEntrySchema).optional(),
   unmappedFacts: z.array(unmappedFactSchema).optional(),
@@ -178,6 +186,11 @@ export const jobPatchSchema = z.object({
 
 export type CandidatePatch = z.infer<typeof candidatePatchSchema>;
 export type JobPatch = z.infer<typeof jobPatchSchema>;
+
+export const jobExtractionSchema = z.object({
+  patch: jobPatchSchema,
+  extractedFields: z.array(extractedFieldSchema).optional(),
+});
 
 export type AiTokenUsage = {
   promptTokens: number;

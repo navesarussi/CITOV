@@ -123,6 +123,41 @@ export default function AdminMonitoringPage() {
           </section>
 
           <section className="panel rounded-[var(--panel-radius)] p-5">
+            <h2 className="text-base font-semibold text-[var(--hero)]">הערכת חילוץ (golden set)</h2>
+            <p className="mt-1 text-xs text-[var(--muted)]">
+              {data.extractionEval.cases} מקרים ({data.extractionEval.cvCases} קו״ח ·{" "}
+              {data.extractionEval.jobCases} משרות) · עודכן{" "}
+              {new Date(data.extractionEval.evaluatedAt).toLocaleString("he-IL")}
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Stat
+                label="דיוק (אחרי הקשחה)"
+                value={`${(data.extractionEval.precision * 100).toFixed(1)}%`}
+              />
+              <Stat
+                label="Recall (אחרי)"
+                value={`${(data.extractionEval.recall * 100).toFixed(1)}%`}
+              />
+              <Stat
+                label="Hallucination rate (אחרי)"
+                value={`${(data.extractionEval.hallucinationRate * 100).toFixed(1)}%`}
+              />
+              <Stat
+                label="דיוק (לפני — baseline)"
+                value={`${(data.extractionEval.baselinePrecision * 100).toFixed(1)}%`}
+              />
+              <Stat
+                label="Recall (לפני)"
+                value={`${(data.extractionEval.baselineRecall * 100).toFixed(1)}%`}
+              />
+              <Stat
+                label="Hallucination (לפני)"
+                value={`${(data.extractionEval.baselineHallucinationRate * 100).toFixed(1)}%`}
+              />
+            </div>
+          </section>
+
+          <section className="panel rounded-[var(--panel-radius)] p-5">
             <h2 className="text-base font-semibold text-[var(--hero)]">E2E אחרון</h2>
             {data.e2e ? (
               <pre className="mt-2 overflow-x-auto rounded-lg bg-[var(--chip)] p-3 text-xs">

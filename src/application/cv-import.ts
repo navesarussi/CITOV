@@ -126,6 +126,8 @@ export async function analyzeCandidateCv(
     unmappedFacts: extracted.unmappedFacts,
     fieldConfidence: extracted.fieldConfidence,
     inferences: extracted.inferences,
+    pendingConfirmations: extracted.pendingConfirmations,
+    sourceText: document.extractedText,
   };
 
   const accountName = store.users.find((u) => u.id === userId)?.name ?? "";

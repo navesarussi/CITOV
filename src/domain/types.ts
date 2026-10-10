@@ -210,7 +210,7 @@ export type PendingInference = {
   fieldKey: string;
   value: string;
   evidence: string;
-  confidence: "low";
+  confidence: "low" | "medium";
   status: "pending" | "accepted" | "rejected";
   at: string;
 };
@@ -270,12 +270,17 @@ export function emptyCvProfile(): CandidateCvProfile {
   };
 }
 
+export type JobImportMeta = {
+  pendingConfirmations: PendingInference[];
+};
+
 export type JobSlot = {
   id: string;
   /** Employer-chosen display name for the jobs filter (optional). */
   name?: string;
   card: JobCard;
   chat: ChatMessage[];
+  importMeta?: JobImportMeta;
 };
 
 export type EmployerRecord = {
