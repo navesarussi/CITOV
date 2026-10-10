@@ -352,7 +352,7 @@ export async function updateMatchStatus(params: {
     const hit = data.matches.find(
       (m) => m.id === params.matchId && m.jobOwnerId === params.employerId,
     );
-    if (!hit) return false;
+    if (!hit || hit.status !== "queued") return false;
     writeMemory({
       ...data,
       matches: data.matches.map((m) =>
@@ -388,7 +388,7 @@ export async function updateMatchStatus(params: {
   const result = await pool.query(
     `update matches
      set status = $1, updated_at = now()
-     where id = $2 and job_owner_id = $3`,
+     where id = $2 and job_owner_id = $3 and status = 'queued'`,
     [params.status, params.matchId, params.employerId],
   );
   invalidateStoreCache();

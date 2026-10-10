@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "016_user_rate_limit_windows";
+const MIGRATION_VERSION = "017_matches_job_candidate_uidx";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -208,6 +208,16 @@ create table if not exists user_rate_limit_windows (
 );
 create index if not exists user_rate_limit_windows_window_idx
   on user_rate_limit_windows (window_start);
+
+update matches
+set id = 'pair__' || job_id || '__' || candidate_id
+where coalesce(is_test, false) = false
+  and job_id is not null
+  and id not like 'pair__%';
+
+create unique index if not exists matches_prod_job_candidate_uidx
+  on matches (job_id, candidate_id)
+  where coalesce(is_test, false) = false and job_id is not null;
 `;
 
 let schemaReady: Promise<void> | undefined;
