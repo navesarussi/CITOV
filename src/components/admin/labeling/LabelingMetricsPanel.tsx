@@ -119,6 +119,11 @@ export function LabelingMetricsPanel(props: {
               <p className="text-sm font-semibold text-[var(--hero)]">
                 {matcherTitle(matcher.id, t.adminLabeling.legacyMatcher, t.adminLabeling.smartMatcher)}
               </p>
+              <p className="text-xs leading-relaxed text-[var(--muted)]">
+                {matcher.id === "rule-based-v1"
+                  ? t.adminLabeling.legacyMatcherHint
+                  : t.adminLabeling.smartMatcherHint}
+              </p>
               <p className="text-xs text-[var(--muted)]">
                 {t.adminLabeling.queueThreshold}: {matcher.threshold.toFixed(2)}
               </p>
@@ -154,6 +159,12 @@ export function LabelingMetricsPanel(props: {
           <h3 className="text-sm font-semibold text-[var(--hero)]">{t.adminLabeling.suggestedThresholdTitle}</h3>
           <p className="mt-2 text-sm text-[var(--muted)]">
             {fmt(t.adminLabeling.suggestedThresholdBody, { count: m.labeledPairs ?? m.totalLabels })}
+          </p>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            {fmt(t.adminLabeling.applyThresholdHelp, {
+              current: (m.queueThreshold ?? 0.6).toFixed(2),
+              suggested: m.suggestedThreshold.toFixed(2),
+            })}
           </p>
           <p className="mt-2 text-2xl font-bold text-[var(--hero)]">{m.suggestedThreshold.toFixed(2)}</p>
           <Button

@@ -4,6 +4,7 @@ import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { EmployerRecord, StoreData, User } from "@/domain/types";
 import { readNormalizedStore, writeNormalizedStore } from "@/infrastructure/db/normalized-store";
 import { refreshCandidateEmbeddings, refreshJobEmbeddings } from "@/infrastructure/db/card-embeddings";
+import { hebrewDemoCandidateCard, hebrewDemoJobCard } from "@/application/demo-hebrew-display";
 import { backfillMatchCanonicalOnStore } from "@/application/match-canonical-backfill";
 import { rebuildAndWriteMatches } from "@/infrastructure/store";
 
@@ -23,7 +24,7 @@ export function buildDemoStoreFromEval(): StoreData {
     });
     return {
       userId,
-      card: c.card,
+      card: hebrewDemoCandidateCard(c.card),
       chat: [],
       pendingFieldQuestionIds: [],
     };
@@ -41,12 +42,15 @@ export function buildDemoStoreFromEval(): StoreData {
       email: `employer${Math.floor(i / jobsPerEmployer) + 1}@demo.local`,
       createdAt: now,
     });
-    const slots = chunk.map((j) => ({
-      id: j.id,
-      name: j.card.title,
-      card: j.card,
-      chat: [],
-    }));
+    const slots = chunk.map((j) => {
+      const card = hebrewDemoJobCard(j.card);
+      return {
+        id: j.id,
+        name: card.title,
+        card,
+        chat: [],
+      };
+    });
     const active = slots[0]?.id ?? "";
     const employerName = `Demo employer ${Math.floor(i / jobsPerEmployer) + 1}`;
     const firstCard = slots[0]?.card ?? chunk[0].card;
