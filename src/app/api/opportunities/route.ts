@@ -26,6 +26,7 @@ export async function GET(req: Request) {
         reason: m.reason,
         whyHe,
         employerName: user?.name ?? "מעסיק/ה",
+        candidateConsentAt: m.candidateConsentAt ?? null,
         card,
       };
     });

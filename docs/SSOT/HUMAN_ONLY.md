@@ -47,19 +47,19 @@ Then **Redeploy** Production if you changed any env var.
 
 Optional internal demo only: set `ALLOW_TEST_LOGIN=true` (enables `/demo` only, not public landings).
 
-## 4) Reset admin prompts (1 minute) — after contact prompt lands
+## 4) Reset admin prompts (1 minute) — after prompt bundle lands
 
 1. Sign in as admin → https://citov.tech/admin  
-2. Click **איפוס לברירת מחדל** so the employer agent asks for contact name/phone from the file prompt
+2. Click **איפוס לברירת מחדל** so employer/candidate agents pick up on-platform contact policy from file prompts
 
 ## 5) Smoke the full loop yourself (10 minutes)
 
 Use **two different Google accounts** on https://citov.tech
 
-1. **Employer** → https://citov.tech/for-employers → Google → chat: describe one real job → give **name + phone** when asked  
+1. **Employer** → https://citov.tech/for-employers → Google → chat: describe one real job (agent must **not** ask for phone/email)  
 2. **Candidate** → https://citov.tech → Google → upload CV → short chat  
 3. Employer → Candidates tab → approve  
-4. Candidate → jobs tab → sees job + **contact phone**
+4. Candidate → jobs tab → sees matched job; contact stays **on-platform** until mutual approval
 
 If any step fails, note exactly where (login / chat / empty queue / no contact) before inviting others.
 
@@ -100,7 +100,7 @@ https://citov.tech
 ## 7) After first invites — your only ongoing job
 
 - Answer stuck users the same day  
-- Make sure each employer job has contact phone  
+- Do not collect phone/email in chat — contact is on-platform after approval  
 - Tell the agent what broke (screenshots / “failed at step X”) — code fixes continue in parallel  
 
 ---
@@ -111,5 +111,5 @@ https://citov.tech
 - Gemini configured in production  
 - Google Auth env present on Vercel  
 - Site up: https://citov.tech  
-- Employer file prompt asks for contact name/phone (reset admin prompts after this PR deploys)  
+- Employer/candidate prompts enforce on-platform contact only (reset admin prompts after deploy)  
 - Production defaults: test login off unless explicitly `ALLOW_TEST_LOGIN=true`  

@@ -1,5 +1,9 @@
 import { canonicalizeRoleToken } from "./match-canonical";
 import {
+  candidateMonthlySalaryRange,
+  jobMonthlySalaryRange,
+} from "./salary-normalize";
+import {
   detectWorkDomain,
   normalizeSeniority,
   SALARY_BANDS_NIS,
@@ -7,36 +11,12 @@ import {
 } from "./work-domain";
 import type { AdminSettings, CandidateCard, JobCard } from "./types";
 
-function extractNumbers(text: string): number[] {
-  const cleaned = text.replace(/[,₪]/g, "").replace(/k\b/gi, "000");
-  const matches = cleaned.match(/\d[\d.]*/g) ?? [];
-  return matches
-    .map((m) => Number(m.replace(/[^\d.]/g, "")))
-    .filter((n) => Number.isFinite(n) && n > 0)
-    .map((n) => (n < 500 ? n * 1000 : n));
-}
-
 function candidateSalaryRange(candidate: CandidateCard): { min?: number; max?: number } {
-  const mins = [
-    ...extractNumbers(candidate.salaryMin ?? ""),
-    ...extractNumbers(candidate.salaryExpectation ?? ""),
-  ];
-  const maxs = [
-    ...extractNumbers(candidate.salaryMax ?? ""),
-    ...extractNumbers(candidate.salaryExpectation ?? ""),
-  ];
-  return {
-    min: mins.length ? Math.min(...mins) : undefined,
-    max: maxs.length ? Math.max(...maxs) : undefined,
-  };
+  return candidateMonthlySalaryRange(candidate);
 }
 
 function jobSalaryRange(job: JobCard): { min?: number; max?: number } {
-  const fromRange = extractNumbers(job.salaryRange ?? "");
-  const mins = [...extractNumbers(job.salaryMin ?? ""), ...(fromRange.length ? [Math.min(...fromRange)] : [])];
-  const maxs = [...extractNumbers(job.salaryMax ?? ""), ...(fromRange.length ? [Math.max(...fromRange)] : [])];
-  let min = mins.length ? Math.min(...mins) : undefined;
-  let max = maxs.length ? Math.max(...maxs) : undefined;
+  let { min, max } = jobMonthlySalaryRange(job);
 
   if (min == null && max == null && detectWorkDomain(job) === "technology") {
     const roleKey = canonicalizeRoleToken(job.title);

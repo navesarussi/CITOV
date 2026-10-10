@@ -27,8 +27,8 @@
 4. **Prod flags on Vercel**
    - `ALLOW_DEMO=false` (or unset)
    - Leave `ALLOW_TEST_LOGIN` unset (production code defaults **off**) or set `true` only if you need `/demo`. If Production still has `ALLOW_TEST_LOGIN=true`, remove/set false and redeploy
-5. **Reset admin prompts** after this PR deploys so employer agent picks up contact collection from file
-6. **Smoke the loop** with two Google accounts: candidate CV → chat → employer chat (+ contact) → approve → candidate sees job **with contact**
+5. **Reset admin prompts** after deploy so agents pick up on-platform contact policy from file prompts
+6. **Smoke the loop** with two Google accounts: candidate CV → chat → employer chat (no phone/email asks) → approve → candidate sees job; contact via platform after mutual approval
 7. **Invite** 2 employers + 5–10 candidates using copy in `HUMAN_ONLY.md`
 
 ### Product / trust checklist

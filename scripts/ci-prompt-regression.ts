@@ -9,6 +9,9 @@ import { matchingEvalDataset } from "../eval/matching/dataset";
 import { createEvalMatcherDefinitions } from "../eval/matching/eval-matchers";
 import { loadEvalEmbeddingFixture } from "../eval/matching/load-embed-fixture";
 import { validateMatchingDataset } from "../eval/matching/validate-dataset";
+import { checkChatPromptContactPolicy } from "../src/infrastructure/ai/prompt-contact-policy";
+import { runCrossLangConsistencyEval } from "../eval/matching/cross-lang-eval";
+import { CROSS_LANG_HOLDOUT_PAIRS } from "../eval/matching/cross-lang-holdout-dataset";
 
 type Thresholds = {
   extraction: {
@@ -22,6 +25,10 @@ type Thresholds = {
     minMacroNdcgAtK: number;
     minMacroRecallAtK: number;
     maxBadQueued: number;
+  };
+  crossLang: {
+    minOverallPassRate: number;
+    maxScoreDelta: number;
   };
 };
 
@@ -83,13 +90,66 @@ function checkMatching(t: Thresholds["matching"], lines: string[]): boolean {
   );
 }
 
+function checkCrossLangConsistency(
+  t: Thresholds["crossLang"],
+  lines: string[],
+): boolean {
+  const report = runCrossLangConsistencyEval(t.maxScoreDelta);
+  lines.push("### התאמה רב-לשונית (HE↔EN)");
+  lines.push(`- Pass rate: ${(report.overallPassRate * 100).toFixed(0)}% (מינימום ${(t.minOverallPassRate * 100).toFixed(0)}%)`);
+  for (const [variant, rate] of Object.entries(report.variantPassRates)) {
+    lines.push(`- ${variant}: ${(rate * 100).toFixed(0)}%`);
+  }
+  if (report.failures.length) {
+    for (const f of report.failures.slice(0, 5)) {
+      lines.push(`- **כשל:** ${f}`);
+    }
+  }
+  return report.overallPassRate >= t.minOverallPassRate;
+}
+
+/** Holdout is report-only — never fails CI (no alias tuning on this set). */
+function reportCrossLangHoldout(lines: string[]): void {
+  const report = runCrossLangConsistencyEval(undefined, CROSS_LANG_HOLDOUT_PAIRS);
+  lines.push("### התאמה רב-לשונית — holdout קפוא (15 זוגות, ללא כיוון aliases)");
+  lines.push(
+    `- Pass rate: ${(report.overallPassRate * 100).toFixed(0)}% (**דיווח בלבד**, לא סף merge)`,
+  );
+  for (const [variant, rate] of Object.entries(report.variantPassRates)) {
+    lines.push(`- ${variant}: ${(rate * 100).toFixed(0)}%`);
+  }
+  if (report.failures.length) {
+    for (const f of report.failures.slice(0, 8)) {
+      lines.push(`- כשל holdout: ${f}`);
+    }
+  }
+}
+
+function checkContactPromptPolicy(lines: string[]): boolean {
+  const violations = checkChatPromptContactPolicy();
+  lines.push("### מדיניות יצירת קשר (prompts)");
+  if (!violations.length) {
+    lines.push("- אין בקשות לטלפון/אימייל בפרומפטי employer/candidate");
+    return true;
+  }
+  for (const v of violations) {
+    lines.push(`- **${v.prompt}** — ${v.patternId}: \`${v.excerpt}\``);
+  }
+  return false;
+}
+
 function main(): void {
   const thresholds = loadThresholds();
   const lines: string[] = ["## בדיקת רגרסיה (prompts / matching)", ""];
+  const okContact = checkContactPromptPolicy(lines);
+  lines.push("");
+  const okCrossLang = checkCrossLangConsistency(thresholds.crossLang, lines);
+  reportCrossLangHoldout(lines);
+  lines.push("");
   const okExtract = checkExtraction(thresholds.extraction, lines);
   lines.push("");
   const okMatch = checkMatching(thresholds.matching, lines);
-  const ok = okExtract && okMatch;
+  const ok = okContact && okCrossLang && okExtract && okMatch;
   lines.push("");
   lines.push(ok ? "**✅ עבר**" : "**❌ נכשל — אל תפרסמו prompts בלי בדיקה ידנית**");
 

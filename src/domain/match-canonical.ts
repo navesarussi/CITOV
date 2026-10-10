@@ -25,12 +25,28 @@ const FIELD_ALIASES: Record<string, string> = {
   מסעדנות: "hospitality",
   מסעדות: "hospitality",
   restaurants: "hospitality",
+  מלונאות: "hospitality",
   technology: "technology",
   הייטק: "technology",
   software: "technology",
   "פיתוח תוכנה": "technology",
+  טכנולוגיה: "technology",
   service: "service",
   שירות: "service",
+  marketing: "marketing",
+  שיווק: "marketing",
+  finance: "finance",
+  כספים: "finance",
+  healthcare: "healthcare",
+  בריאות: "healthcare",
+  logistics: "logistics",
+  לוגיסטיקה: "logistics",
+  "human resources": "human resources",
+  "משאבי אנוש": "human resources",
+  security: "security",
+  אבטחה: "security",
+  retail: "retail",
+  קמעונאות: "retail",
 };
 
 const LANGUAGE_ALIASES: Record<string, string> = {
@@ -42,6 +58,50 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   רוסית: "russian",
   arabic: "arabic",
   ערבית: "arabic",
+};
+
+const SENIORITY_ALIASES: Record<string, string> = {
+  junior: "junior",
+  "junior level": "junior",
+  "entry level": "junior",
+  "ג'וניור": "junior",
+  "ג׳וניור": "junior",
+  "זוטר": "junior",
+  mid: "mid",
+  "mid level": "mid",
+  "mid-level": "mid",
+  intermediate: "mid",
+  "ביניים": "mid",
+  "רמה בינונית": "mid",
+  senior: "senior",
+  "senior level": "senior",
+  "בכיר": "senior",
+  "בכירה": "senior",
+  "בכיר/ה": "senior",
+  lead: "lead",
+  "tech lead": "lead",
+  "team lead": "lead",
+  "ראש צוות": "lead",
+};
+
+const EDUCATION_ALIASES: Record<string, string> = {
+  "b.sc": "bachelor",
+  bsc: "bachelor",
+  bs: "bachelor",
+  bachelor: "bachelor",
+  "bachelor's": "bachelor",
+  ba: "bachelor",
+  "תואר ראשון": "bachelor",
+  "תואר ראשון בהנדסה": "bachelor",
+  msc: "master",
+  ms: "master",
+  master: "master",
+  "master's": "master",
+  mba: "master",
+  "תואר שני": "master",
+  phd: "phd",
+  doctorate: "phd",
+  "דוקטורט": "phd",
 };
 
 const ROLE_ALIASES: Record<string, string> = {
@@ -67,6 +127,50 @@ const ROLE_ALIASES: Record<string, string> = {
   "customer support": "customer support",
   "customer service": "customer support",
   "שירות לקוחות": "customer support",
+  "backend developer": "backend developer",
+  "backend engineer": "backend developer",
+  "מהנדס backend": "backend developer",
+  "מפתח backend": "backend developer",
+  "customer service representative": "customer support",
+  "נציג שירות לקוחות": "customer support",
+  "qa engineer": "qa engineer",
+  "junior qa": "qa engineer",
+  "בודק/ת תוכנה": "qa engineer",
+  "מפתח full stack": "full stack developer",
+  "tech lead": "tech lead",
+  "sales associate": "sales associate",
+  "sales": "sales associate",
+  "מוכר/ת": "sales associate",
+  "מכירות": "sales associate",
+  "marketing manager": "marketing manager",
+  "marketing lead": "marketing manager",
+  "מנהל/ת שיווק": "marketing manager",
+  "data analyst": "data analyst",
+  "bookkeeper": "bookkeeper",
+  "accountant assistant": "bookkeeper",
+  "מנהל/ת חשבונות": "bookkeeper",
+  "עוזר/ת חשבונאי": "bookkeeper",
+  "caregiver": "caregiver",
+  "מטפל/ת": "caregiver",
+  "delivery driver": "courier",
+  "courier": "courier",
+  "שליח/ה": "courier",
+  "שליח": "courier",
+  "hr coordinator": "hr generalist",
+  "hr generalist": "hr generalist",
+  "רכז/ת hr": "hr generalist",
+  "security guard": "security officer",
+  "security officer": "security officer",
+  "מאבטח/ת": "security officer",
+  "hotel receptionist": "front desk",
+  "front desk agent": "front desk",
+  "פקיד/ת קבלה": "front desk",
+  "mobile developer": "ios developer",
+  "ios developer": "ios developer",
+  "מפתח/ת ios": "ios developer",
+  "מפתח ios": "ios developer",
+  "devops engineer": "devops",
+  devops: "devops",
 };
 
 function normToken(s: string): string {
@@ -97,6 +201,18 @@ export function canonicalizeLanguageToken(text: string): string {
   return LANGUAGE_ALIASES[n] ?? text;
 }
 
+export function canonicalizeSeniorityToken(text: string): string {
+  const n = normToken(text);
+  if (!n) return text;
+  return SENIORITY_ALIASES[n] ?? text;
+}
+
+export function canonicalizeEducationToken(text: string): string {
+  const n = normToken(text);
+  if (!n) return text;
+  return EDUCATION_ALIASES[n] ?? text;
+}
+
 export function inferMatchCanonicalFromText(card: {
   desiredRole?: string;
   title?: string;
@@ -105,17 +221,30 @@ export function inferMatchCanonicalFromText(card: {
   skills?: string[];
   languages?: string[];
   mustHaves?: string[];
+  seniority?: string;
+  seniorityLevel?: string;
+  experienceLevel?: string;
+  education?: string;
+  industryDomain?: string;
 }): MatchCanonical | undefined {
   const desiredRole = card.desiredRole?.trim();
   const title = card.title?.trim();
   const field = card.field?.trim();
   const location = card.location?.trim();
-  if (!desiredRole && !title && !field && !location) return undefined;
+  const seniorityRaw =
+    card.seniority?.trim() ||
+    card.seniorityLevel?.trim() ||
+    card.experienceLevel?.trim();
+  if (!desiredRole && !title && !field && !location && !seniorityRaw) return undefined;
   const out: MatchCanonical = {};
   if (desiredRole) out.desiredRole = canonicalizeRoleToken(desiredRole);
   if (title) out.title = canonicalizeRoleToken(title);
   if (field) out.field = canonicalizeFieldToken(field);
   if (location) out.location = canonicalizeLocationToken(location);
+  if (seniorityRaw) out.seniority = canonicalizeSeniorityToken(seniorityRaw);
+  if (card.industryDomain?.trim()) {
+    out.industryDomain = canonicalizeFieldToken(card.industryDomain);
+  }
   if (card.skills?.length) {
     out.skills = canonicalizeSkillList(card.skills);
     const families = skillFamiliesFromSkills(card.skills);
@@ -157,6 +286,9 @@ export function candidateForMatching(card: CandidateCard): CandidateCard {
     location: m.location?.trim() || card.location,
     skills: m.skills?.length ? m.skills : card.skills,
     languages: m.languages?.length ? m.languages : card.languages,
+    seniority: m.seniority?.trim() || card.seniority,
+    experienceLevel: m.seniority?.trim() || card.experienceLevel,
+    industryDomain: m.industryDomain?.trim() || card.industryDomain,
   };
 }
 
@@ -168,6 +300,10 @@ export function enrichCandidateForRuleMatch(card: CandidateCard): CandidateCard 
     skills,
     languages: card.languages,
     location: card.location,
+    seniority: card.seniority,
+    experienceLevel: card.experienceLevel,
+    education: card.education,
+    industryDomain: card.industryDomain,
   });
   return candidateForMatching(mergeMatchCanonical(card, inferred));
 }
@@ -179,6 +315,8 @@ export function enrichJobForRuleMatch(card: JobCard): JobCard {
     mustHaves: card.mustHaves,
     languages: card.requiredLanguages,
     location: card.location,
+    seniorityLevel: card.seniorityLevel,
+    industryDomain: card.industryDomain,
   });
   return jobForMatching(mergeMatchCanonical(card, inferred));
 }
@@ -193,6 +331,8 @@ export function jobForMatching(card: JobCard): JobCard {
     location: m.location?.trim() || card.location,
     mustHaves: m.mustHaves?.length ? m.mustHaves : card.mustHaves,
     requiredLanguages: m.languages?.length ? m.languages : card.requiredLanguages,
+    seniorityLevel: m.seniority?.trim() || card.seniorityLevel,
+    industryDomain: m.industryDomain?.trim() || card.industryDomain,
   };
 }
 

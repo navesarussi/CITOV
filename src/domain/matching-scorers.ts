@@ -81,6 +81,16 @@ export function rawRuleBase(candidate: CandidateCard, job: JobCard): number {
   return computeBaseFit(candidate, job);
 }
 
+export function rawSemanticBase(
+  candidate: CandidateCard,
+  job: JobCard,
+  candidateVec: SegmentVectors,
+  jobVec: SegmentVectors,
+): number {
+  const opts = buildSemanticOptions(candidate, job);
+  return computeSemanticMatchBase(candidate, job, candidateVec, jobVec, opts);
+}
+
 export function rawHybridBase(
   candidate: CandidateCard,
   job: JobCard,

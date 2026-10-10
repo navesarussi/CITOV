@@ -1,5 +1,6 @@
 import { isEmployerApprovedIdentityRevealEnabled } from "@/domain/employer-candidate-privacy";
-import type { Match, StoreData, User } from "./types";
+import { employerCanViewCandidateIdentity } from "@/domain/match-identity-reveal";
+import type { StoreData, User } from "./types";
 
 export type CvViewer = {
   userId: string;
@@ -21,10 +22,10 @@ export function canViewCandidateCv(
   if (!isEmployerApprovedIdentityRevealEnabled()) return false;
 
   return store.matches.some(
-    (m: Match) =>
+    (m) =>
       m.jobOwnerId === viewer.userId &&
       m.candidateId === candidateId &&
-      m.status === "approved",
+      employerCanViewCandidateIdentity(m),
   );
 }
 

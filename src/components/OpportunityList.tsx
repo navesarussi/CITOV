@@ -10,6 +10,7 @@ type Job = {
   reason: string;
   whyHe?: string[];
   employerName: string;
+  candidateConsentAt?: string | null;
   card?: {
     title: string;
     field: string;
@@ -26,6 +27,22 @@ type Job = {
 export function OpportunityList(props: { jobs: Job[] }) {
   const { t, fmt } = useTranslation();
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  async function consentToReveal(matchId: string) {
+    const user = readStoredUser();
+    if (!user?.id) return;
+    setBusyId(matchId);
+    try {
+      await fetch("/api/opportunities/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, matchId }),
+      });
+      window.location.reload();
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function markNotRelevant(matchId: string) {
     const user = readStoredUser();
@@ -105,28 +122,23 @@ export function OpportunityList(props: { jobs: Job[] }) {
             </p>
           ) : null}
 
-          {job.card?.contactName || job.card?.contactPhone ? (
-            <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--chip)] px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">
-                {t.jobs.nextStep}
-              </p>
-              {job.card.contactName ? (
-                <p className="mt-1 text-sm font-medium text-[var(--ink)]">
-                  {fmt(t.jobs.contactName, { value: job.card.contactName })}
-                </p>
-              ) : null}
-              {job.card.contactPhone ? (
-                <a
-                  href={`tel:${job.card.contactPhone}`}
-                  className="mt-1 inline-block text-sm font-semibold text-[var(--accent)]"
+          <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--chip)] px-4 py-3">
+            {job.candidateConsentAt ? (
+              <p className="text-sm leading-6 text-[var(--ink)]">{t.jobs.consentDone}</p>
+            ) : (
+              <>
+                <p className="text-xs leading-5 text-[var(--muted)]">{t.jobs.contactPending}</p>
+                <button
+                  type="button"
+                  disabled={busyId === job.matchId}
+                  className="mt-3 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  onClick={() => void consentToReveal(job.matchId)}
                 >
-                  {fmt(t.jobs.contactPhone, { value: job.card.contactPhone })}
-                </a>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-4 text-xs leading-5 text-[var(--muted)]">{t.jobs.contactPending}</p>
-          )}
+                  {t.jobs.consentCta}
+                </button>
+              </>
+            )}
+          </div>
         </article>
       ))}
     </div>

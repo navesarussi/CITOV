@@ -1,15 +1,11 @@
 import { saveCatalogPrompt } from "@/application/admin-prompt-catalog";
-import {
-  defaultPromptSnapshot,
-  getAdminDashboard,
-  resetAdminPrompts,
-  updateAdminPrompts,
-} from "@/application/admin";
+import { getAdminDashboard, updateAdminPrompts } from "@/application/admin";
 import { assertAdmin } from "@/infrastructure/admin-guard";
 import {
   deleteAdminSettings,
   upsertAdminSettings,
 } from "@/infrastructure/db/normalized-store";
+import { recordAdminAudit } from "@/infrastructure/admin-audit";
 import { ok, fail } from "@/infrastructure/http";
 import { readStore } from "@/infrastructure/store";
 
@@ -60,6 +56,12 @@ export async function PUT(req: Request) {
       adminSettings,
     });
 
+    await recordAdminAudit({
+      actorEmail: gate.email ?? "admin",
+      action: "prompts.update",
+      meta: { bytes: body.candidatePrompt!.length + body.employerPrompt!.length },
+    });
+
     const prompts = getAdminDashboard({ ...store, adminSettings }).prompts;
     return ok({ ok: true, prompts, isCustom: true });
   } catch (e) {
@@ -74,7 +76,10 @@ export async function DELETE() {
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
 
     await deleteAdminSettings();
-    const defaults = defaultPromptSnapshot();
+    await recordAdminAudit({
+      actorEmail: gate.email ?? "admin",
+      action: "prompts.reset_defaults",
+    });
     const store = await readStore();
     const prompts = getAdminDashboard({ ...store, adminSettings: undefined }).prompts;
     return ok({ ok: true, prompts, isCustom: false });

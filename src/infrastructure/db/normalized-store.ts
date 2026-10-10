@@ -160,6 +160,9 @@ async function loadFromTables(pool: Pool): Promise<StoreData> {
       isTest: Boolean(m.is_test),
       datasetId: m.dataset_id ?? undefined,
       status: m.status,
+      candidateConsentAt: m.candidate_consent_at
+        ? new Date(m.candidate_consent_at).toISOString()
+        : undefined,
       createdAt: new Date(m.created_at).toISOString(),
       updatedAt: new Date(m.updated_at).toISOString(),
     })),
@@ -237,6 +240,7 @@ const MATCH_COLUMNS = [
   "is_test",
   "dataset_id",
   "status",
+  "candidate_consent_at",
   "created_at",
   "updated_at",
 ];
@@ -253,6 +257,7 @@ function matchRow(m: Match): unknown[] {
     Boolean(m.isTest),
     m.datasetId ?? null,
     m.status,
+    m.candidateConsentAt ?? null,
     m.createdAt,
     m.updatedAt,
   ];

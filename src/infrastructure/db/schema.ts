@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "017_matches_job_candidate_uidx";
+const MIGRATION_VERSION = "018_launch_hardening";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -218,6 +218,17 @@ where coalesce(is_test, false) = false
 create unique index if not exists matches_prod_job_candidate_uidx
   on matches (job_id, candidate_id)
   where coalesce(is_test, false) = false and job_id is not null;
+
+alter table matches add column if not exists candidate_consent_at timestamptz;
+
+create table if not exists admin_audit_log (
+  id text primary key,
+  actor_email text not null,
+  action text not null,
+  meta jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists admin_audit_log_created_idx on admin_audit_log (created_at desc);
 `;
 
 let schemaReady: Promise<void> | undefined;

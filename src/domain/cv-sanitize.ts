@@ -1,3 +1,4 @@
+import { stripContactFromPublicString } from "./contact-info-sanitize";
 import type { UnmappedFact } from "./types";
 
 const NARRATIVE_CAP = 400;
@@ -62,7 +63,9 @@ function cleanString(value: unknown, max: number): string | undefined {
   const capped = capString(value, max);
   if (!capped) return undefined;
   if (hasRepetitiveLoop(capped)) return undefined;
-  return capped;
+  const { text } = stripContactFromPublicString(capped);
+  if (!text) return undefined;
+  return text;
 }
 
 function cleanStringList(value: unknown): string[] | undefined {

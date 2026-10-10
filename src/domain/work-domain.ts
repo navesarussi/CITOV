@@ -119,42 +119,42 @@ export type RuleComponentWeights = {
 };
 
 export const DEFAULT_RULE_WEIGHTS: RuleComponentWeights = {
-  role: 0.24,
+  role: 0.3,
   field: 0.18,
   location: 0.14,
-  skills: 0.14,
+  skills: 0.18,
   soft: 0.04,
   languages: 0.05,
-  personality: 0.08,
-  culture: 0.04,
-  salary: 0.05,
+  personality: 0,
+  culture: 0,
+  salary: 0.09,
   mustPenalty: 0.1,
 };
 
 /** Tuned on labeled train set — technology pairs benefit from higher skills weight. */
 export const DOMAIN_RULE_WEIGHTS: Partial<Record<WorkDomain, RuleComponentWeights>> = {
   technology: {
-    role: 0.22,
+    role: 0.24,
     field: 0.12,
     location: 0.08,
-    skills: 0.22,
+    skills: 0.26,
     soft: 0.03,
     languages: 0.05,
-    personality: 0.06,
-    culture: 0.04,
-    salary: 0.06,
+    personality: 0,
+    culture: 0,
+    salary: 0.1,
     mustPenalty: 0.12,
   },
   hospitality: {
-    role: 0.24,
+    role: 0.28,
     field: 0.16,
-    location: 0.16,
+    location: 0.18,
     skills: 0.12,
     soft: 0.05,
     languages: 0.06,
-    personality: 0.1,
-    culture: 0.05,
-    salary: 0.04,
+    personality: 0,
+    culture: 0,
+    salary: 0.05,
     mustPenalty: 0.1,
   },
 };
