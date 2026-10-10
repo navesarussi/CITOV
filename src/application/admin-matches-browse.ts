@@ -3,6 +3,7 @@ import { isDemoUserId } from "@/domain/admin";
 import type { MatchStatus, StoreData } from "@/domain/types";
 import { scoreCandidateForJob, type MatchEmbeddingIndex } from "@/application/match-scoring";
 import { readQueueThreshold } from "@/application/matching-config";
+import { stableMatchId as syntheticPairMatchId } from "@/domain/match-id";
 
 export type AdminMatchFilter = "queued" | "approved" | "rejected" | "below_threshold";
 

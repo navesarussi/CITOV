@@ -77,6 +77,11 @@ export function wasQuestionJustAsked(chat: ChatMessage[], candidateQuestion: str
 
 export type ModelChatMessage = { role: "user" | "assistant"; content: string };
 
+/** Delimit latest user turn so card/employer text cannot break out of the user role (M4). */
+export function delimitUserTurn(text: string): string {
+  return `<<<USER_INPUT>>>\n${text}\n<<<END_USER_INPUT>>>`;
+}
+
 export function toModelMessages(
   chat: ChatMessage[],
   newMessage: string,
@@ -85,5 +90,5 @@ export function toModelMessages(
     role: (m.role === "assistant" ? "assistant" : "user") as "user" | "assistant",
     content: m.content,
   }));
-  return [...history, { role: "user", content: newMessage }];
+  return [...history, { role: "user", content: delimitUserTurn(newMessage) }];
 }

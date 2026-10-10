@@ -22,11 +22,21 @@ function resolveBuildTimeIso(): string {
   return new Date().toISOString();
 }
 
+const securityHeaders = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+];
+
 const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_APP_VERSION: pkg.version,
     NEXT_PUBLIC_APP_BUILD_ID: resolveBuildId(),
     NEXT_PUBLIC_APP_BUILD_TIME: resolveBuildTimeIso(),
+  },
+  async headers() {
+    return [{ source: "/:path*", headers: securityHeaders }];
   },
   // Keep the file-parsing libs out of the server bundle (they use Node built-ins
   // and ship their own workers/assets).

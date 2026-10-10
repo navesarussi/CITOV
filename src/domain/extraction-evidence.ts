@@ -342,6 +342,8 @@ export function gateExtractedFields(params: {
   fieldConfidence?: Record<string, "high" | "medium" | "low">;
   workHistory?: WorkHistoryEntry[];
   now?: Date;
+  /** When set, drop fields whose keys are not in the set (M3). */
+  allowedFieldKeys?: ReadonlySet<string>;
 }): GatedExtraction {
   const now = params.now ?? new Date();
   const fields: ExtractedField[] =
@@ -366,6 +368,9 @@ export function gateExtractedFields(params: {
 
   for (const field of fields) {
     if (!field.fieldKey?.trim() || !field.value?.trim()) continue;
+    if (params.allowedFieldKeys && !params.allowedFieldKeys.has(field.fieldKey.trim())) {
+      continue;
+    }
     const conf = field.confidence ?? params.fieldConfidence?.[field.fieldKey] ?? "high";
 
     if (!whSanity.ok && field.fieldKey === "experienceYears") {

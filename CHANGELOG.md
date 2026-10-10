@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.22 — 2025-10-10
+
+- Degraded match queue floor (`MATCH_DEGRADED_RULE_QUEUE_FLOOR`, default 0.38).
+- `after()` handlers await degraded-turn persist + `flushScheduledMatchRebuild()` (chat, CV, flexibility).
+- M1 security headers; M2 client events rate limit + message cap; M3 CV/job fieldKey allow-lists; M4 user-turn delimiters in chat prompts.
+
+## 0.4.21 — 2025-10-10
+
+- Matching (H6): stable match IDs `pair__{jobId}__{candidateId}` on rebuild; unique index on production `(job_id, candidate_id)`; employer status updates only from `queued`.
+
 ## 0.4.20 — 2025-10-10
 
 - Matching (H5/H4): semantic leg scaled by `semanticMustHaveFactor(overlap)`; role boost capped at 0.88 and skipped when must-have overlap &lt; 0.34.

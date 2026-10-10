@@ -3,7 +3,7 @@ import { applyFlexibility } from "@/application/update-flexibility";
 import type { CandidateCard, JobCard } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
 import { assertActor } from "@/infrastructure/auth-guard";
-import { scheduleMatchRebuild } from "@/infrastructure/db/match-scheduler";
+import { flushScheduledMatchRebuild } from "@/infrastructure/db/match-scheduler";
 import {
   persistEmployeeProfile,
   persistEmployerProfile,
@@ -42,8 +42,8 @@ export async function PATCH(req: Request) {
       });
     }
 
-    after(() => {
-      scheduleMatchRebuild();
+    after(async () => {
+      await flushScheduledMatchRebuild();
     });
 
     return ok({ ok: true, flexibility: Math.round(body.value) });

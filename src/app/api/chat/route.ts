@@ -19,7 +19,7 @@ import {
   scheduleCandidateEmbeddingRefresh,
   scheduleJobEmbeddingRefresh,
 } from "@/application/card-embedding-sync";
-import { scheduleMatchRebuild } from "@/infrastructure/db/match-scheduler";
+import { flushScheduledMatchRebuild } from "@/infrastructure/db/match-scheduler";
 import { hasGeminiKey } from "@/infrastructure/ai/schemas";
 import {
   extractEmployeePatch,
@@ -179,9 +179,9 @@ export async function POST(req: Request) {
               : await runEmployerStream(controller, store, userId, message, body.jobId);
 
           await persistTurn(role, userId, result);
-          after(() => {
+          after(async () => {
             if (result.aiDegraded) {
-              void enqueueDegradedTurn({
+              await enqueueDegradedTurn({
                 userId,
                 role: role === "employee" ? "employee" : "employer",
                 jobId: result.jobId,
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
             } else if (result.jobId) {
               scheduleJobEmbeddingRefresh(userId, result.jobId, result.card as JobCard);
             }
-            scheduleMatchRebuild();
+            await flushScheduledMatchRebuild();
           });
 
           frame(controller, {

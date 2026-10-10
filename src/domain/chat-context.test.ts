@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   compactCard,
+  delimitUserTurn,
   isSameQuestion,
   selectChatHistory,
   toModelMessages,
@@ -38,7 +39,7 @@ describe("chat-context", () => {
     const messages = toModelMessages(chat, "מכירות");
     assert.deepEqual(
       messages.map((m) => m.content),
-      ["היי", "מה מחפש/ת?", "מכירות"],
+      ["היי", "מה מחפש/ת?", delimitUserTurn("מכירות")],
     );
   });
 
