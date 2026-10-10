@@ -66,7 +66,7 @@ function thresholdSweep(matcher: MatcherDefinition): void {
       r.macroRecallAtK * 0.35 -
       r.confusion.goodMissed.length * 0.08 -
       r.confusion.badQueued.length * 0.15;
-    if (r.confusion.badQueued <= 1 && obj > best.score) {
+    if (r.confusion.badQueued.length <= 1 && obj > best.score) {
       best = {
         t,
         score: obj,

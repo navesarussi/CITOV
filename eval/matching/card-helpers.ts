@@ -1,13 +1,43 @@
+import {
+  inferMatchCanonicalFromText,
+  mergeMatchCanonical,
+} from "../../src/domain/match-canonical";
 import type { CandidateCard, JobCard } from "../../src/domain/types";
 import { emptyCandidateCard, emptyJobCard } from "../../src/domain/types";
 import type { EvalCandidate, EvalJob, EvalLabel, MatchingEvalDataset } from "../../src/domain/matching-eval/types";
 
+function enrichCandidateCard(card: CandidateCard): CandidateCard {
+  return mergeMatchCanonical(
+    card,
+    inferMatchCanonicalFromText({
+      desiredRole: card.desiredRole,
+      field: card.field,
+      skills: card.skills,
+      languages: card.languages,
+    }) ?? {},
+  );
+}
+
+function enrichJobCard(card: JobCard): JobCard {
+  return mergeMatchCanonical(
+    card,
+    inferMatchCanonicalFromText({
+      title: card.title,
+      field: card.field,
+      mustHaves: card.mustHaves,
+      languages: card.requiredLanguages,
+    }) ?? {},
+  );
+}
+
 export function cand(id: string, patch: Partial<CandidateCard>): EvalCandidate {
-  return { id, card: { ...emptyCandidateCard(), flexibility: 5, ...patch } };
+  const card = enrichCandidateCard({ ...emptyCandidateCard(), flexibility: 5, ...patch });
+  return { id, card };
 }
 
 export function job(id: string, patch: Partial<JobCard>): EvalJob {
-  return { id, card: { ...emptyJobCard(), flexibility: 5, ...patch } };
+  const card = enrichJobCard({ ...emptyJobCard(), flexibility: 5, ...patch });
+  return { id, card };
 }
 
 export function lbl(

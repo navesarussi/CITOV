@@ -3,6 +3,17 @@ import { z } from "zod";
 const optStr = z.string().optional();
 const optArr = z.array(z.string()).optional();
 
+const matchCanonicalSchema = z
+  .object({
+    desiredRole: optStr,
+    title: optStr,
+    field: optStr,
+    skills: optArr,
+    languages: optArr,
+    mustHaves: optArr,
+  })
+  .optional();
+
 export const candidatePatchSchema = z.object({
   summary: optStr,
   desiredRole: optStr,
@@ -56,6 +67,7 @@ export const candidatePatchSchema = z.object({
   narrative: optStr,
   flexibility: z.number().min(1).max(10).optional(),
   extras: z.record(z.string(), z.string()).optional(),
+  matchCanonical: matchCanonicalSchema,
 });
 
 const confidenceSchema = z.enum(["high", "medium", "low"]).optional();
@@ -160,6 +172,7 @@ export const jobPatchSchema = z.object({
   narrative: optStr,
   flexibility: z.number().min(1).max(10).optional(),
   extras: z.record(z.string(), z.string()).optional(),
+  matchCanonical: matchCanonicalSchema,
 });
 
 export type CandidatePatch = z.infer<typeof candidatePatchSchema>;

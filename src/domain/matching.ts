@@ -2,6 +2,7 @@
  * Rule-based fit (token overlap + must-have penalty). Kept for structured
  * gates and hybrid blending; cross-language titles need semantic-matching.ts.
  */
+import { candidateForMatching, jobForMatching } from "./match-canonical";
 import type { CandidateCard, JobCard } from "./types";
 
 function normalize(value: string): string {
@@ -105,6 +106,12 @@ export function shouldQueueForEmployer(score: number): boolean {
 
 /** Production-equivalent match score (base fit + combined flexibility). */
 export function scoreMatch(candidate: CandidateCard, job: JobCard): number {
+  const c = candidateForMatching(candidate);
+  const j = jobForMatching(job);
+  return scoreMatchCards(c, j);
+}
+
+function scoreMatchCards(candidate: CandidateCard, job: JobCard): number {
   return scoreFromBase(computeBaseFit(candidate, job), candidate, job);
 }
 

@@ -7,6 +7,16 @@ export type ChatMessage = {
   createdAt: string;
 };
 
+/** English-normalized fields for matching; originals stay on card for display. */
+export type MatchCanonical = {
+  desiredRole?: string;
+  title?: string;
+  field?: string;
+  skills?: string[];
+  languages?: string[];
+  mustHaves?: string[];
+};
+
 export type CandidateCard = {
   summary: string;
   desiredRole: string;
@@ -66,6 +76,8 @@ export type CandidateCard = {
   /** 1 = גמיש מאוד, 10 = חייב התאמה מדויקת */
   flexibility: number;
   extras: Record<string, string>;
+  /** English-normalized matching fields; UI keeps desiredRole etc. in user language. */
+  matchCanonical?: MatchCanonical;
 };
 
 export type JobCard = {
@@ -118,6 +130,7 @@ export type JobCard = {
   contactPhone: string;
   /** Free-form narrative about the role / culture */
   narrative: string;
+  matchCanonical?: MatchCanonical;
   /** 1 = גמיש מאוד בדרישות, 10 = רק התאמה מדויקת */
   flexibility: number;
   extras: Record<string, string>;

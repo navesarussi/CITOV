@@ -43,6 +43,12 @@ export function AdminShell(props: {
               מעסיקים
             </Link>
             <Link
+              href="/admin/labeling"
+              className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
+            >
+              תיוג התאמות
+            </Link>
+            <Link
               href="/employee"
               className="inline-flex min-h-9 items-center rounded-xl border border-[var(--stroke)] bg-[var(--surface)] px-3 py-1.5 text-sm text-[var(--ink)] transition duration-200 hover:border-[var(--accent)]"
             >

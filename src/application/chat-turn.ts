@@ -19,6 +19,10 @@ import {
   resolveConflictsFromPatch,
   resolvePendingInferencesFromPatch,
 } from "@/domain/cv-merge";
+import {
+  inferMatchCanonicalFromText,
+  mergeMatchCanonical,
+} from "@/domain/match-canonical";
 import type {
   AiUsageRecord,
   CandidateCard,
@@ -118,6 +122,20 @@ function applyCandidatePatchSafely(
     );
   }
 
+  if (patch.matchCanonical) {
+    nextCard = mergeMatchCanonical(nextCard, patch.matchCanonical);
+  } else if (patch.desiredRole || patch.field || patch.skills?.length) {
+    nextCard = mergeMatchCanonical(
+      nextCard,
+      inferMatchCanonicalFromText({
+        desiredRole: nextCard.desiredRole,
+        field: nextCard.field,
+        skills: nextCard.skills,
+        languages: nextCard.languages,
+      }),
+    );
+  }
+
   return { card: nextCard, cv: nextCv };
 }
 
@@ -127,7 +145,7 @@ function applyCandidatePatch(card: CandidateCard, patch?: CandidatePatch): Candi
 
 function applyJobPatch(card: JobCard, patch?: JobPatch): JobCard {
   if (!patch) return card;
-  return {
+  let next: JobCard = {
     ...card,
     ...patch,
     mustHaves: patch.mustHaves ?? card.mustHaves,
@@ -136,6 +154,20 @@ function applyJobPatch(card: JobCard, patch?: JobPatch): JobCard {
     interviewSlots: patch.interviewSlots ?? card.interviewSlots,
     extras: { ...card.extras, ...(patch.extras ?? {}) },
   };
+  if (patch.matchCanonical) {
+    next = mergeMatchCanonical(next, patch.matchCanonical);
+  } else if (patch.title || patch.field || patch.mustHaves?.length) {
+    next = mergeMatchCanonical(
+      next,
+      inferMatchCanonicalFromText({
+        title: next.title,
+        field: next.field,
+        mustHaves: next.mustHaves,
+        languages: next.requiredLanguages,
+      }),
+    );
+  }
+  return next;
 }
 
 function makeMessage(role: "user" | "assistant", content: string): ChatMessage {

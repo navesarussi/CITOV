@@ -1,3 +1,4 @@
+import { candidateForMatching, jobForMatching } from "./match-canonical";
 import type { CandidateCard, JobCard } from "./types";
 
 /** Which slice of a card is embedded (see docs/EMBEDDINGS.md). */
@@ -25,15 +26,16 @@ export function isSegmentNonempty(text: string | undefined): boolean {
  * vectors — they remain in rule-based filters/penalties.
  */
 export function candidateEmbeddingTexts(card: CandidateCard): EmbeddingSegmentTexts {
+  const c = candidateForMatching(card);
   return {
-    role: joinParts([card.desiredRole, card.field, card.subField, card.experienceLevel]),
+    role: joinParts([c.desiredRole, c.field, c.subField, c.experienceLevel]),
     skills: joinParts(
       [
-        joinList(card.skills),
-        joinList(card.softSkills),
-        card.licenses,
-        card.certifications,
-        card.computerSkills,
+        joinList(c.skills),
+        joinList(c.softSkills),
+        c.licenses,
+        c.certifications,
+        c.computerSkills,
       ],
       " | ",
     ),
@@ -49,14 +51,15 @@ export function candidateEmbeddingTexts(card: CandidateCard): EmbeddingSegmentTe
 }
 
 export function jobEmbeddingTexts(card: JobCard): EmbeddingSegmentTexts {
+  const j = jobForMatching(card);
   return {
-    role: joinParts([card.title, card.field, card.subField, card.seniorityLevel]),
+    role: joinParts([j.title, j.field, j.subField, j.seniorityLevel]),
     skills: joinParts(
       [
-        joinList(card.mustHaves),
-        joinList(card.niceToHaves),
-        card.toolsRequired,
-        card.requiredLicenses,
+        joinList(j.mustHaves),
+        joinList(j.niceToHaves),
+        j.toolsRequired,
+        j.requiredLicenses,
       ],
       " | ",
     ),

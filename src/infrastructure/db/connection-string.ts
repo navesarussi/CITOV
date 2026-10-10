@@ -1,6 +1,6 @@
-/** Known-good for this Supabase project (from prod `/api/health/db` resolvedHost). */
-const DEFAULT_POOLER_REGION = "ap-south-1";
-const DEFAULT_POOLER_CLUSTER = "aws-1";
+/** Fallback when DATABASE_URL is still a direct `db.*.supabase.co` host. */
+const DEFAULT_POOLER_REGION = "ap-southeast-1";
+const DEFAULT_POOLER_CLUSTER = "aws-0";
 
 const POOLER_REGIONS = [
   "ap-south-1",
@@ -106,23 +106,31 @@ export function poolerConnectionCandidates(connectionString: string): string[] {
       ...POOLER_CLUSTERS.filter((c) => c !== preferredCluster),
     ];
 
+    const region = process.env.SUPABASE_POOLER_REGION?.trim() || DEFAULT_POOLER_REGION;
+    const cluster = process.env.SUPABASE_POOLER_CLUSTER?.trim() || DEFAULT_POOLER_CLUSTER;
     const out: string[] = [];
-    for (const cluster of clusters) {
-      for (const region of poolerRegionCandidates()) {
-        for (const port of POOLER_PORTS) {
-          out.push(
-            buildDatabaseUrl({
-              user: `postgres.${parsed.ref}`,
-              password: parsed.password,
-              host: `${cluster}-${region}.pooler.supabase.com`,
-              port,
-              database: parsed.database,
-            }),
-          );
-        }
-      }
+    for (const port of POOLER_PORTS) {
+      out.push(
+        buildDatabaseUrl({
+          user: `postgres.${parsed.ref}`,
+          password: parsed.password,
+          host: `${cluster}-${region}.pooler.supabase.com`,
+          port,
+          database: parsed.database,
+        }),
+      );
     }
-    return out;
+    const altCluster = cluster === "aws-0" ? "aws-1" : "aws-0";
+    out.push(
+      buildDatabaseUrl({
+        user: `postgres.${parsed.ref}`,
+        password: parsed.password,
+        host: `${altCluster}-${region}.pooler.supabase.com`,
+        port: 6543,
+        database: parsed.database,
+      }),
+    );
+    return [...new Set(out)];
   } catch {
     return [connectionString];
   }
