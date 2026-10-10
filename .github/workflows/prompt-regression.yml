@@ -16,6 +16,9 @@ on:
 jobs:
   regression:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,36 +27,22 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Extraction + matching thresholds
+        env:
+          REGRESSION_SUMMARY_PATH: eval/ci/last-run-summary.md
         run: npm run ci:prompt-regression
       - name: PR comment (Hebrew summary)
         if: github.event_name == 'pull_request' && always()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const body = fs.existsSync(process.env.GITHUB_STEP_SUMMARY)
-              ? fs.readFileSync(process.env.GITHUB_STEP_SUMMARY, 'utf8')
-              : 'בדיקת רגרסיה — ראו לוג job.';
-            const marker = '<!-- prompt-regression -->';
-            const full = `${marker}\n${body}`;
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find((c) => c.body?.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body: full,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body: full,
-              });
-            }
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          marker='<!-- prompt-regression -->'
+          body="$(cat eval/ci/last-run-summary.md 2>/dev/null || echo 'בדיקת רגרסיה — ראו summary ב-job.')"
+          full="${marker}
+          ${body}"
+          existing="$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --jq '.[] | select(.body | contains("prompt-regression")) | .id' | head -1)"
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/${existing}" -f body="$full"
+          else
+            gh pr comment "${{ github.event.pull_request.number }}" --body "$full"
+          fi

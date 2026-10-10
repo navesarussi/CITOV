@@ -95,6 +95,8 @@ function main(): void {
 
   const summary = lines.join("\n");
   console.log(summary);
+  const summaryPath = process.env.REGRESSION_SUMMARY_PATH ?? join(process.cwd(), "eval/ci/last-run-summary.md");
+  appendFileSync(summaryPath, `${summary}\n`);
   if (process.env.GITHUB_STEP_SUMMARY) {
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${summary}\n`);
   }
