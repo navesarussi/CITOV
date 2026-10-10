@@ -14,6 +14,7 @@ type Row = {
   jobCount: number;
   avgUserMessages: number;
   avgKnowledgePercent: number;
+  employerVerified: boolean;
 };
 
 export default function AdminEmployersPage() {
@@ -46,6 +47,17 @@ export default function AdminEmployersPage() {
   useDeferredEffect(() => {
     void load();
   }, [load]);
+
+  async function toggleVerified(e: React.MouseEvent, userId: string, verified: boolean) {
+    e.preventDefault();
+    e.stopPropagation();
+    await fetch(`/api/admin/employers/${userId}/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ verified: !verified }),
+    });
+    void load();
+  }
 
   return (
     <AdminShell
@@ -80,10 +92,18 @@ export default function AdminEmployersPage() {
                   <span className="font-semibold text-[var(--hero)]">{r.name}</span>
                   {r.email ? <span className="ms-2 text-xs text-[var(--muted)]">{r.email}</span> : null}
                 </span>
-                <span className="flex flex-wrap gap-3 text-xs text-[var(--muted)]">
+                <span className="flex flex-wrap items-center gap-3 text-xs text-[var(--muted)]">
                   <span>{r.jobCount} משרות</span>
                   <span>ממוצע הודעות {r.avgUserMessages.toFixed(1)}</span>
                   <span>ידע {Math.round(r.avgKnowledgePercent)}%</span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="min-h-7 px-2 py-1 text-xs"
+                    onClick={(e) => void toggleVerified(e, r.userId, r.employerVerified)}
+                  >
+                    {r.employerVerified ? "מאומת ✓" : "לא מאומת — אשר"}
+                  </Button>
                 </span>
               </Link>
             </li>

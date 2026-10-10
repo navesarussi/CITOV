@@ -57,6 +57,9 @@ export async function POST(req: Request) {
     if (allowOpenAuth()) {
       const deviceId = body.deviceId?.trim() || randomUUID();
       const existing = await findUserByEmailOrGoogle(`open:${deviceId}`, deviceId);
+      if (existing && existing.role !== role) {
+        return ok({ error: "לא ניתן להחליף תפקיד לאחר ההרשמה." }, { status: 409 });
+      }
       const base: User = existing ?? {
         id: randomUUID(),
         name: body.name?.trim() || (role === "employee" ? "מועמד/ת" : "מעסיק/ה"),
@@ -64,6 +67,7 @@ export async function POST(req: Request) {
         email: `open:${deviceId}@local.dev`,
         googleId: deviceId,
         createdAt: new Date().toISOString(),
+        employerVerified: role === "employer" ? false : undefined,
       };
       const user = await upsertSessionRole({ ...base, role }, role);
       return ok({ user });
@@ -77,6 +81,15 @@ export async function POST(req: Request) {
     const email = session.user.email;
     const googleId = session.user.googleId ?? session.user.id;
     const existing = await findUserByEmailOrGoogle(email, googleId);
+    if (existing && existing.role !== role) {
+      return ok(
+        {
+          error:
+            "לא ניתן להחליף תפקיד לאחר ההרשמה. פנו למנהל המערכת אם נדרש שינוי.",
+        },
+        { status: 409 },
+      );
+    }
 
     const base: User = existing ?? {
       id: randomUUID(),

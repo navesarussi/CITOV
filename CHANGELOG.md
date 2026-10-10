@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.14 — 2025-10-10
+
+- Security (C1): CV access only on approved matches + verified employer + identity-reveal flag; queued candidates anonymized; role immutable after signup; admin employer verification toggle.
+
 ## 0.4.13 — 2025-10-10
 
 - Admin mobile: fixed bottom tab bar (דשבורד, תיוג, ניטור, ארכיטקטורה, עוד); removed תפריט מנהל sheet and header hamburger on small screens.

@@ -1,3 +1,4 @@
+import { isEmployerApprovedIdentityRevealEnabled } from "@/domain/employer-candidate-privacy";
 import type { Match, StoreData, User } from "./types";
 
 export type CvViewer = {
@@ -5,7 +6,7 @@ export type CvViewer = {
   isAdmin: boolean;
 };
 
-/** FR-CV-05: admin always; employer only for matched queued/approved candidates. */
+/** FR-CV-05: admin; employer only on approved match + verified + identity reveal flag. */
 export function canViewCandidateCv(
   store: StoreData,
   viewer: CvViewer,
@@ -16,12 +17,14 @@ export function canViewCandidateCv(
 
   const viewerUser: User | undefined = store.users.find((u) => u.id === viewer.userId);
   if (!viewerUser || viewerUser.role !== "employer") return false;
+  if (viewerUser.employerVerified === false) return false;
+  if (!isEmployerApprovedIdentityRevealEnabled()) return false;
 
   return store.matches.some(
     (m: Match) =>
       m.jobOwnerId === viewer.userId &&
       m.candidateId === candidateId &&
-      (m.status === "queued" || m.status === "approved"),
+      m.status === "approved",
   );
 }
 

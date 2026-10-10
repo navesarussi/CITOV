@@ -1,6 +1,9 @@
 import { ok, fail } from "@/infrastructure/http";
 import { authorizeActor } from "@/infrastructure/auth-guard";
-import { projectCandidateCard } from "@/domain/candidate-card-views";
+import {
+  anonymizedMatchReason,
+  projectCandidateCardAnonymized,
+} from "@/domain/employer-candidate-privacy";
 import { readCandidateQueueStore } from "@/infrastructure/store";
 
 export async function GET(req: Request) {
@@ -19,22 +22,15 @@ export async function GET(req: Request) {
         return (m.jobId || m.jobOwnerId) === jobId;
       })
       .sort((a, b) => b.score - a.score);
-    const candidates = matches.map((m) => {
+    const candidates = matches.map((m, index) => {
       const emp = store.employees.find((e) => e.userId === m.candidateId);
-      const user = store.users.find((u) => u.id === m.candidateId);
-      const latestCv = emp?.cv?.documents
-        ?.filter((d) => d.kind === "cv")
-        .slice()
-        .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))[0];
       return {
         matchId: m.id,
         jobId: m.jobId || m.jobOwnerId,
         score: m.score,
-        reason: m.reason,
-        name: user?.name ?? "מועמד/ת",
-        candidateId: m.candidateId,
-        cvDocumentId: latestCv?.id ?? null,
-        card: emp?.card ? projectCandidateCard(emp.card, "employer") : undefined,
+        reason: anonymizedMatchReason(),
+        name: `מועמד/ת #${index + 1}`,
+        card: emp?.card ? projectCandidateCardAnonymized(emp.card) : undefined,
       };
     });
     return ok({ candidates });

@@ -47,8 +47,24 @@ describe("canViewCandidateCv", () => {
     assert.equal(canViewCandidateCv(store(), { userId: "a1", isAdmin: true }, "e1"), true);
   });
 
-  it("allows matched employer", () => {
-    assert.equal(canViewCandidateCv(store(), { userId: "b1", isAdmin: false }, "e1"), true);
+  it("denies employer on queued match (CV only after approved + reveal)", () => {
+    assert.equal(canViewCandidateCv(store(), { userId: "b1", isAdmin: false }, "e1"), false);
+  });
+
+  it("allows verified employer on approved match when reveal enabled", () => {
+    const prev = process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL;
+    process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL = "true";
+    try {
+      const s = store();
+      s.users = s.users.map((u) =>
+        u.id === "b1" ? { ...u, employerVerified: true } : u,
+      );
+      s.matches = s.matches.map((m) => ({ ...m, status: "approved" as const }));
+      assert.equal(canViewCandidateCv(s, { userId: "b1", isAdmin: false }, "e1"), true);
+    } finally {
+      if (prev === undefined) delete process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL;
+      else process.env.EMPLOYER_APPROVED_IDENTITY_REVEAL = prev;
+    }
   });
 
   it("denies unmatched employer", () => {
