@@ -32,8 +32,9 @@ export const DEFAULT_JOB_CARD_EXTRACTION = `את/ה עוזר/ת השמה שמח�
 - חלץ/י אך ורק מה שמופיע במפורש בטקסט. אל תמציא/י ואל תנחש/י.
 - לכל שדה: extractedFields עם fieldKey, value, evidence (ציטוט מהמקור), confidence.
 - ערכים תמציתיים. שדה שלא מופיע בטקסט — אל תכלול/י אותו ב-patch.
+- **אל תחלץ/י** טלפון, אימייל, contactName, contactPhone — יצירת קשר רק דרך הפלטפורמה.
 - העדף/י למלא: title, field, location, mustHaves, niceToHaves, requiredLanguages, salaryRange, workModel, seniorityLevel, personalityFit, teamCulture.
-- סכם/י את המשרה והתרבות בשדה narrative.
+- סכם/י את המשרה והתרבות בשדה narrative (בלי פרטי קשר).
 החזר/י JSON עם השדה patch בלבד.`;
 
 export const DEFAULT_MATCH_REASON_ENRICH = `נסח במשפט אחד בעברית, אנושי ובלי כותרות, למה המועמד והמשרה מתאימים.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.25 — 2025-10-10
+
+- **Product / security:** On-platform contact only — employer and candidate chat prompts never ask for phone/email or promise off-platform handoff; employer identity from Google. Strip IL phones/emails and `contactName`/`contactPhone` from job/candidate patches (including CV/job extraction). Prompt-regression checks for contact-policy violations.
+
 ## 0.4.24 — 2025-10-10
 
 - **Fix:** Match rebuild no longer drops eval demo queued matches — `seed-*` users participate in rebuild; only sandbox/e2e/singleton demo personas are skipped (fixes admin «התאמות 0» after backfill/H6).
