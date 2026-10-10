@@ -91,7 +91,15 @@ export default function AdminJobDetailPage() {
             <AdminFieldGrid card={data.card as unknown as Record<string, unknown>} />
           </section>
           <section>
-            <h2 className="mb-3 text-lg font-semibold">מאצ׳ים</h2>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold">מאצ׳ים</h2>
+              <Link
+                href={`/admin/matches?jobId=${encodeURIComponent(jobId)}`}
+                className="text-xs font-medium text-[var(--accent)] hover:underline"
+              >
+                כל ההתאמות →
+              </Link>
+            </div>
             <AdminMatchList
               items={data.matches.map((m) => ({
                 id: m.id,

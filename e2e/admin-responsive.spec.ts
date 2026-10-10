@@ -10,6 +10,7 @@ const WIDTHS = [
 
 const ADMIN_ROUTES = [
   { slug: "dashboard", path: "/admin" },
+  { slug: "matches", path: "/admin/matches" },
   { slug: "architecture", path: "/admin/architecture" },
   { slug: "candidates", path: "/admin/candidates" },
   { slug: "employers", path: "/admin/employers" },
@@ -58,21 +59,36 @@ test.describe("Admin portal mobile layout", () => {
       await page.goto("/admin");
       await expect(page).toHaveURL(/\/admin\/?$/);
 
+      await page.getByTestId("admin-tab-matches").click();
+      await expect(page).toHaveURL(/\/admin\/matches/);
+
       await page.getByTestId("admin-tab-labeling").click();
       await expect(page).toHaveURL(/\/admin\/labeling/);
 
       await page.getByTestId("admin-tab-monitoring").click();
       await expect(page).toHaveURL(/\/admin\/monitoring/);
 
-      await page.getByTestId("admin-tab-architecture").click();
-      await expect(page).toHaveURL(/\/admin\/architecture/);
-
       await page.getByTestId("admin-tab-dashboard").click();
       await expect(page).toHaveURL(/\/admin\/?$/);
 
       await page.getByTestId("admin-tab-more").click();
-      await page.getByTestId("admin-more-candidates").click();
-      await expect(page).toHaveURL(/\/admin\/candidates/);
+      await page.getByTestId("admin-more-architecture").click();
+      await expect(page).toHaveURL(/\/admin\/architecture/);
     });
   }
+
+  test("matches explain drawer @ 390px", async ({ page, request }) => {
+    await syncE2eAdminAuth(page, request);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/admin/matches?filter=queued");
+    await page.waitForTimeout(2000);
+    const row = page.getByTestId("admin-match-row").first();
+    await row.click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByText("למה ההתאמה הזו?")).toBeVisible();
+    await page.screenshot({
+      path: path.join("e2e", "screenshots", "admin-matches-drawer-390.png"),
+      fullPage: true,
+    });
+  });
 });

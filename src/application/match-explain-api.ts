@@ -1,3 +1,4 @@
+import { scoreCandidateForJob } from "@/application/match-scoring";
 import { buildMatchScoreBreakdown } from "@/application/match-score-detail";
 import { breakdownWaterfallHe } from "@/application/match-explain-waterfall";
 import { explainMatchPair } from "@/application/match-pair-explain";
@@ -59,4 +60,56 @@ export function explainStoredOrLiveMatch(params: {
     candidate: cards.candidate,
     job: cards.job,
   };
+}
+
+export function explainLivePair(params: {
+  store: StoreData;
+  jobId: string;
+  candidateId: string;
+  index?: MatchEmbeddingIndex;
+}): {
+  match: Match;
+  breakdown: MatchScoreBreakdown;
+  waterfall: ReturnType<typeof breakdownWaterfallHe>;
+  legacy: ReturnType<typeof explainMatchPair>;
+  candidate: CandidateCard;
+  job: JobCard;
+} | null {
+  const emp = params.store.employees.find((e) => e.userId === params.candidateId);
+  let jobOwnerId = "";
+  let jobCard: JobCard | undefined;
+  for (const raw of params.store.employers) {
+    const er = normalizeEmployerRecord(raw);
+    const slot = er.jobs.find((j) => j.id === params.jobId);
+    if (slot) {
+      jobOwnerId = er.userId;
+      jobCard = slot.card;
+      break;
+    }
+  }
+  if (!emp || !jobCard || !jobOwnerId) return null;
+  const scored = scoreCandidateForJob({
+    candidate: emp.card,
+    job: jobCard,
+    candidateId: params.candidateId,
+    jobId: params.jobId,
+    index: params.index,
+    adminSettings: params.store.adminSettings,
+  });
+  const now = new Date().toISOString();
+  const match: Match = {
+    id: `pair__${params.jobId}__${params.candidateId}`,
+    jobOwnerId,
+    jobId: params.jobId,
+    candidateId: params.candidateId,
+    score: scored.score,
+    reason: scored.reason,
+    status: scored.queued ? "queued" : "rejected",
+    scoreBreakdown: scored.scoreBreakdown,
+    createdAt: now,
+    updatedAt: now,
+  };
+  const explained = explainStoredOrLiveMatch({ store: params.store, match, index: params.index });
+  if (!explained) return null;
+  return { match, ...explained };
 }

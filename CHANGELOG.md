@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.17 — 2025-10-10
+
+- Admin **התאמות** page: filters (בתור / אושרו / נדחו / מתחת לסף), scope toggle, search, pagination, explain drawer; links from candidate/job detail.
+- Mobile nav: single bottom bar (דשבורד, התאמות, תיוג, ניטור, עוד) — full-screen “עוד” list; no overlapping header menu on mobile.
+
 ## 0.4.16 — 2025-10-10
 
 - Security (H1): public `/api/health/db|ai|auth` return `{ ok }` only; admin `?detail=1` for diagnostics.

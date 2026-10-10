@@ -11,7 +11,7 @@
 }
 
 .admin-main-with-tab-bar {
-  padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(3.35rem + env(safe-area-inset-bottom, 0px));
 }
 
 .admin-main-with-label-bar {
@@ -42,12 +42,22 @@
 /* Compact mobile density */
 @media (max-width: 767px) {
   .admin-portal .panel {
-    padding: 0.65rem !important;
-    border-radius: 0.75rem !important;
+    padding: 0.55rem !important;
+    border-radius: 0.65rem !important;
   }
 
   .admin-portal .admin-stat-card {
-    padding: 0.5rem 0.65rem !important;
+    padding: 0.45rem 0.55rem !important;
+  }
+
+  .admin-portal h2 {
+    font-size: 0.95rem !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .admin-portal .admin-main {
+    padding-inline: 0.5rem;
   }
 }
 

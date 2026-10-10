@@ -465,6 +465,7 @@ export const he: Messages = {
   },
   adminNav: {
     dashboard: "דשבורד",
+    matches: "התאמות",
     candidates: "מועמדים",
     employers: "מעסיקים",
     labeling: "תיוג התאמות",
@@ -478,6 +479,8 @@ export const he: Messages = {
   adminPages: {
     dashboardTitle: "פורטל מנהלים",
     dashboardSubtitle: "סטטיסטיקות, עלויות AI, ומצב המערכת",
+    matchesTitle: "התאמות",
+    matchesSubtitle: "כל זוגות משרה–מועמד, סינון ופירוט ציון",
     candidatesTitle: "מועמדים",
     candidatesSubtitle: "דפדפן כרטיסים — קריאה בלבד",
     candidateDetailSubtitle: "כרטיס מלא — קריאה בלבד",
