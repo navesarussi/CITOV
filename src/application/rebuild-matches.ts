@@ -1,5 +1,5 @@
-import { randomUUID } from "crypto";
 import { isDemoUserId } from "@/domain/admin";
+import { stableMatchId } from "@/domain/match-id";
 import { isSandboxUserId } from "@/domain/test-sandbox";
 import { normalizeEmployerRecord } from "@/domain/employer-jobs";
 import type { Match, StoreData } from "@/domain/types";
@@ -57,7 +57,7 @@ export function rebuildMatches(
         newlyQueued += 1;
 
         next.push({
-          id: randomUUID(),
+          id: stableMatchId(job.id, employee.userId),
           jobOwnerId: employer.userId,
           jobId: job.id,
           candidateId: employee.userId,

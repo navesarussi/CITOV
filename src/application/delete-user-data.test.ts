@@ -7,11 +7,9 @@ import { NotFoundError } from "@/domain/errors";
 describe("deleteUserAccountData (memory store)", () => {
   it("refuses demo and removes a custom user", async () => {
     const prevDb = process.env.DATABASE_URL;
-    const prevNode = process.env.NODE_ENV;
-    process.env.NODE_ENV = "development";
-    delete process.env.DATABASE_URL;
     try {
-    writeMemoryStore(createSeedStore());
+      process.env.DATABASE_URL = "";
+      writeMemoryStore(createSeedStore());
     await assert.rejects(
       () => deleteUserAccountData("demo-employee"),
       (e: unknown) => e instanceof NotFoundError,
@@ -48,8 +46,6 @@ describe("deleteUserAccountData (memory store)", () => {
     } finally {
       if (prevDb === undefined) delete process.env.DATABASE_URL;
       else process.env.DATABASE_URL = prevDb;
-      if (prevNode === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = prevNode;
     }
   });
 });

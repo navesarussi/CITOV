@@ -21,17 +21,10 @@ export type AdminMatchRow = {
   topReasons: string[];
 };
 
-export function syntheticPairMatchId(jobId: string, candidateId: string): string {
-  return `pair__${jobId}__${candidateId}`;
-}
-
-export function parseSyntheticPairMatchId(matchId: string): { jobId: string; candidateId: string } | null {
-  if (!matchId.startsWith("pair__")) return null;
-  const rest = matchId.slice(6);
-  const sep = rest.indexOf("__");
-  if (sep <= 0) return null;
-  return { jobId: rest.slice(0, sep), candidateId: rest.slice(sep + 2) };
-}
+export {
+  stableMatchId as syntheticPairMatchId,
+  parseStableMatchId as parseSyntheticPairMatchId,
+} from "@/domain/match-id";
 
 function userName(store: StoreData, userId: string): string {
   return store.users.find((u) => u.id === userId)?.name ?? userId;
