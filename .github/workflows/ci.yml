@@ -15,6 +15,7 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      - run: bash scripts/check-no-conflict-markers.sh
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
