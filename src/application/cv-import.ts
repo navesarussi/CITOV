@@ -6,6 +6,12 @@ import { NotFoundError } from "@/domain/errors";
 import { emptyCvProfile, type CandidateDocument, type StoreData } from "@/domain/types";
 import type { Locale } from "@/i18n/types";
 import { runCvExtraction } from "@/infrastructure/ai/cv-extraction";
+import {
+  cvPersonNameFromExtraction,
+  shouldStageIdentityMismatch,
+  stageCvForIdentityCheck,
+} from "@/application/cv-identity";
+import { replaceEmployee } from "@/domain/candidate-profiles";
 
 export type SaveCvInput = {
   userId: string;
@@ -113,19 +119,55 @@ export async function analyzeCandidateCv(
     extractionStatus: status,
   };
 
-  const applied = applyCvExtraction(
-    store,
-    userId,
-    {
-      patch: extracted.patch,
-      workHistory: extracted.workHistory,
-      educationHistory: extracted.educationHistory,
-      unmappedFacts: extracted.unmappedFacts,
-      fieldConfidence: extracted.fieldConfidence,
-      inferences: extracted.inferences,
-    },
-    analyzedDoc,
-  );
+  const extractionPayload = {
+    patch: extracted.patch,
+    workHistory: extracted.workHistory,
+    educationHistory: extracted.educationHistory,
+    unmappedFacts: extracted.unmappedFacts,
+    fieldConfidence: extracted.fieldConfidence,
+    inferences: extracted.inferences,
+  };
+
+  const accountName = store.users.find((u) => u.id === userId)?.name ?? "";
+  const cvPersonName =
+    extracted.subjectFullName?.trim() ||
+    cvPersonNameFromExtraction(extractionPayload, document);
+
+  let applied: ReturnType<typeof applyCvExtraction>;
+  if (shouldStageIdentityMismatch(accountName, cvPersonName)) {
+    let stagedStore = stageCvForIdentityCheck(store, userId, {
+      cvPersonName: cvPersonName!,
+      documentId: document.id,
+      extraction: extractionPayload,
+      analyzedDocument: analyzedDoc,
+    });
+    const stagedEmp = stagedStore.employees.find((e) => e.userId === userId)!;
+    const cv = stagedEmp.cv ?? emptyCvProfile();
+    stagedStore = {
+      ...stagedStore,
+      employees: replaceEmployee(stagedStore.employees, {
+        ...stagedEmp,
+        cv: {
+          ...cv,
+          documents: [...cv.documents.filter((d) => d.id !== analyzedDoc.id), analyzedDoc],
+        },
+      }),
+    };
+    applied = {
+      store: stagedStore,
+      card: stagedEmp.card,
+      summary: {
+        fieldsUpdated: 0,
+        rolesFound: extractionPayload.workHistory?.length ?? 0,
+        educationFound: extractionPayload.educationHistory?.length ?? 0,
+        conflictsPending: 0,
+        unmappedCount: extractionPayload.unmappedFacts?.length ?? 0,
+        fileName: document.fileName,
+      },
+    };
+  } else {
+    applied = applyCvExtraction(store, userId, extractionPayload, analyzedDoc);
+  }
 
   let next: StoreData = applied.store;
   const appliedEmp = next.employees.find((e) => e.userId === userId);

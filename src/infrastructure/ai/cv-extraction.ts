@@ -65,6 +65,7 @@ const PASS_B_SYSTEM = `את/ה אנליסט/ית השמה. הפק/י הסקות 
 החזר/י JSON עם inferences בלבד — קצר.`;
 
 export type CvExtractionResult = {
+  subjectFullName?: string;
   patch: CandidatePatch;
   workHistory?: import("@/domain/types").WorkHistoryEntry[];
   educationHistory?: import("@/domain/types").EducationHistoryEntry[];
@@ -169,6 +170,7 @@ export async function runCvExtraction(params: {
     });
 
     return {
+      subjectFullName: passA.object.subjectFullName?.trim() || undefined,
       patch: sanitized.patch as CandidatePatch,
       workHistory: sanitized.workHistory as CvExtractionResult["workHistory"],
       educationHistory: sanitized.educationHistory as CvExtractionResult["educationHistory"],

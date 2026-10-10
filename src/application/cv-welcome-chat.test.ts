@@ -11,10 +11,12 @@ describe("heuristicCvWelcomeReply", () => {
       pendingQuestions: [],
       isCvUpdate: true,
       locale: "he",
-      candidateName: "דני",
+      candidateSubjectFirstName: "דני",
+      accountHolderFirstName: "ליאן",
     });
     assert.match(reply, /קיבלתי את קורות החיים המעודכנים שלך/);
     assert.match(reply, /שלום דני/);
+    assert.doesNotMatch(reply, /אני ליאן/);
     assert.match(reply, /3/);
   });
 
@@ -25,7 +27,7 @@ describe("heuristicCvWelcomeReply", () => {
       pendingQuestions: [],
       isCvUpdate: false,
       locale: "he",
-      candidateName: "נועה",
+      candidateSubjectFirstName: "נועה",
     });
     assert.match(reply, /קיבלתי את קורות החיים שלך/);
     assert.doesNotMatch(reply, /מעודכנים/);

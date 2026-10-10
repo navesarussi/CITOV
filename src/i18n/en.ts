@@ -199,6 +199,9 @@ export const en = {
     jobTitle: "Upload job description",
     jobHint: "PDF, DOCX or TXT — the agent reads it and fills the job card.",
   },
+  candidateProfiles: {
+    label: "Candidate profiles",
+  },
   profile: {
     yourCard: "Your profile",
     yourCardWithPercent: "Your profile {percent}%",

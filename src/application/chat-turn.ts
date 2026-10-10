@@ -20,6 +20,16 @@ import {
   resolvePendingInferencesFromPatch,
 } from "@/domain/cv-merge";
 import {
+  detectIdentityResolution,
+  tryResolveIdentityFromMessage,
+} from "@/application/cv-identity";
+import {
+  ensureProfilePack,
+  getIdentityStaging,
+  persistActiveProfile,
+} from "@/domain/candidate-profiles";
+import { firstNameFromFullName } from "@/domain/person-name";
+import {
   inferMatchCanonicalFromText,
   mergeMatchCanonical,
 } from "@/domain/match-canonical";
@@ -221,8 +231,11 @@ export function prepareEmployeeTurn(
   openReliabilityNotes: string;
   cv?: CandidateCvProfile;
 } {
-  const emp = store.employees.find((e) => e.userId === userId);
-  if (!emp) throw new NotFoundError("Employee");
+  const raw = store.employees.find((e) => e.userId === userId);
+  if (!raw) throw new NotFoundError("Employee");
+  const accountLabel =
+    firstNameFromFullName(store.users.find((u) => u.id === userId)?.name ?? "") ?? "אני";
+  const emp = ensureProfilePack(raw, accountLabel);
   const prompts = resolveAdminSettings(store.adminSettings);
   return {
     card: emp.card,
@@ -271,7 +284,23 @@ export function applyEmployeeTurn(params: {
   provider: string;
   aiDegraded?: boolean;
 }): ChatTurnResult {
-  const { store, userId, message, reply } = params;
+  let store = params.store;
+  const { userId, message } = params;
+  let reply = params.reply;
+
+  const empBefore = store.employees.find((e) => e.userId === userId);
+  if (empBefore && getIdentityStaging(empBefore) && detectIdentityResolution(message)) {
+    const resolved = tryResolveIdentityFromMessage(store, userId, message);
+    if (resolved) {
+      store = resolved;
+      const stagingName = empBefore.cv?.identityStaging?.cvPersonName ?? "";
+      reply =
+        detectIdentityResolution(message) === "self"
+          ? "מעולה, נמשיך עם קורות החיים שלך."
+          : `מעולה — יצרתי פרופיל נפרד עבור ${stagingName}. אפשר לעבור ביניהם בתפריט הפרופילים.`;
+    }
+  }
+
   const emp = store.employees.find((e) => e.userId === userId);
   if (!emp) throw new NotFoundError("Employee");
 
@@ -340,17 +369,16 @@ export function applyEmployeeTurn(params: {
     aiUsage: usageRecord
       ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
       : store.aiUsage,
-    employees: store.employees.map((e) =>
-      e.userId === userId
-        ? {
-            ...e,
-            card,
-            cv,
-            pendingFieldQuestionIds: pendingIds,
-            chat: [...e.chat, ...newMessages],
-          }
-        : e,
-    ),
+    employees: store.employees.map((e) => {
+      if (e.userId !== userId) return e;
+      return persistActiveProfile({
+        ...e,
+        card,
+        cv,
+        pendingFieldQuestionIds: pendingIds,
+        chat: [...e.chat, ...newMessages],
+      });
+    }),
   };
   const empNext = next.employees.find((e) => e.userId === userId)!;
   const pendingOut = next.fieldQuestions.filter((q) =>
@@ -367,7 +395,7 @@ export function applyEmployeeTurn(params: {
     newMessages,
     newFieldAnswers,
     usageRecord,
-    cv,
+    cv: empNext.cv,
   };
 }
 
@@ -391,9 +419,10 @@ export function appendAssistantReply(params: {
     aiUsage: usageRecord
       ? [...(store.aiUsage ?? []), usageRecord].slice(-200)
       : store.aiUsage,
-    employees: store.employees.map((e) =>
-      e.userId === userId ? { ...e, chat: [...e.chat, assistantMsg] } : e,
-    ),
+    employees: store.employees.map((e) => {
+      if (e.userId !== userId) return e;
+      return persistActiveProfile({ ...e, chat: [...e.chat, assistantMsg] });
+    }),
   };
   const empNext = next.employees.find((e) => e.userId === userId)!;
   const pendingOut = next.fieldQuestions.filter((q) =>

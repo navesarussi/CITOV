@@ -239,6 +239,8 @@ export type CandidateCvProfile = {
   documents: CandidateDocument[];
   pendingInferences: PendingInference[];
   reliability: CandidateReliability;
+  profilePack?: import("./candidate-profiles").CandidateProfilePack;
+  identityStaging?: import("./candidate-profiles").IdentityStaging;
 };
 
 export function emptyReliability(now = ""): CandidateReliability {

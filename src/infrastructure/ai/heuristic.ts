@@ -268,13 +268,14 @@ export function heuristicCvWelcomeReply(params: {
   pendingQuestions: FieldQuestion[];
   isCvUpdate: boolean;
   locale: Locale;
-  candidateName?: string;
+  candidateSubjectFirstName?: string;
+  accountHolderFirstName?: string;
 }): string {
-  const first = params.candidateName?.split(/[\s(]/)[0]?.trim();
-  const greet = first
+  const subject = params.candidateSubjectFirstName?.split(/[\s(]/)[0]?.trim();
+  const greet = subject
     ? params.locale === "he"
-      ? `שלום ${first}, `
-      : `Hi ${first}, `
+      ? `שלום ${subject}, `
+      : `Hi ${subject}, `
     : params.locale === "he"
       ? "שלום, "
       : "Hi, ";
