@@ -158,7 +158,7 @@ export function EndToEndJourneyMap() {
           <h3 className="text-xl font-bold text-[var(--hero)]">מסע מוצר מקצה לקצה</h3>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--muted)]">
             מהתחברות Google ועד כיול מחדש — כולל צדדי ניטור, תקציב, חוסן ופרטיות. לחצו על תיבה לפרטים.
-            גררו לתזוזה; +/- לזום. במובייל: רשימת שלבים אנכית.
+            גררו לתזוזה; +/- להגדלה. במובייל: רשימת שלבים אנכית.
           </p>
         </div>
         <KindLegend />

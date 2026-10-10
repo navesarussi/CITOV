@@ -122,7 +122,11 @@ export function LabelingMetricsPanel(props: {
               label={t.adminLabeling.llmJudgeAgreementAb}
               tip={t.adminLabeling.llmJudgeAgreementAbTip}
               value={`${((m.llmJudge!.judgeAgreementRate ?? 0) * 100).toFixed(0)}%`}
-              sub={fmt(t.adminLabeling.llmJudgePairsSub, { n: m.llmJudge!.total })}
+              sub={
+                m.llmJudge!.judgeDisagreementCount > 0
+                  ? `${m.llmJudge!.judgeDisagreementCount} מחלוקות א׳/ב׳`
+                  : fmt(t.adminLabeling.llmJudgePairsSub, { n: m.llmJudge!.total })
+              }
             />
             <KpiTile
               label={t.adminLabeling.llmJudgeAutoSkip}
