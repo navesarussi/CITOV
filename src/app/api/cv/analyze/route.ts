@@ -67,6 +67,9 @@ export async function POST(req: Request) {
         ? { id: assistant.id, role: assistant.role, content: assistant.content }
         : null;
 
+      const usageRecords = [analyzed.usageRecord, welcome.usageRecord].filter(
+        (r): r is NonNullable<typeof r> => Boolean(r),
+      );
       await persistEmployeeTurn({
         store,
         userId,
@@ -76,7 +79,7 @@ export async function POST(req: Request) {
         cv: welcome.cv,
         newMessages: welcome.newMessages,
         newFieldAnswers: welcome.newFieldAnswers,
-        usageRecord: welcome.usageRecord,
+        usageRecords,
       });
     } else {
       await persistEmployeeProfile({
@@ -85,6 +88,7 @@ export async function POST(req: Request) {
         card: emp.card,
         pendingFieldQuestionIds: emp.pendingFieldQuestionIds,
         cv: emp.cv,
+        usageRecord: analyzed.usageRecord,
       });
     }
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
+import { AdminAiUsagePanel } from "@/components/admin/AdminAiUsagePanel";
 import { AdminPromptWorkbench } from "@/components/admin/AdminPromptWorkbench";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminShell } from "@/components/AdminShell";
@@ -335,6 +336,10 @@ export default function AdminPage() {
           </a>
         </AdminStatCard>
       </section>
+
+      <div className="enter-delay mt-4">
+        <AdminAiUsagePanel />
+      </div>
 
       <section className="enter-delay mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AdminStatCard

@@ -122,8 +122,9 @@ async function upsertEmployerProfile(
 async function insertAiUsage(client: PoolClient, record: AiUsageRecord): Promise<void> {
   await client.query(
     `insert into ai_usage
-       (id, type, prompt_tokens, completion_tokens, total_tokens, cached_prompt_tokens, estimated_cost_usd, created_at)
-     values ($1, $2, $3, $4, $5, $6, $7, $8)
+       (id, type, prompt_tokens, completion_tokens, total_tokens, cached_prompt_tokens,
+        thinking_tokens, estimated_cost_usd, user_id, model, latency_ms, created_at)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      on conflict (id) do nothing`,
     [
       record.id,
@@ -132,10 +133,20 @@ async function insertAiUsage(client: PoolClient, record: AiUsageRecord): Promise
       record.completionTokens,
       record.totalTokens,
       record.cachedPromptTokens ?? 0,
+      record.thinkingTokens ?? 0,
       record.estimatedCostUsd,
+      record.userId ?? null,
+      record.model ?? null,
+      record.latencyMs ?? null,
       record.createdAt,
     ],
   );
+}
+
+async function insertAiUsageBatch(client: PoolClient, records: AiUsageRecord[]): Promise<void> {
+  for (const record of records) {
+    await insertAiUsage(client, record);
+  }
 }
 
 async function upsertFieldAnswers(client: PoolClient, answers: FieldAnswer[]): Promise<void> {
@@ -161,11 +172,16 @@ export async function persistEmployeeTurn(params: {
   newMessages: ChatMessage[];
   newFieldAnswers: FieldAnswer[];
   usageRecord?: AiUsageRecord;
+  usageRecords?: AiUsageRecord[];
 }): Promise<void> {
   if (shouldUseMemoryStore()) {
     writeMemory(params.store);
     return;
   }
+  const usageRows = [
+    ...(params.usageRecords ?? []),
+    ...(params.usageRecord ? [params.usageRecord] : []),
+  ];
   await withTx(async (client) => {
     await upsertEmployeeProfile(
       client,
@@ -176,7 +192,7 @@ export async function persistEmployeeTurn(params: {
     );
     await insertChatMessages(client, params.userId, "employee", null, params.newMessages);
     if (params.newFieldAnswers.length) await upsertFieldAnswers(client, params.newFieldAnswers);
-    if (params.usageRecord) await insertAiUsage(client, params.usageRecord);
+    if (usageRows.length) await insertAiUsageBatch(client, usageRows);
   });
 }
 
@@ -190,11 +206,16 @@ export async function persistEmployerTurn(params: {
   jobId: string;
   newMessages: ChatMessage[];
   usageRecord?: AiUsageRecord;
+  usageRecords?: AiUsageRecord[];
 }): Promise<void> {
   if (shouldUseMemoryStore()) {
     writeMemory(params.store);
     return;
   }
+  const usageRows = [
+    ...(params.usageRecords ?? []),
+    ...(params.usageRecord ? [params.usageRecord] : []),
+  ];
   await withTx(async (client) => {
     await upsertEmployerProfile(
       client,
@@ -204,7 +225,7 @@ export async function persistEmployerTurn(params: {
       params.activeJobId,
     );
     await insertChatMessages(client, params.userId, "employer", params.jobId, params.newMessages);
-    if (params.usageRecord) await insertAiUsage(client, params.usageRecord);
+    if (usageRows.length) await insertAiUsageBatch(client, usageRows);
   });
 }
 

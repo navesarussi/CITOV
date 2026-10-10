@@ -71,6 +71,7 @@ async function persistTurn(
       newMessages: result.newMessages,
       newFieldAnswers: result.newFieldAnswers,
       usageRecord: result.usageRecord,
+      usageRecords: result.usageRecords,
     });
   } else {
     const raw = result.store.employers.find((e) => e.userId === userId);
@@ -85,6 +86,7 @@ async function persistTurn(
       jobId: result.jobId ?? employer.activeJobId,
       newMessages: result.newMessages,
       usageRecord: result.usageRecord,
+      usageRecords: result.usageRecords,
     });
   }
 }
@@ -234,8 +236,9 @@ async function runEmployeeStream(
   let replyText = "";
   let provider: "gemini" | "heuristic" = "gemini";
   let degraded = false;
+  let replyUsage;
   try {
-    const { textStream } = streamEmployeeReply({
+    const streamed = streamEmployeeReply({
       message,
       card: prep.card,
       chat: prep.chat,
@@ -247,10 +250,11 @@ async function runEmployeeStream(
       locale,
       accountHolderFirstName,
     });
-    for await (const delta of textStream) {
+    for await (const delta of streamed.textStream) {
       if (!delta) continue;
       replyText += delta;
     }
+    replyUsage = await streamed.usage;
   } catch (err) {
     console.error("gemini employee reply stream failed", err);
   }
@@ -276,6 +280,7 @@ async function runEmployeeStream(
     candidatePatch: patch.candidatePatch,
     fieldAnswers: patch.fieldAnswers,
     usage: patch.usage,
+    replyUsage,
     provider,
     aiDegraded: degraded,
   });
@@ -314,17 +319,19 @@ async function runEmployerStream(
   let replyText = "";
   let provider: "gemini" | "heuristic" = "gemini";
   let degraded = false;
+  let replyUsage;
   try {
-    const { textStream } = streamEmployerReply({
+    const streamed = streamEmployerReply({
       message,
       card: prep.card,
       chat: prep.chat,
       systemPrompt: prep.systemPrompt,
     });
-    for await (const delta of textStream) {
+    for await (const delta of streamed.textStream) {
       if (!delta) continue;
       replyText += delta;
     }
+    replyUsage = await streamed.usage;
   } catch (err) {
     console.error("gemini employer reply stream failed", err);
   }
@@ -349,6 +356,7 @@ async function runEmployerStream(
     reply: replyText,
     jobPatch: patch.jobPatch,
     usage: patch.usage,
+    replyUsage,
     provider,
     aiDegraded: degraded,
     jobId: prep.jobId,

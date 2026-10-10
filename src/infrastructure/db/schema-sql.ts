@@ -91,8 +91,12 @@ create table if not exists ai_usage (
   cached_prompt_tokens integer not null default 0,
   thinking_tokens integer not null default 0,
   estimated_cost_usd double precision not null default 0,
+  user_id text references app_users (id) on delete set null,
+  model text,
+  latency_ms integer,
   created_at timestamptz not null default now()
 );
+create index if not exists ai_usage_created_at_idx on ai_usage (created_at desc);
 
 create table if not exists card_field_definitions (
   id text primary key,
