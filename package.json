@@ -1,6 +1,6 @@
 {
   "name": "shidukh-poc",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "private": true,
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "eval:matching": "tsx scripts/eval-matching.ts",
     "eval:extraction": "tsx scripts/eval-extraction.ts",
+    "ci:prompt-regression": "tsx scripts/ci-prompt-regression.ts",
     "eval:generate-holdout-sheet": "tsx scripts/generate-holdout-labeling.ts",
     "eval:import-labels": "tsx scripts/eval-import-labels.ts",
     "eval:embed-fixtures": "tsx scripts/eval-embed-fixtures.ts",

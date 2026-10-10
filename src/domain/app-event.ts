@@ -8,7 +8,10 @@ export type AppEventKind =
   | "slow_request"
   | "e2e_run"
   | "match_rebuild"
-  | "sandbox_run_report";
+  | "sandbox_run_report"
+  | "degraded_chat_turn"
+  | "degraded_turn_recovered"
+  | "degraded_turn_recovery_failed";
 
 export type AppEventSeverity = "info" | "warn" | "critical";
 
