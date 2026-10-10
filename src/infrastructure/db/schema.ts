@@ -3,7 +3,7 @@ import { NORMALIZED_SCHEMA_SQL } from "./schema-sql";
 import { isNormalizedDataCached, markNormalizedDataPresent } from "./store-cache";
 import { logDbTiming, startDbTimer } from "./db-timing";
 
-const MIGRATION_VERSION = "015_sandbox_llm_judgments";
+const MIGRATION_VERSION = "016_user_rate_limit_windows";
 
 const ALTERS = `
 create extension if not exists vector;
@@ -198,6 +198,16 @@ create table if not exists app_events (
 create index if not exists app_events_fingerprint_idx on app_events (fingerprint, created_at desc);
 create index if not exists app_events_kind_idx on app_events (kind, created_at desc);
 create index if not exists app_events_created_idx on app_events (created_at desc);
+
+create table if not exists user_rate_limit_windows (
+  user_id text not null references app_users (id) on delete cascade,
+  bucket text not null default 'ai',
+  window_start timestamptz not null,
+  request_count integer not null default 0,
+  primary key (user_id, bucket)
+);
+create index if not exists user_rate_limit_windows_window_idx
+  on user_rate_limit_windows (window_start);
 `;
 
 let schemaReady: Promise<void> | undefined;

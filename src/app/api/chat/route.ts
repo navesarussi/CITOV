@@ -97,6 +97,15 @@ async function persistTurn(
 
 export async function POST(req: Request) {
   try {
+    const {
+      jsonBodyTooLargeResponse,
+      readMaxChatMessageChars,
+      readMaxJsonBodyBytes,
+      trimMessageTooLong,
+    } = await import("@/infrastructure/request-limits");
+    const tooLarge = jsonBodyTooLargeResponse(req, readMaxJsonBodyBytes("chat"));
+    if (tooLarge) return tooLarge;
+
     const body = (await req.json()) as {
       userId?: string;
       role?: "employee" | "employer";
@@ -109,8 +118,8 @@ export async function POST(req: Request) {
     const gate = await assertActor(body.userId);
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
 
-    const { checkUserRateLimit } = await import("@/infrastructure/user-rate-limit");
-    const rl = checkUserRateLimit(body.userId);
+    const { checkUserRateLimitAsync } = await import("@/infrastructure/user-rate-limit");
+    const rl = await checkUserRateLimitAsync(body.userId);
     if (!rl.allowed) {
       return ok(
         { error: `יותר מדי בקשות AI — נסו שוב בעוד ${rl.retryAfterSec ?? 60} שניות` },
@@ -141,7 +150,11 @@ export async function POST(req: Request) {
       }
     }
 
-    const message = body.message.trim();
+    const msgCheck = trimMessageTooLong(body.message, readMaxChatMessageChars());
+    if (!msgCheck.ok) {
+      return ok({ error: msgCheck.error }, { status: 413 });
+    }
+    const message = msgCheck.message;
     const aiMode = hasGeminiKey() ? "gemini" : "heuristic";
     const locale = parseLocale(
       new URL(req.url).searchParams.get("locale") ??

@@ -21,6 +21,12 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
+    const { jsonBodyTooLargeResponse, readMaxJsonBodyBytes } = await import(
+      "@/infrastructure/request-limits"
+    );
+    const tooLarge = jsonBodyTooLargeResponse(req, readMaxJsonBodyBytes("cv-analyze"));
+    if (tooLarge) return tooLarge;
+
     const body = (await req.json()) as {
       userId?: string;
       documentId?: string;
@@ -35,8 +41,8 @@ export async function POST(req: Request) {
     const gate = await assertActor(userId);
     if (!gate.ok) return ok({ error: gate.error }, { status: gate.status });
 
-    const { checkUserRateLimit } = await import("@/infrastructure/user-rate-limit");
-    const rl = checkUserRateLimit(userId);
+    const { checkUserRateLimitAsync } = await import("@/infrastructure/user-rate-limit");
+    const rl = await checkUserRateLimitAsync(userId);
     if (!rl.allowed) {
       return ok(
         { error: `יותר מדי בקשות AI — נסו שוב בעוד ${rl.retryAfterSec ?? 60} שניות` },
