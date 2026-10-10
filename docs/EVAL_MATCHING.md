@@ -14,7 +14,7 @@ npm run seed:demo          # load eval cards into Postgres (needs DATABASE_URL; 
 
 ## Match canonical (English) for rules
 
-Eval seeds apply `matchCanonical` (dictionary + extraction schema) so rule token overlap improves cross-language pairs **without** replacing Hebrew display fields. After canonical: **rule-based-v1** P@5 **33.6%** (was ~30.4%), R@5 **75.1%**; hybrid unchanged (embeddings stay multilingual).
+Eval seeds apply `matchCanonical` (dictionary + extraction schema) so rule token overlap improves cross-language pairs **without** replacing Hebrew display fields. Demo seed runs `backfillMatchCanonicalOnStore`; prod/backfill via `tsx scripts/backfill-match-canonical.ts`. After canonical: **rule-based-v1** P@5 **33.6%** (was ~30.4%), R@5 **75.1%**; hybrid unchanged (embeddings stay multilingual).
 
 ## Holdout labeling (human)
 
