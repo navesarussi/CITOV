@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
 
@@ -41,7 +42,7 @@ export default function AdminCandidatesPage() {
     }
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
   }, [load]);
 

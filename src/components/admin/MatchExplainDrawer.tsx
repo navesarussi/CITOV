@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { MatchScoreBreakdown } from "@/domain/match-score-breakdown";
 import type { CandidateCard, JobCard } from "@/domain/types";
 import type { WaterfallStepHe } from "@/application/match-explain-waterfall";
@@ -21,7 +22,7 @@ export function MatchExplainDrawer(props: {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!props.matchId) {
       setData(null);
       return;

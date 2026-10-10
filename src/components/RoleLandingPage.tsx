@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { BrandMark } from "@/components/BrandMark";
 import { DevLoginDialog } from "@/components/DevLoginDialog";
 import { SettingsMenu } from "@/components/SettingsMenu";
@@ -98,7 +99,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
     });
   }
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (props.initialFlags) return;
     void loadFlags()
       .catch(() => {
@@ -107,7 +108,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
       .finally(() => setFlagsReady(true));
   }, [props.initialFlags]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (status !== "authenticated") return;
     void loadFlags().catch(() => undefined);
   }, [status]);
@@ -117,7 +118,7 @@ export function RoleLandingPage(props: { role: Role; initialFlags?: SessionFlags
     void prefetchGoogleSignInCsrf();
   }, [flagsReady, flags.googleAuth]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!flagsReady || autoStarted.current) return;
     if (consumeSkipAutoLogin()) return;
 

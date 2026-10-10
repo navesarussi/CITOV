@@ -46,16 +46,20 @@ export function ChatPanel(props: {
 }) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<Msg[]>(props.initialMessages);
+  const [messageSyncKey, setMessageSyncKey] = useState({
+    jobId: props.jobId,
+    initial: props.initialMessages,
+  });
+  if (props.jobId !== messageSyncKey.jobId || props.initialMessages !== messageSyncKey.initial) {
+    setMessageSyncKey({ jobId: props.jobId, initial: props.initialMessages });
+    setMessages(props.initialMessages);
+  }
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [provider, setProvider] = useState("");
   const [degraded, setDegraded] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMessages(props.initialMessages);
-  }, [props.initialMessages, props.jobId]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });

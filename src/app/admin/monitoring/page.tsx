@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { MonitoringDashboard } from "@/application/monitoring-dashboard";
 import { AdminShell } from "@/components/AdminShell";
 import { Button } from "@/components/ui/Button";
@@ -30,7 +31,7 @@ export default function AdminMonitoringPage() {
     }
   }, [cache]);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!data) void load();
   }, [data, load]);
 

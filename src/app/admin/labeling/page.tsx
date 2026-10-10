@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { LabelingPair } from "@/application/admin-labeling";
 import {
   LabelingMetricsPanel,
@@ -68,7 +69,7 @@ export default function AdminLabelingPage() {
     [loadFromResponse],
   );
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void refresh();
   }, [refresh]);
 

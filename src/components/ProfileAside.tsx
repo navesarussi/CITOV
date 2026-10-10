@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FlexibilitySlider } from "@/components/FlexibilitySlider";
 import { useTranslation } from "@/components/LocaleProvider";
 import { Panel } from "@/components/ui/Panel";
@@ -22,15 +22,16 @@ export function ProfileAside(props: {
 }) {
   const { t, fmt } = useTranslation();
   const showFullCard = props.showFullCard ?? false;
-  const [flex, setFlex] = useState(5);
-
   const c =
     props.card ??
     (props.kind === "employee" ? emptyCandidateCard() : emptyJobCard());
-
-  useEffect(() => {
-    setFlex(clampFlex((c as CandidateCard | JobCard).flexibility));
-  }, [c]);
+  const flexFromCard = clampFlex((c as CandidateCard | JobCard).flexibility);
+  const [flex, setFlex] = useState(flexFromCard);
+  const [prevFlexFromCard, setPrevFlexFromCard] = useState(flexFromCard);
+  if (flexFromCard !== prevFlexFromCard) {
+    setPrevFlexFromCard(flexFromCard);
+    setFlex(flexFromCard);
+  }
 
   const labels = (props.kind === "employee"
     ? t.cardFields.candidate

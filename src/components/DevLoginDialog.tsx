@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/components/LocaleProvider";
 import type { Role } from "@/domain/types";
@@ -24,7 +25,7 @@ export function DevLoginDialog(props: {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     if (!props.open) return;
     setMode("new");
     setUserId(props.users[0]?.id ?? "");

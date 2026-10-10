@@ -77,8 +77,8 @@ export function commitStagedCvToOtherProfile(
   const staging = getIdentityStaging(emp);
   if (!staging) return store;
 
-  let base = clearIdentityStaging(ensureProfilePack(emp));
-  let withOther = createOtherPersonProfile(base, cvPersonName, emptyCardForNewProfile());
+  const base = clearIdentityStaging(ensureProfilePack(emp));
+  const withOther = createOtherPersonProfile(base, cvPersonName, emptyCardForNewProfile());
   const merged = mergeCvIntoEmployee(withOther, staging.extraction, staging.analyzedDocument);
   return {
     ...store,

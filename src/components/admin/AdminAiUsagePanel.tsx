@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useDeferredEffect } from "@/lib/deferred-effect";
 import type { AdminAiUsageDashboard } from "@/application/admin-ai-usage";
 import { Button } from "@/components/ui/Button";
 
@@ -28,7 +29,7 @@ export function AdminAiUsagePanel() {
     }
   }, []);
 
-  useEffect(() => {
+  useDeferredEffect(() => {
     void load();
     const id = window.setInterval(() => void load(), 30_000);
     return () => window.clearInterval(id);
