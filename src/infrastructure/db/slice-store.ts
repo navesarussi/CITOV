@@ -279,6 +279,7 @@ export async function readCandidateQueueStore(
     ? await pool.query(
         `select * from matches
          where job_owner_id = $1 and status = 'queued'
+           and coalesce(is_test, false) = false
            and coalesce(job_id, job_owner_id) = $2
          order by score desc`,
         [employerId, jobId],
@@ -286,6 +287,7 @@ export async function readCandidateQueueStore(
     : await pool.query(
         `select * from matches
          where job_owner_id = $1 and status = 'queued'
+           and coalesce(is_test, false) = false
          order by score desc`,
         [employerId],
       );
