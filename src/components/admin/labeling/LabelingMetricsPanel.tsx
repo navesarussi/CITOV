@@ -26,6 +26,7 @@ export type LabelingMetricsView = {
     badQueued: number;
   }[];
   llmJudge?: LlmJudgeDashboardMetrics;
+  holdout?: { holdoutTotal: number; holdoutLabeled: number; holdoutRemaining: number };
 };
 
 function matcherTitle(id: string, legacy: string, smart: string): string {

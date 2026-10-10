@@ -1,0 +1,1386 @@
+{
+  "version": "holdout-v1",
+  "description": "Frozen judge suggestions for holdout labeling (heuristic fixture; owner label is truth)",
+  "judgments": [
+    {
+      "jobId": "j01",
+      "candidateId": "c11",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.014000000000000002,
+      "ruleScore": 0.014000000000000002,
+      "hybridScore": 0.014000000000000002,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c34",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.005999999999999995,
+      "ruleScore": 0.005999999999999995,
+      "hybridScore": 0.005999999999999995,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c11",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.006666666666666665,
+      "ruleScore": 0.006666666666666665,
+      "hybridScore": 0.006666666666666665,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c03",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.003999999999999998,
+      "ruleScore": 0.003999999999999998,
+      "hybridScore": 0.003999999999999998,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c01",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.028000000000000004,
+      "ruleScore": 0.028000000000000004,
+      "hybridScore": 0.028000000000000004,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j01",
+      "candidateId": "c34",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.005999999999999995,
+      "ruleScore": 0.005999999999999995,
+      "hybridScore": 0.005999999999999995,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c37",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.17866666666666667,
+      "ruleScore": 0.17866666666666667,
+      "hybridScore": 0.17866666666666667,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c46",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.06400000000000002,
+      "ruleScore": 0.06400000000000002,
+      "hybridScore": 0.06400000000000002,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j03",
+      "candidateId": "c09",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.06773333333333333,
+      "ruleScore": 0.06773333333333333,
+      "hybridScore": 0.06773333333333333,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c46",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.28288888888888886,
+      "ruleScore": 0.28288888888888886,
+      "hybridScore": 0.28288888888888886,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c47",
+      "judgeA": {
+        "label": "good",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — נראה מתאים לפי הכרטיסים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "good",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — נראה מתאים לפי הכרטיסים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.5950000000000001,
+      "ruleScore": 0.5950000000000001,
+      "hybridScore": 0.5950000000000001,
+      "engineQueued": true
+    },
+    {
+      "jobId": "j09",
+      "candidateId": "c37",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.0104,
+      "ruleScore": 0.0104,
+      "hybridScore": 0.0104,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c02",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.006666666666666665,
+      "ruleScore": 0.006666666666666665,
+      "hybridScore": 0.006666666666666665,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j01",
+      "candidateId": "c33",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08800000000000001,
+      "ruleScore": 0.08800000000000001,
+      "hybridScore": 0.08800000000000001,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c02",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j24",
+      "candidateId": "c12",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.0104,
+      "ruleScore": 0.0104,
+      "hybridScore": 0.0104,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j16",
+      "candidateId": "c11",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c11",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j06",
+      "candidateId": "c05",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.18362962962962964,
+      "ruleScore": 0.18362962962962964,
+      "hybridScore": 0.18362962962962964,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c33",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.201,
+      "ruleScore": 0.201,
+      "hybridScore": 0.201,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j06",
+      "candidateId": "c19",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08800000000000001,
+      "ruleScore": 0.08800000000000001,
+      "hybridScore": 0.08800000000000001,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j03",
+      "candidateId": "c49",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08800000000000001,
+      "ruleScore": 0.08800000000000001,
+      "hybridScore": 0.08800000000000001,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j03",
+      "candidateId": "c26",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08800000000000001,
+      "ruleScore": 0.08800000000000001,
+      "hybridScore": 0.08800000000000001,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j21",
+      "candidateId": "c04",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "השוואת כישורים ותפקיד — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08800000000000001,
+      "ruleScore": 0.08800000000000001,
+      "hybridScore": 0.08800000000000001,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c47",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c46",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c47",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j16",
+      "candidateId": "c25",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c13",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c34",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j01",
+      "candidateId": "c23",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j09",
+      "candidateId": "c24",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.006666666666666665,
+      "ruleScore": 0.006666666666666665,
+      "hybridScore": 0.006666666666666665,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c32",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08800000000000001,
+      "ruleScore": 0.08800000000000001,
+      "hybridScore": 0.08800000000000001,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j09",
+      "candidateId": "c23",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j04",
+      "candidateId": "c19",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.055999999999999994,
+      "ruleScore": 0.055999999999999994,
+      "hybridScore": 0.055999999999999994,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j24",
+      "candidateId": "c34",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j15",
+      "candidateId": "c11",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c35",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j01",
+      "candidateId": "c35",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j01",
+      "candidateId": "c37",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.024000000000000007,
+      "ruleScore": 0.024000000000000007,
+      "hybridScore": 0.024000000000000007,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j03",
+      "candidateId": "c48",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.0644,
+      "ruleScore": 0.0644,
+      "hybridScore": 0.0644,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c12",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.014000000000000002,
+      "ruleScore": 0.014000000000000002,
+      "hybridScore": 0.014000000000000002,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c04",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.006666666666666665,
+      "ruleScore": 0.006666666666666665,
+      "hybridScore": 0.006666666666666665,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j03",
+      "candidateId": "c08",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.031999999999999994,
+      "ruleScore": 0.031999999999999994,
+      "hybridScore": 0.031999999999999994,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c12",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j08",
+      "candidateId": "c04",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "התאמת מיקום ונסיעה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j01",
+      "candidateId": "c12",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c03",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j24",
+      "candidateId": "c03",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j22",
+      "candidateId": "c37",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j02",
+      "candidateId": "c37",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j24",
+      "candidateId": "c46",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j09",
+      "candidateId": "c34",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j20",
+      "candidateId": "c39",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.064,
+      "ruleScore": 0.064,
+      "hybridScore": 0.064,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j09",
+      "candidateId": "c01",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j06",
+      "candidateId": "c43",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.064,
+      "ruleScore": 0.064,
+      "hybridScore": 0.064,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j24",
+      "candidateId": "c01",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j09",
+      "candidateId": "c35",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0,
+      "ruleScore": 0,
+      "hybridScore": 0,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j04",
+      "candidateId": "c48",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "פער בדרישות חובה — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.08,
+      "ruleScore": 0.08,
+      "hybridScore": 0.08,
+      "engineQueued": false
+    },
+    {
+      "jobId": "j05",
+      "candidateId": "c10",
+      "judgeA": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.88
+      },
+      "judgeB": {
+        "label": "bad",
+        "reasonHe": "הבדל שפה/ניסוח בין כרטיסים — לא נראה מתאים.",
+        "confidence": 0.86,
+        "critiqueHe": "מסכים/ה עם שופט א׳."
+      },
+      "judgesAgree": true,
+      "autoSkipped": true,
+      "auditSample": false,
+      "needsOwner": false,
+      "engineScore": 0.031999999999999994,
+      "ruleScore": 0.031999999999999994,
+      "hybridScore": 0.031999999999999994,
+      "engineQueued": false
+    }
+  ]
+}

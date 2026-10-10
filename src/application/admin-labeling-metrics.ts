@@ -6,7 +6,12 @@ import type { EvalLabel, MatchingEvalDataset, RelevanceLabel } from "@/domain/ma
 import type { StoreData } from "@/domain/types";
 import { readQueueThreshold } from "./matching-config";
 import type { MatchEmbeddingIndex } from "./match-scoring";
-import { buildDatasetFromDbLabels, productionHybridMatcher } from "./admin-labeling";
+import {
+  buildDatasetFromDbLabels,
+  holdoutLabelingProgress,
+  productionHybridMatcher,
+} from "./admin-labeling";
+import { labeledPairKeys } from "@/infrastructure/db/match-labels";
 import { resolveLabelingPair } from "./labeling-pair-resolve";
 import { explainMatchPair } from "./match-pair-explain";
 import { buildLlmJudgeDashboardMetrics, type LlmJudgeDashboardMetrics } from "./llm-judge-metrics";
@@ -189,9 +194,11 @@ export async function extendedLiveMetrics(
   const dataset = await buildDatasetFromDbLabels(store);
   const minRequired = 3;
   const llmJudge = await buildLlmJudgeDashboardMetrics();
+  const holdout = holdoutLabelingProgress(await labeledPairKeys());
   if (!dataset) {
     return {
       ...base,
+      holdout,
       minRequired,
       labelCounts: { good: 0, acceptable: 0, bad: 0 } as LabelCounts,
       agreementRate: 0,
@@ -209,6 +216,7 @@ export async function extendedLiveMetrics(
   const suggested = base.ready ? pickSuggestedThreshold(thresholdSweep) : null;
   return {
     ...base,
+    holdout,
     minRequired,
     labelCounts,
     agreementRate: agreement,

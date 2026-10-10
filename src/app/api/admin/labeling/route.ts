@@ -29,6 +29,13 @@ async function GETHandler(req: Request) {
     const url = new URL(req.url);
     const jobId = url.searchParams.get("jobId")?.trim();
     const candidateId = url.searchParams.get("candidateId")?.trim();
+    const excludeRaw = url.searchParams.get("exclude")?.trim() ?? "";
+    const excludeKeys = new Set(
+      excludeRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
     const metrics = await extendedLiveMetrics(store, index);
     if (jobId && candidateId) {
       const pair = getLabelingPair(store, jobId, candidateId, index, scope === "test" ? "test-run" : "review");
@@ -37,7 +44,7 @@ async function GETHandler(req: Request) {
     const pairs =
       scope === "test"
         ? await nextTestRunLabelingPairs(store, index, 1)
-        : await nextLabelingPairs(store, index, 1);
+        : await nextLabelingPairs(store, index, 1, excludeKeys);
     return ok({ pair: pairs[0] ?? null, metrics, dataScope: scope });
   } catch (e) {
     return fail(e, undefined, { route: ROUTE });

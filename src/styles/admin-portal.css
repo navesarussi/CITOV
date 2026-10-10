@@ -7,13 +7,47 @@
 .admin-portal .admin-main {
   overflow-x: clip;
   max-width: 100%;
-  padding-inline: 0.75rem;
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-inline: 0.625rem;
+}
+
+.admin-main-with-tab-bar {
+  padding-bottom: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.admin-main-with-label-bar {
+  padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .admin-main-with-tab-bar,
+  .admin-main-with-label-bar {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (min-width: 640px) {
   .admin-portal .admin-main {
     padding-inline: 1rem;
+  }
+}
+
+.admin-tab-bar {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.admin-more-sheet {
+  padding-bottom: 0.25rem;
+}
+
+/* Compact mobile density */
+@media (max-width: 767px) {
+  .admin-portal .panel {
+    padding: 0.65rem !important;
+    border-radius: 0.75rem !important;
+  }
+
+  .admin-portal .admin-stat-card {
+    padding: 0.5rem 0.65rem !important;
   }
 }
 
@@ -28,7 +62,7 @@
     gap: 0.35rem;
     border: 1px solid var(--stroke);
     border-radius: 0.75rem;
-    padding: 0.75rem;
+    padding: 0.65rem;
     margin-bottom: 0.5rem;
     background: rgb(255 255 255 / 0.92);
   }
@@ -47,6 +81,19 @@
   }
 }
 
-.admin-nav-sheet {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+.admin-label-thumb-bar {
+  position: fixed;
+  inset-inline: 0;
+  z-index: 55;
+  border-top: 1px solid var(--stroke);
+  background: rgb(255 255 255 / 0.97);
+  backdrop-filter: blur(10px);
+  padding: 0.5rem 0.625rem;
+  padding-bottom: calc(0.5rem + 3.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 768px) {
+  .admin-label-thumb-bar {
+    display: none;
+  }
 }
