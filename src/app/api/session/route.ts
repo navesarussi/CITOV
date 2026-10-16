@@ -2,6 +2,8 @@ import { randomUUID } from "crypto";
 import { auth } from "@/auth";
 import type { Role, User } from "@/domain/types";
 import { ok, fail } from "@/infrastructure/http";
+import { isAdminEmail } from "@/infrastructure/admin-config";
+import { isRoleChangeBlocked } from "@/domain/role-lock";
 import { allowOpenAuth } from "@/infrastructure/auth-flags";
 import { allowDemo } from "@/infrastructure/auth-guard";
 import { createSeedStore } from "@/infrastructure/db/memory-store";
@@ -81,7 +83,13 @@ export async function POST(req: Request) {
     const email = session.user.email;
     const googleId = session.user.googleId ?? session.user.id;
     const existing = await findUserByEmailOrGoogle(email, googleId);
-    if (existing && existing.role !== role) {
+    if (
+      isRoleChangeBlocked({
+        existingRole: existing?.role,
+        requestedRole: role,
+        isAdmin: isAdminEmail(email),
+      })
+    ) {
       return ok(
         {
           error:
