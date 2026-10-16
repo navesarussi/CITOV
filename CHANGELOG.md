@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.27 — 2026-10-16
+
+- Fix: admin "תצוגת מועמד" failed with the role-lock error; admins may now switch preview role (regular users stay locked).
+
 ## 0.4.26 — 2025-10-10
 
 - **Matching i18n:** 20×3 cross-language consistency eval (rule/semantic/hybrid \|Δ\| ≤ 0.05, queue parity); seniority/field/skill aliases; frozen 15-pair holdout (report-only ~13% pass); salary normalized to ILS/month in rules; personality/culture removed from rule `textScore`; `MATCHING_I18N_AUDIT.md`; prod coverage script + backfill.
