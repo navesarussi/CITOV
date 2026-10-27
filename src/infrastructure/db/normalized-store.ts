@@ -682,15 +682,35 @@ export async function withMatchRebuildAdvisoryLock<T>(work: () => Promise<T>): P
   await ensureSchema();
   const pool = await getPool();
   const client = await pool.connect();
+  return runUnderXactAdvisoryLock(client, MATCH_REBUILD_ADVISORY_LOCK_ID, work);
+}
+
+type LockClient = { query: (sql: string, params?: unknown[]) => Promise<unknown>; release: () => void };
+
+/**
+ * Transaction-scoped lock (pg_advisory_xact_lock): safe behind the Supabase
+ * transaction pooler (6543), where session locks can land on a different backend.
+ * The lock is released automatically on commit/rollback.
+ */
+export async function runUnderXactAdvisoryLock<T>(
+  client: LockClient,
+  lockId: number,
+  work: () => Promise<T>,
+): Promise<T> {
+  let began = false;
   try {
-    await client.query(`select pg_advisory_lock($1)`, [MATCH_REBUILD_ADVISORY_LOCK_ID]);
-    return await work();
+    await client.query("begin");
+    began = true;
+    await client.query(`select pg_advisory_xact_lock($1)`, [lockId]);
+    const result = await work();
+    await client.query("commit");
+    began = false;
+    return result;
+  } catch (e) {
+    if (began) await client.query("rollback").catch(() => undefined);
+    throw e;
   } finally {
-    try {
-      await client.query(`select pg_advisory_unlock($1)`, [MATCH_REBUILD_ADVISORY_LOCK_ID]);
-    } finally {
-      client.release();
-    }
+    client.release();
   }
 }
 
